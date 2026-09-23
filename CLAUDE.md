@@ -281,6 +281,12 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - 2.3 Condições (`/treinos/condicoes`: catálogo somente leitura + próprias; arquivar só owner; nome igual ao
   do catálogo é recusado) e "Condições relacionadas" no diálogo de grupos especiais. Ao salvar o grupo, os
   vínculos são adicionados antes de remover e vínculos com condições arquivadas são preservados.
+- 2.4 Montador (`/treinos/novo[?aluno=]`, `/treinos/[planId]/editar`): componente único para aluno e modelo
+  (`features/plans/components/PlanBuilder.tsx`); lógica pura em `features/plans/builder.ts` (blocos,
+  agrupar/desagrupar, rascunho ⇄ payload, testada) e schema Zod `planPayloadSchema` igual ao do banco.
+  `@dnd-kit` (core/sortable/utilities) para arrastar com mouse e teclado + botões ↑↓; `DndContext` precisa
+  de `id={useId()}` (senão erro de hidratação). Alertas vêm de `student_contraindication_rules` e só
+  aparecem para quem vê os dados de saúde.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** treinos e exercícios (biblioteca + montador +
   alertas de contraindicação) → **Fase 3 mínima** (app do aluno: treino do dia, registro série a série,

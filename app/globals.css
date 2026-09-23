@@ -78,6 +78,7 @@
   --color-amber-200: color-mix(in oklab, var(--color-amber-500) 34%, var(--surface));
   --color-amber-700: var(--color-amber-300);
   --color-amber-800: var(--color-amber-300);
+  --color-amber-900: var(--color-amber-300);
   --color-violet-50: color-mix(in oklab, var(--color-violet-500) 14%, var(--surface));
   --color-violet-100: color-mix(in oklab, var(--color-violet-500) 22%, var(--surface));
   --color-violet-200: color-mix(in oklab, var(--color-violet-500) 34%, var(--surface));
@@ -87,6 +88,7 @@
   --color-red-100: color-mix(in oklab, var(--color-red-500) 22%, var(--surface));
   --color-red-200: color-mix(in oklab, var(--color-red-500) 34%, var(--surface));
   --color-red-700: var(--color-red-300);
+  --color-red-800: var(--color-red-300);
   --color-teal-100: color-mix(in oklab, var(--color-teal-500) 22%, var(--surface));
   --color-teal-700: var(--color-teal-300);
   --color-sky-100: color-mix(in oklab, var(--color-sky-500) 22%, var(--surface));
