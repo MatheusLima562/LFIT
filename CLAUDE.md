@@ -15,10 +15,10 @@ por isso tudo é **multi-tenant desde o início**.
 | Estilo | Tailwind CSS v4 (tokens em `app/globals.css` via `@theme`) | [existe] |
 | Componentes | Primitivas próprias em `components/ui/` (sem shadcn por enquanto) | [existe] |
 | Ícones / gráficos | lucide-react / recharts | [existe] |
-| Banco, Auth, Storage | Supabase (Postgres + RLS) | [planejado] |
+| Banco, Auth, Storage | Supabase (Postgres 17 + RLS), migrations em `supabase/migrations/` | [existe — schema da Fase 1] |
 | Validação / formulários | Zod (mesmo schema no client e no server) + React Hook Form | [planejado] |
 | Dados no client | TanStack Query | [planejado] |
-| Testes | Vitest (unitários) + Playwright (e2e) | [planejado] |
+| Testes | Vitest (banco/RLS em `tests/db/`) · Playwright (e2e) | [existe] · [planejado] |
 | Deploy | Vercel (+ Vercel Cron para jobs diários) | [planejado] |
 
 ### Particularidades do Next.js 16 (diferente do que costuma estar no treino dos modelos)
@@ -36,15 +36,18 @@ npm run lint       # ESLint (config next/core-web-vitals + typescript)
 npx tsc --noEmit   # checagem de tipos isolada
 ```
 
-[planejado] — serão adicionados na Fase 1:
+Banco e testes **[existe]** (precisam de `.env.local` — ver `.env.example`):
 
 ```bash
-npm test                  # Vitest
-npm run test:e2e          # Playwright
-npx supabase db reset     # recria o banco local aplicando migrations + seed
-npx supabase migration new <nome>
-npx supabase gen types typescript --local > lib/db/types.ts
+npm test                  # Vitest (testes de banco pulam se ALLOW_DB_TESTS != true)
+npm run test:db           # só os testes de isolamento/regras contra o Supabase de DEV
+npx supabase link --project-ref <ref>   # uma vez por máquina
+npm run db:push           # aplica supabase/migrations no projeto linkado (confirme antes!)
+npm run db:types          # gera lib/db/types.ts a partir do banco linkado
+npm run db:seed           # dados fictícios (-- --reset para recriar)
 ```
+
+[planejado]: `npm run test:e2e` (Playwright).
 
 ## Estrutura de pastas
 
@@ -75,7 +78,7 @@ features/<modulo>/         # components/, hooks/, schemas.ts (Zod), actions.ts (
 lib/                       # db/ (clientes Supabase, tipos gerados), auth/, utils
 components/ui/             # primitivas genéricas sem regra de negócio
 supabase/migrations/       # migrations versionadas
-supabase/seed.sql          # dados FICTÍCIOS
+scripts/seed.ts            # dados FICTÍCIOS (usa as RPCs; projeto Supabase é hospedado, sem seed.sql)
 messages/pt-BR.ts          # textos da UI centralizados (preparo para i18n)
 ```
 
@@ -104,21 +107,26 @@ messages/pt-BR.ts          # textos da UI centralizados (preparo para i18n)
 effective_status =
   expired   se access_expires_at <= now()
   inactive  senão, se status = 'inactive'
-  blocked   senão, se block_if_overdue e existe pagamento vencido
+  blocked   senão, se block_if_overdue e existe pagamento pending com
+            due_date + organizations.overdue_grace_days (default 5) < hoje em America/Sao_Paulo
   active    caso contrário
 ```
-- Implementado como view/função SQL usada por listagens, contadores e RLS do app do aluno.
+- Implementado em `public.student_effective_status()` + view `students_with_status`.
 - Ações: **Desativar** → `status = inactive` · **Expirar** → `access_expires_at = now()` ·
   **Limpar expiração** → `access_expires_at = null` · **Reativar** → valida limite do plano antes.
-- **Limite do plano**: conta só `effective_status = active`. Bloquear cadastro/reativação ao atingir
-  `student_limit`, com mensagem clara e CTA de upgrade.
+- **Limite do plano**: ocupam vaga `effective_status in (active, blocked)` (decisão do dono: senão a
+  inadimplência liberaria vagas). Bloqueados aparecem na aba Ativos com badge. Cadastro/reativação
+  além de `student_limit` falha com `PLAN_LIMIT_REACHED` (UI mostra CTA de upgrade).
 - Job diário (cron): registra expirações e avisa o treinador sobre alunos expirando em 7 dias.
 
 ### Alunos
 - Matrícula (`enrollment_number`) **gerada automaticamente**, sequencial por organização,
   `unique(organization_id, enrollment_number)`; zeros à esquerda só na exibição.
 - `unique(organization_id, lower(email))` entre alunos não excluídos.
-- Soft delete (`deleted_at`); exclusão definitiva só por ação explícita, confirmando pelo nome.
+- Soft delete (`deleted_at`); exclusão definitiva (`hard_delete_student`) só owner, confirmando pelo nome.
+- Trainers só entram por convite do owner; `/criar-conta` só existe com `ALLOW_PUBLIC_SIGNUP=true`.
+- "Copiar link de acesso" gera link de DEFINIR SENHA (tabela `access_links`, 30 min, uso único, só hash
+  no banco) — nunca magic link de login.
 - `audit_logs` para: desativar, expirar, excluir, resetar senha/acesso, alterar dados de saúde.
 
 ### Métrica de engajamento
@@ -136,6 +144,10 @@ effective_status =
 - Segredos só em `.env*` (já no `.gitignore`); `service_role` do Supabase **somente no servidor**.
 
 ## Estado atual (set/2026)
-- Existe apenas o dashboard "Início" com **dados mockados** (`data/dashboard.ts`, data de referência fixa).
-- Não há banco, autenticação, testes nem configuração de deploy.
+- Dashboard "Início" ainda com **dados mockados** (`data/dashboard.ts`).
+- Schema da Fase 1 em `supabase/migrations/` (tabelas, RLS, status efetivo, RPCs de alunos, cadastro
+  público, links de acesso, storage). Regras de negócio vivem nas RPCs (`security definer`).
+- Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
+  enviados pelo usuário. "Allow new users to sign up" deve ficar DESLIGADO no Supabase Auth.
+- Ainda sem autenticação na UI e sem deploy.
 - Roadmap: Fase 1 alunos → Fase 2 treinos e exercícios → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.
