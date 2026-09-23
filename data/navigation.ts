@@ -41,10 +41,11 @@ export const navigation: NavSection[] = [
         label: "Treinos & Exercícios",
         href: "/treinos",
         icon: Dumbbell,
+        status: "available",
         children: [
-          { label: "Treinos", href: "/treinos" },
+          { label: "Treinos", href: "/treinos", status: "soon" },
           { label: "Exercícios", href: "/treinos/exercicios" },
-          { label: "Modelos prontos", href: "/treinos/modelos" },
+          { label: "Modelos prontos", href: "/treinos/modelos", status: "soon" },
         ],
       },
       { id: "avaliacao", label: "Avaliação", href: "/avaliacao", icon: ClipboardCheck },

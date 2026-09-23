@@ -273,7 +273,11 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
   de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
 - Fase 2 em andamento: 2.1 (banco) pronta — biblioteca global com 52 exercícios, 11 condições
-  globais, sem regras globais de contraindicação (aguardando revisão do CSV). UI a partir da 2.2.
+  globais, sem regras globais de contraindicação (aguardando revisão do CSV).
+- 2.2 Biblioteca (`/treinos/exercicios`): view `exercise_library` (busca sem acento, `customized` esconde o
+  global quando a equipe tem cópia), RPCs `save_exercise`/`customize_exercise` em **SECURITY INVOKER** (RLS e
+  grants por coluna do chamador valem; não entram no aviso do advisor). Diálogos pela URL (`?ver=`,
+  `?editar=`, `?novo=1`). Vídeo só carrega no clique (`youtube-nocookie` / Vimeo `dnt=1`, `lib/video.ts`).
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** treinos e exercícios (biblioteca + montador +
   alertas de contraindicação) → **Fase 3 mínima** (app do aluno: treino do dia, registro série a série,

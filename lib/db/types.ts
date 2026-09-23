@@ -318,6 +318,13 @@ export type Database = {
             foreignKeyName: "exercise_contraindications_exercise_id_fkey"
             columns: ["exercise_id"]
             isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_contraindications_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
             referencedRelation: "exercises"
             referencedColumns: ["id"]
           },
@@ -379,6 +386,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
             referencedColumns: ["id"]
           },
           {
@@ -712,6 +726,13 @@ export type Database = {
           workout_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "plan_workout_items_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "plan_workout_items_exercise_id_fkey"
             columns: ["exercise_id"]
@@ -1161,6 +1182,79 @@ export type Database = {
       }
     }
     Views: {
+      exercise_library: {
+        Row: {
+          archived_at: string | null
+          created_at: string | null
+          created_by: string | null
+          customized: boolean | null
+          equipment: string | null
+          id: string | null
+          instructions: string | null
+          is_global: boolean | null
+          muscle_groups: string[] | null
+          name: string | null
+          organization_id: string | null
+          search_text: string | null
+          source_exercise_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customized?: never
+          equipment?: string | null
+          id?: string | null
+          instructions?: string | null
+          is_global?: never
+          muscle_groups?: string[] | null
+          name?: string | null
+          organization_id?: string | null
+          search_text?: never
+          source_exercise_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customized?: never
+          equipment?: string | null
+          id?: string | null
+          instructions?: string | null
+          is_global?: never
+          muscle_groups?: string[] | null
+          name?: string | null
+          organization_id?: string | null
+          search_text?: never
+          source_exercise_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students_with_status: {
         Row: {
           access_expires_at: string | null
@@ -1441,6 +1535,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      customize_exercise: { Args: { p_id: string }; Returns: string }
       deactivate_student: {
         Args: { p_student_id: string }
         Returns: {
@@ -1660,6 +1755,10 @@ export type Database = {
       respond_my_health_consent: {
         Args: { p_accept: boolean }
         Returns: undefined
+      }
+      save_exercise: {
+        Args: { p_data: Json; p_id: string; p_rules: Json }
+        Returns: string
       }
       save_plan_as_template: {
         Args: { p_name: string; p_plan_id: string }
