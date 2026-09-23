@@ -4,6 +4,9 @@ import { z } from "zod";
 export const STUDENT_TABS = ["active", "inactive", "expired"] as const;
 export const STUDENT_SORTS = ["name:asc", "name:desc", "created:desc", "expires:asc", "expires:desc"] as const;
 export const PAGE_SIZE = 25;
+/** Filtro de treino (students.workout_plan_ends_at): vence em 7 dias, vencido, sem plano ativo. */
+export const PLAN_FILTERS = ["a_vencer", "vencido", "sem_treino"] as const;
+export type PlanFilter = (typeof PLAN_FILTERS)[number];
 
 export type StudentTab = (typeof STUDENT_TABS)[number];
 export type StudentSort = (typeof STUDENT_SORTS)[number];
@@ -22,6 +25,7 @@ export const studentListParamsSchema = z.object({
     .transform((v) => v || undefined),
   turma: uuid,
   grupo: uuid,
+  treino: z.enum(PLAN_FILTERS).optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
 });
 
@@ -36,6 +40,7 @@ export function parseStudentListParams(raw: Record<string, string | string[] | u
     q: first(raw.q),
     turma: first(raw.turma),
     grupo: first(raw.grupo),
+    treino: first(raw.treino),
     page: first(raw.page),
   });
 }
@@ -48,6 +53,7 @@ export function studentListHref(params: Partial<StudentListParams>, base = "/alu
   if (params.q) qs.set("q", params.q);
   if (params.turma) qs.set("turma", params.turma);
   if (params.grupo) qs.set("grupo", params.grupo);
+  if (params.treino) qs.set("treino", params.treino);
   if (params.page && params.page > 1) qs.set("page", String(params.page));
   const s = qs.toString();
   return s ? `${base}?${s}` : base;

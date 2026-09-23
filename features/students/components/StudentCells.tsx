@@ -1,5 +1,7 @@
 import { ageFrom, formatDate, formatEnrollment } from "@/lib/format";
 import { messages } from "@/messages/pt-BR";
+import { timestampToISODate } from "@/lib/dates";
+import { planSituation } from "@/features/plans/format";
 import { GroupChip } from "@/components/students/GroupChip";
 import { StatusBadge } from "@/components/students/StatusBadge";
 import { StudentAvatar } from "@/components/students/StudentAvatar";
@@ -53,5 +55,25 @@ export function StudentGroups({ student }: { student: StudentRow }) {
         <GroupChip key={g.name} name={g.name} color={g.color} />
       ))}
     </div>
+  );
+}
+
+/** Situação do treino: sem plano ativo, vencido, vencendo em 7 dias ou em dia. */
+export function StudentPlan({ student }: { student: StudentRow }) {
+  const ends = student.workoutPlanEndsAt;
+  if (!ends) return <span className="text-[13px] whitespace-nowrap text-ink-3">{t.plan.none}</span>;
+  const state = planSituation(timestampToISODate(ends))?.kind ?? "ok";
+  return (
+    <span
+      className={
+        state === "expired"
+          ? "text-[13px] font-medium whitespace-nowrap text-red-700"
+          : state === "soon"
+            ? "text-[13px] font-medium whitespace-nowrap text-amber-800"
+            : "text-[13px] whitespace-nowrap text-ink-2"
+      }
+    >
+      {state === "expired" ? t.plan.expired(formatDate(ends)) : t.plan.until(formatDate(ends))}
+    </span>
   );
 }

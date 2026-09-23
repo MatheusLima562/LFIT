@@ -221,3 +221,18 @@ describe("validação e payload", () => {
     expect(nextLabel([...ws, { ...emptyWorkout(ws), label: "C" }])).toBe("B");
   });
 });
+
+describe("situação do plano", async () => {
+  const { daysUntil, planSituation, planPeriod } = await import("@/features/plans/format");
+  it("dias civis até o fim", () => {
+    expect(daysUntil("2026-10-10", "2026-10-03")).toBe(7);
+    expect(planSituation("2026-10-09", "2026-10-03")).toEqual({ kind: "soon", label: "Vence em 6 dias" });
+    expect(planSituation("2026-10-03", "2026-10-03")?.label).toBe("Vence hoje");
+    expect(planSituation("2026-10-02", "2026-10-03")?.kind).toBe("expired");
+    expect(planSituation("2026-10-10", "2026-10-03")?.kind).toBe("ok");
+  });
+  it("período", () => {
+    expect(planPeriod("2026-10-01", "2026-11-30")).toBe("01/10/2026 – 30/11/2026");
+    expect(planPeriod(null, null)).toBe("Sem período definido");
+  });
+});

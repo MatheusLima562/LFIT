@@ -9,6 +9,7 @@ import {
   getStudentFilterOptions,
   getStudentForEdit,
   getStudentFormOptions,
+  getStudentPlanCounts,
   getStudentTabCounts,
   listStudents,
 } from "@/features/students/queries";
@@ -19,6 +20,7 @@ import { StudentsCards } from "@/features/students/components/StudentsCards";
 import { StudentsList } from "@/features/students/components/StudentsList";
 import { StudentsPagination } from "@/features/students/components/StudentsPagination";
 import { StudentsTabs } from "@/features/students/components/StudentsTabs";
+import { StudentsPlanFilter } from "@/features/students/components/StudentsPlanFilter";
 import { StudentsToolbar } from "@/features/students/components/StudentsToolbar";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
@@ -52,9 +54,10 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
   const listHref = studentListHref(params);
   const newHref = `${listHref}${listHref.includes("?") ? "&" : "?"}novo=1`;
 
-  const [{ rows, total }, counts, plan, filters, view, pendingSignups] = await Promise.all([
+  const [{ rows, total }, counts, planCounts, plan, filters, view, pendingSignups] = await Promise.all([
     listStudents(params),
     getStudentTabCounts(),
+    getStudentPlanCounts(),
     getOrganizationPlanUsage(),
     getStudentFilterOptions(),
     getViewPreference(session.userId),
@@ -65,7 +68,7 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
     ? await Promise.all([getStudentFormOptions(), dialog.id ? getStudentForEdit(dialog.id) : Promise.resolve(null)])
     : [null, null];
 
-  const filtered = Boolean(params.q || params.turma || params.grupo);
+  const filtered = Boolean(params.q || params.turma || params.grupo || params.treino);
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
@@ -101,6 +104,8 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
       </header>
 
       <StudentsTabs params={params} counts={counts} />
+
+      <StudentsPlanFilter params={params} counts={planCounts} />
 
       <StudentsToolbar params={params} view={view} classes={filters.classes} groups={filters.groups} />
 

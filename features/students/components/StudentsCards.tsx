@@ -1,6 +1,6 @@
 import { messages } from "@/messages/pt-BR";
 import type { StudentRow } from "../queries";
-import { AgeSex, StudentGroups, StudentIdentity, StudentStatus } from "./StudentCells";
+import { AgeSex, StudentGroups, StudentIdentity, StudentPlan, StudentStatus } from "./StudentCells";
 import { StudentRowActions } from "./StudentRowActions";
 
 /** Visualização em cards (também usada sempre no mobile). */
@@ -21,6 +21,12 @@ export function StudentsCards({ rows, className }: { rows: StudentRow[]; classNa
             <div className="flex justify-between gap-3">
               <dt className="text-ink-3">{messages.students.columns.trainer}</dt>
               <dd className="truncate text-ink-2">{s.trainerName ?? messages.students.noTrainer}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-3">{messages.students.columns.plan}</dt>
+              <dd className="truncate">
+                <StudentPlan student={s} />
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-ink-3">{messages.students.columns.email}</dt>

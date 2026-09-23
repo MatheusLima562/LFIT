@@ -160,3 +160,135 @@ export async function getStudentRules(studentId: string): Promise<{ hidden: bool
     })),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Listas (treinos do aluno, modelos, visão geral)
+// ---------------------------------------------------------------------------
+
+export interface PlanSummary {
+  id: string;
+  name: string;
+  status: PlanStatus;
+  goal: string | null;
+  level: PlanLevel | null;
+  startsOn: string | null;
+  endsOn: string | null;
+  updatedAt: string;
+  workoutLabels: string[];
+  createdBy: string | null;
+  /** Modelo: owner ou autor editam/arquivam. Plano de aluno: sempre (RLS já filtrou). */
+  canEdit: boolean;
+}
+
+type SummaryRow = {
+  id: string;
+  name: string;
+  status: PlanStatus;
+  goal: string | null;
+  level: PlanLevel | null;
+  starts_on: string | null;
+  ends_on: string | null;
+  updated_at: string;
+  created_by: string | null;
+  student_id: string | null;
+  plan_workouts: { label: string; position: number }[];
+};
+
+const SUMMARY_SELECT = "id, name, status, goal, level, starts_on, ends_on, updated_at, created_by, student_id, plan_workouts(label, position)";
+
+function toSummary(r: SummaryRow, session: { userId: string; role: string }): PlanSummary {
+  return {
+    id: r.id,
+    name: r.name,
+    status: r.status,
+    goal: r.goal,
+    level: r.level,
+    startsOn: r.starts_on,
+    endsOn: r.ends_on,
+    updatedAt: r.updated_at,
+    workoutLabels: [...r.plan_workouts].sort(byPosition).map((w) => w.label),
+    createdBy: r.created_by,
+    canEdit: r.status !== "archived" && (r.student_id !== null || session.role === "owner" || r.created_by === session.userId),
+  };
+}
+
+export async function listStudentPlans(studentId: string, session: { userId: string; role: string }) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("training_plans")
+    .select(SUMMARY_SELECT)
+    .eq("student_id", studentId)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(`Falha ao listar treinos: ${error.message}`);
+  const rows = ((data ?? []) as unknown as SummaryRow[]).map((r) => toSummary(r, session));
+  return {
+    active: rows.find((r) => r.status === "active") ?? null,
+    drafts: rows.filter((r) => r.status === "draft"),
+    archived: rows.filter((r) => r.status === "archived"),
+  };
+}
+
+export async function listTemplates(session: { userId: string; role: string }, includeArchived = false) {
+  const supabase = await createClient();
+  let q = supabase.from("training_plans").select(SUMMARY_SELECT).is("student_id", null);
+  if (!includeArchived) q = q.neq("status", "archived");
+  const { data, error } = await q.order("name");
+  if (error) throw new Error(`Falha ao listar modelos: ${error.message}`);
+  const rows = ((data ?? []) as unknown as SummaryRow[]).map((r) => toSummary(r, session));
+  const authorIds = [...new Set(rows.flatMap((r) => (r.createdBy ? [r.createdBy] : [])))];
+  const { data: profiles } = authorIds.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", authorIds)
+    : { data: [] as { id: string; full_name: string }[] };
+  const names = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  return rows.map((r) => ({ ...r, authorName: r.createdBy ? (names.get(r.createdBy) ?? null) : null }));
+}
+
+export type TemplateSummary = Awaited<ReturnType<typeof listTemplates>>[number];
+
+/** Opções do diálogo "Aplicar modelo". */
+export async function listTemplateOptions() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("training_plans").select("id, name").is("student_id", null).neq("status", "archived").order("name");
+  return data ?? [];
+}
+
+/** Alunos acessíveis (RLS) para "Aplicar a aluno". */
+export async function listStudentOptions() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("students_with_status")
+    .select("id, full_name")
+    .in("effective_status", ["active", "blocked"])
+    .order("first_name")
+    .order("last_name")
+    .limit(1000);
+  return (data ?? []).map((s) => ({ id: s.id!, name: s.full_name! }));
+}
+
+export interface ActivePlanRow {
+  id: string;
+  name: string;
+  startsOn: string | null;
+  endsOn: string | null;
+  student: { id: string; name: string };
+}
+
+/** Treinos ativos visíveis ao usuário, do vencimento mais próximo ao mais distante. */
+export async function listActivePlans(): Promise<ActivePlanRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("training_plans")
+    .select("id, name, starts_on, ends_on, student:students!training_plans_student_id_organization_id_fkey!inner(id, first_name, last_name, deleted_at)")
+    .eq("status", "active")
+    .is("student.deleted_at", null)
+    .order("ends_on", { ascending: true, nullsFirst: false })
+    .limit(500);
+  if (error) throw new Error(`Falha ao listar treinos ativos: ${error.message}`);
+  return ((data ?? []) as unknown as { id: string; name: string; starts_on: string | null; ends_on: string | null; student: { id: string; first_name: string; last_name: string } }[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    startsOn: r.starts_on,
+    endsOn: r.ends_on,
+    student: { id: r.student.id, name: `${r.student.first_name} ${r.student.last_name}` },
+  }));
+}

@@ -4,6 +4,7 @@ import {
   Ban,
   CalendarX2,
   CircleCheck,
+  Dumbbell,
   Link2,
   MailPlus,
   MessageCircle,
@@ -123,6 +124,13 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem asChild>
+            <Link href={`/alunos/${student.id}/treinos`}>
+              <Dumbbell aria-hidden />
+              {t.menu.plans}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={copyLink}>
             <Link2 aria-hidden />
             {t.menu.copyLink}

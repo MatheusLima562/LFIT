@@ -21,6 +21,8 @@ export interface StudentRow {
   trainerName: string | null;
   groups: { name: string; color: string }[];
   photoUrl: string | null;
+  /** Fim do plano de treino ativo (23:59:59 SP) ou null sem plano ativo. */
+  workoutPlanEndsAt: string | null;
 }
 
 const STATUS_FILTER: Record<StudentListParams["status"], EffectiveStatus[]> = {
@@ -30,7 +32,7 @@ const STATUS_FILTER: Record<StudentListParams["status"], EffectiveStatus[]> = {
 };
 
 const BASE_COLUMNS =
-  "id, full_name, first_name, email, whatsapp_e164, birth_date, sex, enrollment_number, effective_status, access_expires_at, user_id, photo_path, " +
+  "id, full_name, first_name, email, whatsapp_e164, birth_date, sex, enrollment_number, effective_status, access_expires_at, user_id, photo_path, workout_plan_ends_at, " +
   "trainer:profiles!students_trainer_id_organization_id_fkey(full_name), student_groups(special_groups(name, color))";
 
 /** Remove caracteres com significado na sintaxe de filtros do PostgREST. */
@@ -51,6 +53,7 @@ type Row = {
   access_expires_at: string | null;
   user_id: string | null;
   photo_path: string | null;
+  workout_plan_ends_at: string | null;
   trainer: { full_name: string } | null;
   student_groups: { special_groups: { name: string; color: string } | null }[];
 };
@@ -71,6 +74,7 @@ function toStudentRow(r: Row, photoUrls: Map<string, string>): StudentRow {
     trainerName: r.trainer?.full_name ?? null,
     groups: r.student_groups.flatMap((g) => (g.special_groups ? [g.special_groups] : [])),
     photoUrl: r.photo_path ? (photoUrls.get(r.photo_path) ?? null) : null,
+    workoutPlanEndsAt: r.workout_plan_ends_at,
   };
 }
 
@@ -104,6 +108,13 @@ export async function listStudents(params: StudentListParams, options: { limit?:
 
   if (params.turma) query = query.eq("turma.class_id", params.turma);
   if (params.grupo) query = query.eq("grupo.group_id", params.grupo);
+  if (params.treino) {
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 86_400_000);
+    if (params.treino === "sem_treino") query = query.is("workout_plan_ends_at", null);
+    else if (params.treino === "vencido") query = query.lt("workout_plan_ends_at", now.toISOString());
+    else query = query.gte("workout_plan_ends_at", now.toISOString()).lt("workout_plan_ends_at", in7.toISOString());
+  }
 
   if (params.q) {
     const term = sanitizeTerm(params.q);
@@ -144,6 +155,14 @@ export async function getStudentTabCounts() {
   const { data, error } = await supabase.rpc("student_tab_counts").single();
   if (error || !data) return { active: 0, inactive: 0, expired: 0 };
   return { active: Number(data.active), inactive: Number(data.inactive), expired: Number(data.expired) };
+}
+
+/** Contagens dos filtros de treino entre os alunos da aba Ativos. */
+export async function getStudentPlanCounts() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("student_plan_counts").single();
+  if (error || !data) return { a_vencer: 0, vencido: 0, sem_treino: 0 };
+  return { a_vencer: Number(data.expiring), vencido: Number(data.expired), sem_treino: Number(data.no_plan) };
 }
 
 export async function getStudentFilterOptions() {

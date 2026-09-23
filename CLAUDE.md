@@ -183,8 +183,11 @@ effective_status =
   (`save_training_plan` substitui a estrutura inteira). Agrupamentos (`group_key`) precisam ser
   contíguos; séries detalhadas (`plan_item_sets`) são opcionais.
 - No máximo 1 plano `active` por aluno (ativar arquiva o anterior). O gatilho `sync_student_plan_end`
-  mantém `students.workout_plan_ends_at` = fim do plano ativo às 23:59:59 de São Paulo (base de
-  "treino a vencer / vencido / sem treino" — telas ainda não usam).
+  mantém `students.workout_plan_ends_at` = fim do plano ativo às 23:59:59 de São Paulo. Em "Meus alunos",
+  filtro `?treino=a_vencer|vencido|sem_treino` (a vencer = próximos 7 dias); contagens via
+  `student_plan_counts()` (SECURITY INVOKER, só alunos da aba Ativos).
+- A view `students_with_status` usa `s.*`, que o Postgres congela na criação: coluna nova em `students`
+  exige recriar a view (drop + create + grant), como em `20261001120000_student_plan_filters.sql`.
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
@@ -287,6 +290,13 @@ Checklist para toda função `SECURITY DEFINER` nova:
   `@dnd-kit` (core/sortable/utilities) para arrastar com mouse e teclado + botões ↑↓; `DndContext` precisa
   de `id={useId()}` (senão erro de hidratação). Alertas vêm de `student_contraindication_rules` e só
   aparecem para quem vê os dados de saúde.
+- 2.5 `/alunos/[id]/treinos` (ativo, rascunhos, histórico; aplicar modelo, duplicar, salvar como modelo,
+  arquivar), `/treinos/modelos` (aplicar a aluno; arquivados em `?arquivados=1`), `/treinos` (treinos ativos
+  por vencimento) e entrada "Treinos" no menu da linha de Meus alunos.
+- Próximos passos da Fase 2: 2.6 impressão (`/treinos/[planId]/imprimir`, sem dados de saúde) e 2.7
+  verificação final. Regras globais de contraindicação: aguardando o CSV revisado.
+- Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
+  lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** treinos e exercícios (biblioteca + montador +
   alertas de contraindicação) → **Fase 3 mínima** (app do aluno: treino do dia, registro série a série,

@@ -43,9 +43,9 @@ export const navigation: NavSection[] = [
         icon: Dumbbell,
         status: "available",
         children: [
-          { label: "Treinos", href: "/treinos", status: "soon" },
+          { label: "Treinos", href: "/treinos" },
           { label: "Exercícios", href: "/treinos/exercicios" },
-          { label: "Modelos prontos", href: "/treinos/modelos", status: "soon" },
+          { label: "Modelos prontos", href: "/treinos/modelos" },
           { label: "Condições de saúde", href: "/treinos/condicoes" },
         ],
       },

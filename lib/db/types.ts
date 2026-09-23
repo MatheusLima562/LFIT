@@ -1270,6 +1270,8 @@ export type Database = {
           enrollment_number: number | null
           first_name: string | null
           full_name: string | null
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string | null
           last_name: string | null
@@ -1285,6 +1287,7 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
           whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
         }
         Insert: {
           access_expires_at?: string | null
@@ -1298,6 +1301,8 @@ export type Database = {
           enrollment_number?: number | null
           first_name?: string | null
           full_name?: never
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
           health_data_consent_at?: string | null
           id?: string | null
           last_name?: string | null
@@ -1313,6 +1318,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           whatsapp_e164?: string | null
+          workout_plan_ends_at?: string | null
         }
         Update: {
           access_expires_at?: string | null
@@ -1326,6 +1332,8 @@ export type Database = {
           enrollment_number?: number | null
           first_name?: string | null
           full_name?: never
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
           health_data_consent_at?: string | null
           id?: string | null
           last_name?: string | null
@@ -1341,6 +1349,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           whatsapp_e164?: string | null
+          workout_plan_ends_at?: string | null
         }
         Relationships: [
           {
@@ -1783,6 +1792,14 @@ export type Database = {
       student_effective_status: {
         Args: { s: Database["public"]["Tables"]["students"]["Row"] }
         Returns: Database["public"]["Enums"]["effective_status"]
+      }
+      student_plan_counts: {
+        Args: never
+        Returns: {
+          expired: number
+          expiring: number
+          no_plan: number
+        }[]
       }
       student_tab_counts: {
         Args: never

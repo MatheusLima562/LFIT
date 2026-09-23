@@ -75,3 +75,76 @@ export async function searchExercises(q: string, grupo: string | null): Promise<
     isGlobal: Boolean(e.is_global),
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Gestão (lista do aluno, modelos)
+// ---------------------------------------------------------------------------
+
+const uuid = z.uuid();
+
+async function planOwner(planId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("training_plans").select("student_id").eq("id", planId).maybeSingle();
+  return data?.student_id ?? null;
+}
+
+export async function duplicatePlan(planId: string): Promise<PlanActionResult> {
+  if (!uuid.safeParse(planId).success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
+  if (!(await isStaff())) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("duplicate_plan", { p_plan_id: planId });
+  if (error || !data) return { ok: false, error: dbErrorMessage(error) };
+  revalidatePlan(await planOwner(planId));
+  return { ok: true, id: data, message: messages.plans.manage.duplicated };
+}
+
+export async function savePlanAsTemplate(planId: string, name: string): Promise<PlanActionResult> {
+  const parsedName = z.string().trim().min(2, messages.validation.required).max(120).safeParse(name);
+  if (!uuid.safeParse(planId).success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
+  if (!parsedName.success) return { ok: false, error: parsedName.error.issues[0].message };
+  if (!(await isStaff())) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("save_plan_as_template", { p_plan_id: planId, p_name: parsedName.data });
+  if (error || !data) return { ok: false, error: dbErrorMessage(error) };
+  revalidatePlan(null);
+  return { ok: true, id: data, message: messages.plans.manage.templateCreated };
+}
+
+export async function archivePlan(planId: string): Promise<PlanActionResult> {
+  if (!uuid.safeParse(planId).success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
+  if (!(await isStaff())) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const studentId = await planOwner(planId);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("archive_plan", { p_plan_id: planId });
+  if (error) return { ok: false, error: dbErrorMessage(error) };
+  revalidatePlan(studentId, planId);
+  revalidatePath("/treinos");
+  return { ok: true, id: planId, message: messages.plans.manage.archived };
+}
+
+const applySchema = z.object({
+  templateId: uuid,
+  studentId: uuid,
+  startsOn: z.iso.date().nullable(),
+  endsOn: z.iso.date().nullable(),
+});
+
+/** Aplica um modelo a um aluno: novo rascunho (RPC apply_template_to_student). */
+export async function applyTemplate(input: unknown): Promise<PlanActionResult> {
+  const parsed = applySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
+  const { templateId, studentId, startsOn, endsOn } = parsed.data;
+  if (startsOn && endsOn && endsOn < startsOn) return { ok: false, error: messages.plans.validation.endBeforeStart };
+  if (!(await isStaff())) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("apply_template_to_student", {
+    p_template_id: templateId,
+    p_student_id: studentId,
+    // null = sem período (os tipos gerados não marcam argumentos SQL como anuláveis)
+    p_starts_on: startsOn ?? (null as unknown as string),
+    p_ends_on: endsOn ?? (null as unknown as string),
+  });
+  if (error || !data) return { ok: false, error: dbErrorMessage(error) };
+  revalidatePlan(studentId);
+  return { ok: true, id: data, message: messages.plans.manage.applied };
+}

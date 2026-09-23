@@ -2,7 +2,7 @@ import { formatEnrollment } from "@/lib/format";
 import { messages } from "@/messages/pt-BR";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import type { StudentRow } from "../queries";
-import { AgeSex, StudentGroups, StudentIdentity, StudentStatus } from "./StudentCells";
+import { AgeSex, StudentGroups, StudentIdentity, StudentPlan, StudentStatus } from "./StudentCells";
 import { StudentRowActions } from "./StudentRowActions";
 
 const c = messages.students.columns;
@@ -30,6 +30,7 @@ const columns: DataTableColumn<StudentRow>[] = [
     hideBelow: "lg",
   },
   { id: "status", header: c.status, cell: (s) => <StudentStatus student={s} /> },
+  { id: "plan", header: c.plan, cell: (s) => <StudentPlan student={s} />, hideBelow: "md" },
   { id: "groups", header: c.groups, cell: (s) => <StudentGroups student={s} />, hideBelow: "md" },
   {
     id: "actions",
