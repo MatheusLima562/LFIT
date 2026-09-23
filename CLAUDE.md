@@ -54,6 +54,10 @@ npm run bootstrap:owner   # cria organização + owner e imprime link de convite
 > Ambos apagam dados. Antes de rodar, confirme o projeto linkado (`supabase/.temp/project-ref`)
 > e o `NEXT_PUBLIC_SUPABASE_URL` do `.env.local`. O mesmo vale para `npm run test:db`
 > (cria e apaga organizações; só roda com `ALLOW_DB_TESTS=true`).
+> **Trava no seed:** `scripts/seed.mts` chama `assertDevProject()` (`scripts/dev-guard.mts`) e se recusa a
+> rodar se `ALLOW_DB_TESTS` não for `true`, se `NEXT_PUBLIC_SUPABASE_URL` não for
+> `https://<ref do lfit-dev>.supabase.co` ou se o CLI estiver linkado a outro projeto. O ref do lfit-dev
+> fica fixo no código (não é segredo); trocar o projeto de dev exige mudar esse arquivo em um commit.
 
 [planejado]: `npm run test:e2e` (Playwright).
 
