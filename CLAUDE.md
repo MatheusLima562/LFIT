@@ -110,6 +110,9 @@ tests/unit/                # testes de lógica pura (sem banco)
   só itens com `status: "available"` navegam; `CardLink` e o banner consultam `isAvailableRoute()`.
   Ao entregar um módulo, marque-o como `available`.
 - Remover acentos: use `stripAccents`/`searchKey`/`slugify` de `lib/text.ts` (não reescreva o regex).
+- Arquivos `"use server"` só exportam funções async (tipos podem). Schemas/constantes ficam em outro
+  arquivo — o build não acusa, só a execução (erro 500).
+- Gatilhos que auditam exclusões devem ignorar a cascata da organização (a org já não existe).
 - Server Action que precisa levar a um Route Handler que grava cookies (ex.: `/auth/confirm`): devolva a
   URL e navegue com `window.location.assign` no cliente. `redirect()` da action faz uma busca RSC e a
   sessão não chega à página seguinte.
@@ -216,6 +219,13 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - **Pendente (produção): ativar "Leaked password protection" (HaveIBeenPwned) — exige plano pago do
   Supabase.** Aviso `auth_leaked_password_protection` do advisor é aceito no lfit-dev.
 
+## Backlog e decisões adiadas
+- **Importação do MFIT** (alunos e treinos via CSV/planilha) — etapa obrigatória **antes do uso com
+  alunos reais**. Deve respeitar limite do plano, matrícula, consentimento de saúde (importar grupos só
+  como "declarado") e auditoria; relatório de linhas rejeitadas.
+- **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
+  `npm run bootstrap:owner` e trainers de teste existem só no seed. O item "Equipe" segue "Em breve".
+
 ## Decisões pendentes (rever antes de comercializar)
 - **"1 e-mail = 1 conta"**: cada usuário do Auth tem um único `profile` (uma organização). Um aluno que
   treina com dois personais (duas organizações) não consegue ter acesso nas duas com o mesmo e-mail —
@@ -229,9 +239,9 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
   enviados pelo usuário. "Allow new users to sign up" deve ficar DESLIGADO no Supabase Auth.
 - Autenticação do treinador pronta (login, recuperação, convite, logout, rate limit). Sem deploy ainda.
-- Módulo Alunos disponível: "Meus alunos" (1.2), modal Novo/Editar (1.3, via `?novo=1` / `?editar=<id>`)
-  e cadastro público (1.4: `/cadastro/[token]` + `/alunos/cadastros-publicos`, só owner). Grupos/turmas/
-  equipe (1.5) aparecem como "Em breve".
+- Módulo Alunos disponível: "Meus alunos" (1.2), modal Novo/Editar (1.3, via `?novo=1` / `?editar=<id>`),
+  cadastro público (1.4: `/cadastro/[token]` + `/alunos/cadastros-publicos`, só owner), grupos especiais
+  (`/alunos/grupos`) e turmas (`/turmas`) (1.5). Excluir grupo/turma é auditado.
 - Cadastro público: honeypot → rate limit (5/h por IP, 100/h por link) → Turnstile → RPC com secret key.
   Sem chaves do Turnstile em produção, o formulário mostra "temporariamente indisponível" (fail-closed);
   em `npm run dev` usa as chaves de teste oficiais. Pendentes não ocupam vaga; dados enviados são
@@ -239,4 +249,5 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
   de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap: Fase 1 alunos → Fase 2 treinos e exercícios → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.
+- Roadmap: Fase 1 alunos → Fase 2 treinos e exercícios (biblioteca + montador) → **Importação do MFIT**
+  (antes de alunos reais) → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.

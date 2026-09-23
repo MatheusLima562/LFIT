@@ -10,6 +10,7 @@ import { getSession } from "@/lib/auth/session";
 import type { Json } from "@/lib/db/types";
 import { AccountConflictError, linkStudentAccount, type StudentAccountTarget } from "./account";
 import { studentFormSchema, toStudentPayload } from "./schemas";
+import { GROUP_COLORS } from "@/features/groups/colors";
 
 const t = messages.students;
 const f = messages.studentForm;
@@ -187,7 +188,6 @@ export async function setStudentPhoto(studentId: string, path: string | null): P
 }
 
 const groupSchema = z.object({ name: z.string().trim().min(2).max(60) });
-const GROUP_COLORS = ["#f0642d", "#7c5cfc", "#1ba39c", "#e0a100", "#d6336c", "#2f80ed"];
 
 /** Cria grupo especial inline (RLS: staff da organização). */
 export async function createSpecialGroup(

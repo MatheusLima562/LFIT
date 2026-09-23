@@ -32,10 +32,10 @@ export const navigation: NavSection[] = [
           { label: "Todos os alunos", href: "/alunos" },
           { label: "Cadastros públicos", href: "/alunos/cadastros-publicos" },
           { label: "Anamneses", href: "/alunos/anamneses", status: "soon" },
-          { label: "Grupos especiais", href: "/alunos/grupos", status: "soon" },
+          { label: "Grupos especiais", href: "/alunos/grupos" },
         ],
       },
-      { id: "turmas", label: "Turmas", href: "/turmas", icon: UsersRound },
+      { id: "turmas", label: "Turmas", href: "/turmas", icon: UsersRound, status: "available" },
       {
         id: "treinos",
         label: "Treinos & Exercícios",
