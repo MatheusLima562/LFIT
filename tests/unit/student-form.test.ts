@@ -80,3 +80,12 @@ describe("helpers de data e telefone", () => {
     expect(formatPhoneDisplay("+351912345678")).toBe("+351 912 345 678");
   });
 });
+
+describe("senha", () => {
+  it("exige pelo menos 10 caracteres", async () => {
+    const { newPasswordSchema, PASSWORD_MIN_LENGTH } = await import("@/features/auth/schemas");
+    expect(PASSWORD_MIN_LENGTH).toBe(10);
+    expect(newPasswordSchema.safeParse({ password: "123456789", confirm: "123456789" }).success).toBe(false);
+    expect(newPasswordSchema.safeParse({ password: "1234567890", confirm: "1234567890" }).success).toBe(true);
+  });
+});

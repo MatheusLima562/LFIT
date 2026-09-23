@@ -4,7 +4,9 @@ import { messages } from "@/messages/pt-BR";
 const v = messages.validation;
 
 const email = z.string().trim().toLowerCase().min(1, v.required).pipe(z.email(v.email));
-const newPassword = z.string().min(8, v.passwordMin).max(72, v.passwordMax);
+/** Mínimo alinhado ao Supabase Auth (Authentication → Email → Minimum password length = 10). */
+export const PASSWORD_MIN_LENGTH = 10;
+const newPassword = z.string().min(PASSWORD_MIN_LENGTH, v.passwordMin).max(72, v.passwordMax);
 
 export const signInSchema = z.object({
   email,
