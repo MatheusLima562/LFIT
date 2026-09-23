@@ -46,6 +46,7 @@ export const navigation: NavSection[] = [
           { label: "Treinos", href: "/treinos", status: "soon" },
           { label: "Exercícios", href: "/treinos/exercicios" },
           { label: "Modelos prontos", href: "/treinos/modelos", status: "soon" },
+          { label: "Condições de saúde", href: "/treinos/condicoes" },
         ],
       },
       { id: "avaliacao", label: "Avaliação", href: "/avaliacao", icon: ClipboardCheck },

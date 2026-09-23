@@ -278,6 +278,9 @@ Checklist para toda função `SECURITY DEFINER` nova:
   global quando a equipe tem cópia), RPCs `save_exercise`/`customize_exercise` em **SECURITY INVOKER** (RLS e
   grants por coluna do chamador valem; não entram no aviso do advisor). Diálogos pela URL (`?ver=`,
   `?editar=`, `?novo=1`). Vídeo só carrega no clique (`youtube-nocookie` / Vimeo `dnt=1`, `lib/video.ts`).
+- 2.3 Condições (`/treinos/condicoes`: catálogo somente leitura + próprias; arquivar só owner; nome igual ao
+  do catálogo é recusado) e "Condições relacionadas" no diálogo de grupos especiais. Ao salvar o grupo, os
+  vínculos são adicionados antes de remover e vínculos com condições arquivadas são preservados.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** treinos e exercícios (biblioteca + montador +
   alertas de contraindicação) → **Fase 3 mínima** (app do aluno: treino do dia, registro série a série,

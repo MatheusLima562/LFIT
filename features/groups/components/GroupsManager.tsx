@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, HeartPulse, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Check, HeartPulse, Pencil, Plus, ShieldAlert, Trash2, Users } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -16,9 +16,15 @@ import { deleteGroup, saveGroup } from "../actions";
 import { GROUP_COLORS, type GroupColor } from "../colors";
 import type { GroupRow } from "../queries";
 
+export interface ConditionChoice {
+  id: string;
+  name: string;
+  isGlobal: boolean;
+}
+
 const t = messages.groups;
 
-export function GroupsManager({ groups, canDelete }: { groups: GroupRow[]; canDelete: boolean }) {
+export function GroupsManager({ groups, canDelete, conditions }: { groups: GroupRow[]; canDelete: boolean; conditions: ConditionChoice[] }) {
   const [editing, setEditing] = useState<GroupRow | "new" | null>(null);
   const [deleting, setDeleting] = useState<GroupRow | null>(null);
   const [pending, startTransition] = useTransition();
@@ -49,6 +55,10 @@ export function GroupsManager({ groups, canDelete }: { groups: GroupRow[]; canDe
                   <Users aria-hidden className="size-3.5" />
                   {t.students(g.students)}
                 </Link>
+                <p className="mt-1 flex items-start gap-1 text-[12px] text-ink-3">
+                  <ShieldAlert aria-hidden className="mt-px size-3.5 shrink-0" />
+                  <span>{g.conditions.length ? g.conditions.map((c) => c.name).join(", ") : t.conditionsNone}</span>
+                </p>
               </div>
               <Button variant="ghost" size="icon-sm" aria-label={`${t.edit}: ${g.name}`} onClick={() => setEditing(g)}>
                 <Pencil aria-hidden />
@@ -63,7 +73,7 @@ export function GroupsManager({ groups, canDelete }: { groups: GroupRow[]; canDe
         </ul>
       )}
 
-      {editing && <GroupDialog group={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
+      {editing && <GroupDialog group={editing === "new" ? null : editing} conditions={conditions} onClose={() => setEditing(null)} />}
 
       <ConfirmDialog
         open={deleting !== null}
@@ -90,7 +100,8 @@ export function GroupsManager({ groups, canDelete }: { groups: GroupRow[]; canDe
   );
 }
 
-function GroupDialog({ group, onClose }: { group: GroupRow | null; onClose: () => void }) {
+function GroupDialog({ group, conditions, onClose }: { group: GroupRow | null; conditions: ConditionChoice[]; onClose: () => void }) {
+  const [conditionIds, setConditionIds] = useState<string[]>(group?.conditions.map((c) => c.id) ?? []);
   const [name, setName] = useState(group?.name ?? "");
   const [color, setColor] = useState<GroupColor>((GROUP_COLORS as readonly string[]).includes(group?.color ?? "") ? (group!.color as GroupColor) : GROUP_COLORS[0]);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +109,7 @@ function GroupDialog({ group, onClose }: { group: GroupRow | null; onClose: () =
 
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{group ? t.edit : t.new}</DialogTitle>
           <DialogDescription>{t.subtitle}</DialogDescription>
@@ -108,7 +119,7 @@ function GroupDialog({ group, onClose }: { group: GroupRow | null; onClose: () =
           onSubmit={(e) => {
             e.preventDefault();
             startTransition(async () => {
-              const r = await saveGroup({ name, color }, group?.id);
+              const r = await saveGroup({ name, color, conditionIds }, group?.id);
               if (!r.ok) return setError(r.error);
               toast.success(r.message);
               onClose();
@@ -142,6 +153,33 @@ function GroupDialog({ group, onClose }: { group: GroupRow | null; onClose: () =
                 </button>
               ))}
             </div>
+          </fieldset>
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium text-ink">{t.conditions}</legend>
+            <p className="text-xs text-ink-3">{t.conditionsHint}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {conditions.map((c) => {
+                const on = conditionIds.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setConditionIds(on ? conditionIds.filter((x) => x !== c.id) : [...conditionIds, c.id])}
+                    className={cn(
+                      "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
+                      on ? "border-brand-300 bg-brand-50 font-medium text-brand-700" : "border-line bg-surface text-ink-2 hover:text-ink",
+                    )}
+                  >
+                    {on && <Check aria-hidden className="size-3.5" />}
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
+            <Link href="/treinos/condicoes" className="w-fit rounded text-xs text-brand-700 hover:underline">
+              {t.manageConditions}
+            </Link>
           </fieldset>
         </form>
         <DialogFooter>
