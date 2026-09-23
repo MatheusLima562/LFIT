@@ -47,6 +47,11 @@ npm run db:types          # gera lib/db/types.ts a partir do banco linkado
 npm run db:seed           # dados fictícios (-- --reset para recriar)
 ```
 
+> ⚠️ **`supabase db reset` e `npm run db:seed -- --reset` só no lfit-dev, NUNCA em produção.**
+> Ambos apagam dados. Antes de rodar, confirme o projeto linkado (`supabase/.temp/project-ref`)
+> e o `NEXT_PUBLIC_SUPABASE_URL` do `.env.local`. O mesmo vale para `npm run test:db`
+> (cria e apaga organizações; só roda com `ALLOW_DB_TESTS=true`).
+
 [planejado]: `npm run test:e2e` (Playwright).
 
 ## Estrutura de pastas
@@ -87,6 +92,7 @@ messages/pt-BR.ts          # textos da UI centralizados (preparo para i18n)
 - **Sem lógica de negócio em componentes.** Regras ficam em `features/<modulo>` / funções SQL.
 - Um schema Zod por formulário, reutilizado no client (RHF) e na server action.
 - Toda mudança de banco via **migration versionada**; seed só com dados fictícios, nunca dados reais de alunos.
+- `supabase db reset` / `--reset` só no lfit-dev, nunca em produção.
 - Datas: UTC no banco; exibição em `America/Sao_Paulo`, formato `dd/mm/aaaa`.
 - WhatsApp salvo em E.164 (`+5541999010287`), exibido com máscara.
 - Textos da UI em PT-BR, centralizados.
