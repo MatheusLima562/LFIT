@@ -15,13 +15,13 @@ import {
   UsersRound,
   Wallet,
 } from "lucide-react";
-import type { NavChild, NavItem, NavSection } from "@/types/dashboard";
+import type { NavSection } from "@/types/dashboard";
 
 export const navigation: NavSection[] = [
   {
     id: "principal",
     items: [
-      { id: "inicio", label: "Início", href: "/", icon: House },
+      { id: "inicio", label: "Início", href: "/", icon: House, status: "available" },
       {
         id: "alunos",
         label: "Alunos",
@@ -93,30 +93,18 @@ export const navigation: NavSection[] = [
   },
 ];
 
-/** Busca uma rota da navegação (item ou subitem) pelo pathname. */
-export function findRoute(
-  pathname: string,
-): { item: NavItem; child?: NavChild } | undefined {
-  for (const section of navigation) {
-    for (const item of section.items) {
-      const child = item.children?.find((c) => c.href === pathname);
-      if (child) return { item, child: child.href === item.href ? undefined : child };
-      if (item.href === pathname) return { item };
-    }
-  }
-  return undefined;
-}
+const allItems = () => navigation.flatMap((section) => section.items);
 
-/** Todas as rotas de módulo (exceto a home), para gerar páginas estáticas. */
-export function moduleRoutes(): string[] {
-  const routes = new Set<string>();
-  for (const section of navigation) {
-    for (const item of section.items) {
-      if (item.href !== "/") routes.add(item.href);
-      item.children?.forEach((c) => routes.add(c.href));
-    }
-  }
-  return [...routes];
+/**
+ * A rota existe no app? Usado para desabilitar links para módulos "em breve"
+ * (nada de links mortos). Query string é ignorada.
+ */
+export function isAvailableRoute(href: string) {
+  const path = href.split("?")[0];
+  const item = allItems().find(
+    (i) => i.href === path || path.startsWith(`${i.href}/`) || i.children?.some((c) => c.href === path),
+  );
+  return item?.status === "available";
 }
 
 export function isRouteActive(pathname: string, href: string) {

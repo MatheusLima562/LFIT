@@ -154,28 +154,31 @@ export function WeeklyWorkoutsCard({ data }: { data: WeeklyWorkoutsPoint[] }) {
         </div>
       </div>
 
-      {/* Versão tabular para leitores de tela */}
-      <table className="sr-only">
-        <caption>Treinos concluídos por dia</caption>
-        <thead>
-          <tr>
-            <th scope="col">Dia</th>
-            {series.map((s) => (
-              <th key={s.key} scope="col">{s.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.day}>
-              <th scope="row">{d.day}</th>
+      {/* Versão tabular para leitores de tela. O sr-only fica num <div>:
+          em <table> ele não recorta (overflow não se aplica a tabelas) e vaza a largura. */}
+      <div className="sr-only">
+        <table>
+          <caption>Treinos concluídos por dia</caption>
+          <thead>
+            <tr>
+              <th scope="col">Dia</th>
               {series.map((s) => (
-                <td key={s.key}>{d[s.key] ?? "—"}</td>
+                <th key={s.key} scope="col">{s.label}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.day}>
+                <th scope="row">{d.day}</th>
+                {series.map((s) => (
+                  <td key={s.key}>{d[s.key] ?? "—"}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }

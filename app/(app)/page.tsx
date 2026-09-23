@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { banner, currentUser } from "@/data/dashboard";
-import { getDashboardSummary, getSearchableStudents } from "@/lib/dashboard";
+import { banner } from "@/data/dashboard";
+import { getDashboardSummary, withRealPlan } from "@/lib/dashboard";
+import { requireStaff } from "@/lib/auth/session";
+import { getOrganizationPlanUsage } from "@/features/organizations/queries";
 import { CompletedWorkoutsCard } from "@/components/dashboard/CompletedWorkoutsCard";
 import { DashboardView } from "@/components/dashboard/DashboardView";
 import { ExpiringAccessCard } from "@/components/dashboard/ExpiringAccessCard";
@@ -18,13 +20,14 @@ export const metadata: Metadata = {
   title: "Início",
 };
 
-export default function DashboardPage() {
-  const summary = getDashboardSummary();
+export default async function DashboardPage() {
+  const [session, plan] = await Promise.all([requireStaff(), getOrganizationPlanUsage()]);
+  // Cards ainda com dados mockados até a etapa 1.6 (exceto plano/alunos ativos).
+  const summary = withRealPlan(getDashboardSummary(), plan);
 
   return (
     <DashboardView
-      firstName={currentUser.firstName}
-      students={getSearchableStudents()}
+      firstName={session.firstName}
       banner={banner}
       cards={{
         overview: <OverviewMetrics metrics={summary.metrics} />,

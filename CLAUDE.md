@@ -13,10 +13,11 @@ por isso tudo é **multi-tenant desde o início**.
 | Framework | Next.js 16 (App Router, Turbopack) + React 19 | [existe] |
 | Linguagem | TypeScript `strict` | [existe] |
 | Estilo | Tailwind CSS v4 (tokens em `app/globals.css` via `@theme`) | [existe] |
-| Componentes | Primitivas próprias em `components/ui/` (sem shadcn por enquanto) | [existe] |
+| Componentes | shadcn/ui (base Radix, preset Nova) em `components/ui/*.tsx` minúsculos + componentes próprios (`Card`, `StatTabs`, `EmptyState`…); `cn` do pacote `cn` (substitui clsx + tailwind-merge) via `@/lib/utils` | [existe] |
+| Tema | `next-themes` (classe `.dark`); tokens por tema em `app/globals.css` | [existe] |
 | Ícones / gráficos | lucide-react / recharts | [existe] |
 | Banco, Auth, Storage | Supabase (Postgres 17 + RLS), migrations em `supabase/migrations/` | [existe — schema da Fase 1] |
-| Validação / formulários | Zod (mesmo schema no client e no server) + React Hook Form | [planejado] |
+| Validação / formulários | Zod 4 (mesmo schema no client e no server) + React Hook Form | [existe] |
 | Dados no client | TanStack Query | [planejado] |
 | Testes | Vitest (banco/RLS em `tests/db/`) · Playwright (e2e) | [existe] · [planejado] |
 | Deploy | Vercel (+ Vercel Cron para jobs diários) | [planejado] |
@@ -45,6 +46,7 @@ npx supabase link --project-ref <ref>   # uma vez por máquina
 npm run db:push           # aplica supabase/migrations no projeto linkado (confirme antes!)
 npm run db:types          # gera lib/db/types.ts a partir do banco linkado
 npm run db:seed           # dados fictícios (-- --reset para recriar)
+npm run bootstrap:owner   # cria organização + owner e imprime link de convite (sem e-mail)
 ```
 
 > ⚠️ **`supabase db reset` e `npm run db:seed -- --reset` só no lfit-dev, NUNCA em produção.**
@@ -59,32 +61,29 @@ npm run db:seed           # dados fictícios (-- --reset para recriar)
 Atual **[existe]**:
 
 ```
+proxy.ts                   # (Next 16) renova a sessão Supabase e protege a área logada
 app/
-  layout.tsx               # layout raiz (fontes, metadata, lang pt-BR)
-  globals.css              # tokens de design (cores brand/ink/line, séries de gráfico)
-  (app)/                   # área logada do treinador (usa AppShell)
-    layout.tsx
-    page.tsx               # dashboard "Início"
-    [...slug]/page.tsx     # placeholder "Módulo em construção" para itens da sidebar
+  layout.tsx, providers.tsx, globals.css   # tema, tooltips, toasts, tokens
+  (auth)/                  # entrar, esqueci-senha, redefinir-senha, convite, criar-conta (flag)
+  (app)/                   # área logada (requireStaff + AppShell); page.tsx = dashboard
+  auth/confirm, auth/sair  # route handlers (links de e-mail, logout forçado)
+features/
+  auth/                    # schemas.ts (Zod), actions.ts (server actions), components/
+  organizations/queries.ts # uso do plano (RPC organization_plan_usage)
 components/
-  ui/                      # primitivas: Card, Dialog (<dialog> nativo), DropdownMenu, StatTabs, Tooltip...
-  layout/                  # AppShell, Sidebar, Logo
-  dashboard/               # cards e composição do dashboard
-data/                      # mocks e configuração estática (navegação, ações rápidas)
-lib/                       # utilitários (cn, format) e seletores do dashboard
-types/                     # tipos compartilhados
-```
-
-Alvo **[planejado]** (spec §2) — migrar gradualmente, módulo a módulo:
-
-```
-app/                       # só rotas e composição de telas
-features/<modulo>/         # components/, hooks/, schemas.ts (Zod), actions.ts (server actions), queries.ts
-lib/                       # db/ (clientes Supabase, tipos gerados), auth/, utils
-components/ui/             # primitivas genéricas sem regra de negócio
-supabase/migrations/       # migrations versionadas
-scripts/seed.mts            # dados FICTÍCIOS (usa as RPCs; projeto Supabase é hospedado, sem seed.sql)
-messages/pt-BR.ts          # textos da UI centralizados (preparo para i18n)
+  ui/                      # shadcn (minúsculos) + próprios (Card, StatTabs, EmptyState, ProgressBar…)
+  layout/                  # AppShell, Sidebar, UserMenu, ThemeToggle, Logo
+  dashboard/               # cards do dashboard (ainda com dados mockados — etapa 1.6)
+lib/
+  db/                      # server.ts, client.ts, admin.ts (service_role, server-only), types.ts (gerado)
+  auth/session.ts          # getSession / requireStaff
+  security/rate-limit.ts   # rate limit via RPC hit_rate_limit
+  text.ts, format.ts, utils.ts
+messages/pt-BR.ts          # textos da UI + tradução dos códigos de erro das RPCs
+data/                      # navegação (status de cada módulo), ações rápidas, mocks do dashboard
+supabase/migrations/       # schema, RLS e RPCs
+scripts/                   # seed.mts, bootstrap-owner.mts
+tests/db/                  # testes de RLS e regras (Vitest, contra o lfit-dev)
 ```
 
 ## Convenções
@@ -97,7 +96,14 @@ messages/pt-BR.ts          # textos da UI centralizados (preparo para i18n)
 - WhatsApp salvo em E.164 (`+5541999010287`), exibido com máscara.
 - Textos da UI em PT-BR, centralizados.
 - Acessibilidade: foco visível, labels, contraste AA, botões são `<button>` e links são `<a>`.
-- Nada de links mortos: módulo não implementado fica oculto ou desabilitado com "em breve".
+- Nada de links mortos: módulo não implementado fica desabilitado com "Em breve". Em `data/navigation.ts`,
+  só itens com `status: "available"` navegam; `CardLink` e o banner consultam `isAvailableRoute()`.
+  Ao entregar um módulo, marque-o como `available`.
+- Remover acentos: use `stripAccents`/`searchKey`/`slugify` de `lib/text.ts` (não reescreva o regex).
+- Contraste AA: texto pequeno usa `ink`/`ink-2`/`ink-3`; links em `brand-700`; botão primário usa
+  `bg-primary` (não `brand-500`, que só passa 3:1 — ok para ícones, barras e gráficos).
+- Tema escuro: use os tokens (`surface`, `canvas`, `line`, `ink*`, `brand-*`). Os tons 50–200 e 700–800
+  de emerald/amber/violet/red/teal/sky/rose/orange/zinc já são remapeados no `.dark` do globals.css.
 - Commits pequenos em conventional commits (`feat:`, `fix:`, `chore:`...).
 - Não instalar dependência sem justificar.
 - Spec ambígua ou em conflito com o código → **parar e perguntar**.
@@ -155,5 +161,5 @@ effective_status =
   público, links de acesso, storage). Regras de negócio vivem nas RPCs (`security definer`).
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
   enviados pelo usuário. "Allow new users to sign up" deve ficar DESLIGADO no Supabase Auth.
-- Ainda sem autenticação na UI e sem deploy.
+- Autenticação do treinador pronta (login, recuperação, convite, logout, rate limit). Sem deploy ainda.
 - Roadmap: Fase 1 alunos → Fase 2 treinos e exercícios → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.

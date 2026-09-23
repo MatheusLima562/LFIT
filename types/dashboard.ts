@@ -63,6 +63,13 @@ export interface CurrentUser {
   role: string;
 }
 
+/** Dados do usuário logado exibidos no shell (sidebar, topo mobile). */
+export interface ShellUser {
+  fullName: string;
+  roleLabel: string;
+  organizationName: string;
+}
+
 export interface Banner {
   id: string;
   title: string;
@@ -168,6 +175,8 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  /** Só "available" navega. Ausente = módulo em construção: aparece desabilitado com "Em breve". */
+  status?: "available" | "soon";
   badge?: number;
   children?: NavChild[];
 }
@@ -189,6 +198,8 @@ export interface QuickActionField {
 
 export interface QuickAction {
   id: string;
+  /** Só "available" fica clicável; as demais aparecem como "Em breve". */
+  status?: "available";
   label: string;
   /** Rótulo curto usado no dropdown "+ Novo". */
   menuLabel: string;

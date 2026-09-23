@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { ArrowLeftRight, Clock3, Landmark, Wallet, type LucideIcon } from "lucide-react";
 import type { SalesSummary } from "@/types/dashboard";
 import { formatCurrency } from "@/lib/format";
-import { buttonClass } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { messages } from "@/messages/pt-BR";
 import { Card, CardHeader, CardIcon, CardLink } from "@/components/ui/Card";
 import { InfoHint } from "@/components/ui/InfoHint";
 
@@ -67,17 +67,17 @@ export function SalesCard({ sales }: { sales: SalesSummary }) {
           ))}
         </dl>
         <div className="flex shrink-0 flex-row gap-2 lg:w-44 lg:flex-col lg:justify-center">
-          <button
-            type="button"
+          <Button
+            size="lg"
             disabled={sales.available === 0}
             title={sales.available === 0 ? "Sem saldo disponível para saque" : undefined}
-            className={buttonClass("primary", "md", "flex-1 lg:flex-none")}
+            className="flex-1 lg:flex-none"
           >
             Solicitar saque
-          </button>
-          <Link href="/vendas/cobrancas" className={buttonClass("secondary", "md", "flex-1 lg:flex-none")}>
+          </Button>
+          <Button variant="outline" size="lg" disabled title={messages.app.soonHint} className="flex-1 lg:flex-none">
             Nova cobrança
-          </Link>
+          </Button>
         </div>
       </div>
     </Card>

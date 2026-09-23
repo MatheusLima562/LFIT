@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
+import { isAvailableRoute } from "@/data/navigation";
+import { messages } from "@/messages/pt-BR";
 
 interface CardProps {
   children: ReactNode;
@@ -67,10 +69,20 @@ export function CardFooter({ children, className }: { children: ReactNode; class
 }
 
 export function CardLink({ href, children }: { href: string; children: ReactNode }) {
+  if (!isAvailableRoute(href)) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-3" aria-disabled="true">
+        {children}
+        <span className="rounded-md bg-canvas px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase ring-1 ring-line">
+          {messages.app.soon}
+        </span>
+      </span>
+    );
+  }
   return (
     <Link
       href={href}
-      className="group inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-brand-600 outline-none transition-colors hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500/40"
+      className="group inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-brand-700 outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
     >
       {children}
       <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-0.5" />

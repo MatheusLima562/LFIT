@@ -2,18 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, PanelLeftClose, PanelLeftOpen, Settings, Sparkles } from "lucide-react";
+import { ChevronDown, PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { navigation, isRouteActive } from "@/data/navigation";
-import type { CurrentUser, NavItem, PlanUsage } from "@/types/dashboard";
-import { cn } from "@/lib/cn";
-import { Avatar } from "@/components/ui/Avatar";
+import { isRouteActive, navigation } from "@/data/navigation";
+import type { NavItem, PlanUsage, ShellUser } from "@/types/dashboard";
+import { cn } from "@/lib/utils";
+import { plural } from "@/lib/format";
+import { messages } from "@/messages/pt-BR";
+import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "./Logo";
+import { ThemeToggle } from "./ThemeToggle";
+import { UserMenu } from "./UserMenu";
 
 interface SidebarProps {
-  user: CurrentUser;
+  user: ShellUser;
   plan: PlanUsage;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -21,34 +25,69 @@ interface SidebarProps {
 }
 
 const itemBase =
-  "group relative flex h-9 w-full items-center gap-3 rounded-lg px-2.5 text-[13.5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-500/40";
+  "group relative flex h-9 w-full items-center gap-3 rounded-lg px-2.5 text-[13.5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50";
 
-function itemTone(active: boolean) {
-  return active ? "bg-brand-50 text-brand-700" : "text-ink-2 hover:bg-canvas hover:text-ink";
-}
+const isAvailable = (item: NavItem) => item.status === "available";
 
-function NavIcon({ item, active }: { item: NavItem; active: boolean }) {
+function NavIcon({ item, active, muted }: { item: NavItem; active?: boolean; muted?: boolean }) {
   const Icon = item.icon;
   return (
     <Icon
       aria-hidden
-      className={cn("size-[18px] shrink-0", active ? "text-brand-500" : "text-ink-3 group-hover:text-ink-2")}
+      className={cn(
+        "size-[18px] shrink-0",
+        active ? "text-brand-500" : muted ? "text-ink-3/70" : "text-ink-3 group-hover:text-ink-2",
+      )}
       strokeWidth={active ? 2.2 : 1.9}
     />
   );
 }
 
-function Badge({ count, collapsed }: { count: number; collapsed?: boolean }) {
+function SoonBadge() {
+  return (
+    <span className="ml-auto shrink-0 text-[10px] font-medium tracking-wide text-ink-3 uppercase">{messages.app.soon}</span>
+  );
+}
+
+function CountBadge({ count, collapsed }: { count: number; collapsed?: boolean }) {
   return (
     <span
       aria-label={`${count} não lidas`}
       className={cn(
-        "grid min-w-[18px] place-items-center rounded-full bg-brand-500 px-1 text-[10px] leading-[18px] font-semibold text-white",
-        collapsed ? "absolute top-0.5 right-0.5 h-4 min-w-4 text-[9px] leading-4" : "ml-auto h-[18px]",
+        "grid place-items-center rounded-full bg-primary px-1 font-semibold text-primary-foreground",
+        collapsed ? "absolute top-0.5 right-0.5 h-4 min-w-4 text-[9px]" : "ml-auto h-[18px] min-w-[18px] text-[10px]",
       )}
     >
       {count}
     </span>
+  );
+}
+
+/** Item recolhido: só ícone + tooltip (inclusive nos desabilitados, via span focável). */
+function CollapsedItem({ item, active }: { item: NavItem; active: boolean }) {
+  const available = isAvailable(item);
+  const label = available ? item.label : `${item.label} · ${messages.app.soon}`;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {available ? (
+          <Link
+            href={item.href}
+            aria-label={item.label}
+            aria-current={active ? "page" : undefined}
+            className={cn(itemBase, "justify-center px-0", active ? "bg-brand-50 text-brand-700" : "hover:bg-canvas")}
+          >
+            <NavIcon item={item} active={active} />
+            {item.badge ? <CountBadge count={item.badge} collapsed /> : null}
+          </Link>
+        ) : (
+          <span tabIndex={0} aria-disabled="true" aria-label={label} className={cn(itemBase, "cursor-default justify-center px-0")}>
+            <NavIcon item={item} muted />
+          </span>
+        )}
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -57,7 +96,7 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
   const [openIds, setOpenIds] = useState<Set<string>>(() => {
     const initial = new Set<string>();
     navigation.forEach((s) =>
-      s.items.forEach((i) => i.children && isRouteActive(pathname, i.href) && initial.add(i.id)),
+      s.items.forEach((i) => isAvailable(i) && i.children && isRouteActive(pathname, i.href) && initial.add(i.id)),
     );
     return initial;
   });
@@ -75,21 +114,13 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
       <div className={cn("flex h-16 shrink-0 items-center px-4", collapsed ? "justify-center" : "justify-between")}>
         <Logo compact={collapsed} onNavigate={onNavigate} />
         {onToggleCollapse && !collapsed && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            aria-label="Recolher menu lateral"
-            className="grid size-8 place-items-center rounded-lg text-ink-3 outline-none transition-colors hover:bg-canvas hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-500/40"
-          >
+          <Button variant="ghost" size="icon-sm" onClick={onToggleCollapse} aria-label="Recolher menu lateral" className="text-ink-3">
             <PanelLeftClose className="size-[18px]" aria-hidden />
-          </button>
+          </Button>
         )}
       </div>
 
-      <nav
-        aria-label="Menu principal"
-        className={cn("flex-1 px-3 pb-3", collapsed ? "overflow-visible" : "overflow-y-auto")}
-      >
+      <nav aria-label="Menu principal" className="flex-1 overflow-y-auto px-3 pb-3">
         {navigation.map((section, sectionIndex) => (
           <div key={section.id} className={cn(sectionIndex > 0 && "mt-4")}>
             {section.title &&
@@ -103,44 +134,46 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
             <ul className="flex flex-col gap-0.5">
               {section.items.map((item) => {
                 const active = isRouteActive(pathname, item.href);
-                const hasChildren = !!item.children?.length;
-                const expanded = openIds.has(item.id);
+                const available = isAvailable(item);
 
                 if (collapsed) {
                   return (
                     <li key={item.id}>
-                      <Tooltip content={item.label} side="right" className="w-full">
-                        <Link
-                          href={item.href}
-                          aria-label={item.label}
-                          aria-current={active ? "page" : undefined}
-                          className={cn(itemBase, "justify-center px-0", itemTone(active))}
-                        >
-                          <NavIcon item={item} active={active} />
-                          {item.badge ? <Badge count={item.badge} collapsed /> : null}
-                        </Link>
-                      </Tooltip>
+                      <CollapsedItem item={item} active={active} />
                     </li>
                   );
                 }
 
-                if (!hasChildren) {
+                if (!available) {
+                  return (
+                    <li key={item.id}>
+                      <span aria-disabled="true" className={cn(itemBase, "cursor-default text-ink-3")}>
+                        <NavIcon item={item} muted />
+                        <span className="truncate">{item.label}</span>
+                        <SoonBadge />
+                      </span>
+                    </li>
+                  );
+                }
+
+                if (!item.children?.length) {
                   return (
                     <li key={item.id}>
                       <Link
                         href={item.href}
                         onClick={onNavigate}
                         aria-current={active ? "page" : undefined}
-                        className={cn(itemBase, itemTone(active))}
+                        className={cn(itemBase, active ? "bg-brand-50 text-brand-700" : "text-ink-2 hover:bg-canvas hover:text-ink")}
                       >
                         <NavIcon item={item} active={active} />
                         <span className="truncate">{item.label}</span>
-                        {item.badge ? <Badge count={item.badge} /> : null}
+                        {item.badge ? <CountBadge count={item.badge} /> : null}
                       </Link>
                     </li>
                   );
                 }
 
+                const expanded = openIds.has(item.id);
                 const submenuId = `submenu-${item.id}`;
                 return (
                   <li key={item.id}>
@@ -149,24 +182,18 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
                       onClick={() => toggle(item.id)}
                       aria-expanded={expanded}
                       aria-controls={submenuId}
-                      className={cn(itemBase, active ? "text-ink" : itemTone(false), active && "font-semibold")}
+                      className={cn(itemBase, active ? "font-semibold text-ink" : "text-ink-2 hover:bg-canvas hover:text-ink")}
                     >
                       <NavIcon item={item} active={active} />
                       <span className="truncate">{item.label}</span>
-                      <ChevronDown
-                        aria-hidden
-                        className={cn("ml-auto size-4 text-ink-3 transition-transform", expanded && "rotate-180")}
-                      />
+                      <ChevronDown aria-hidden className={cn("ml-auto size-4 text-ink-3 transition-transform", expanded && "rotate-180")} />
                     </button>
                     <div
                       id={submenuId}
-                      className={cn(
-                        "grid transition-[grid-template-rows] duration-200",
-                        expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                      )}
+                      className={cn("grid transition-[grid-template-rows] duration-200", expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}
                     >
                       <ul className="ml-[21px] overflow-hidden border-l border-line pl-3" inert={!expanded}>
-                        {item.children!.map((child) => {
+                        {item.children.map((child) => {
                           const childActive = pathname === child.href;
                           return (
                             <li key={child.href} className="first:mt-0.5 last:mb-1">
@@ -175,7 +202,7 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
                                 onClick={onNavigate}
                                 aria-current={childActive ? "page" : undefined}
                                 className={cn(
-                                  "relative flex h-8 items-center rounded-md px-2.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand-500/40",
+                                  "relative flex h-8 items-center rounded-md px-2.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
                                   childActive
                                     ? "bg-brand-50 font-medium text-brand-700 before:absolute before:top-2 before:bottom-2 before:-left-[13px] before:w-0.5 before:rounded-full before:bg-brand-500"
                                     : "text-ink-2 hover:bg-canvas hover:text-ink",
@@ -209,44 +236,21 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
               </span>
             </div>
             <ProgressBar value={plan.used} max={plan.limit} label="Alunos usados no plano" className="mt-2 h-1.5" />
-            <Link
-              href="/vendas/planos"
-              onClick={onNavigate}
-              className="mt-2.5 inline-flex rounded text-xs font-medium text-brand-600 outline-none hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500/40"
-            >
-              Fazer upgrade
-            </Link>
+            <p className="mt-2 text-xs text-ink-3">{plural(plan.remaining, "vaga disponível", "vagas disponíveis")}</p>
           </div>
         )}
 
-        <div className={cn("flex items-center gap-2.5", collapsed && "flex-col")}>
-          <Avatar name={user.fullName} size="lg" />
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-ink">{user.fullName}</p>
-              <p className="truncate text-xs text-ink-3">{user.role}</p>
-            </div>
-          )}
-          <Tooltip content="Perfil e configurações" side={collapsed ? "right" : "top"}>
-            <Link
-              href="/configuracoes"
-              onClick={onNavigate}
-              aria-label="Perfil e configurações"
-              className="grid size-8 place-items-center rounded-lg text-ink-3 outline-none transition-colors hover:bg-canvas hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-500/40"
-            >
-              <Settings className="size-4" aria-hidden />
-            </Link>
-          </Tooltip>
+        <div className={cn("flex items-center gap-1", collapsed && "flex-col")}>
+          <UserMenu user={user} compact={collapsed} />
+          <ThemeToggle side={collapsed ? "right" : "top"} />
           {collapsed && onToggleCollapse && (
-            <Tooltip content="Expandir menu" side="right">
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                aria-label="Expandir menu lateral"
-                className="grid size-8 place-items-center rounded-lg text-ink-3 outline-none transition-colors hover:bg-canvas hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-500/40"
-              >
-                <PanelLeftOpen className="size-[18px]" aria-hidden />
-              </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={onToggleCollapse} aria-label="Expandir menu lateral" className="text-ink-3">
+                  <PanelLeftOpen className="size-[18px]" aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Expandir menu</TooltipContent>
             </Tooltip>
           )}
         </div>

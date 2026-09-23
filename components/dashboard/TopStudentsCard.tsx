@@ -1,6 +1,6 @@
 import { Medal, Trophy } from "lucide-react";
 import type { TopStudent } from "@/types/dashboard";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { formatNumber, plural } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card, CardFooter, CardHeader, CardIcon } from "@/components/ui/Card";

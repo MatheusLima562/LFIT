@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Tabs as TabsPrimitive } from "radix-ui";
+import type { ReactNode } from "react";
 import type { StatTab } from "@/types/dashboard";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { formatNumber, plural } from "@/lib/format";
 import { Avatar } from "./Avatar";
 import { EmptyState } from "./EmptyState";
@@ -22,105 +23,65 @@ const toneDot: Record<NonNullable<StatTab["tone"]>, string> = {
   danger: "bg-red-500",
 };
 
+/** Abas com contador (Radix Tabs: setas, Home/End e ARIA prontos). */
 export function StatTabs({ tabs, label, emptyIcon, maxItems = 3, defaultTabId }: StatTabsProps) {
-  const [selectedId, setSelectedId] = useState(defaultTabId ?? tabs[0]?.id);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const baseId = useId();
-  const selected = tabs.find((t) => t.id === selectedId) ?? tabs[0];
-
-  const onKeyDown = (e: KeyboardEvent, index: number) => {
-    const moves: Record<string, number> = {
-      ArrowRight: index + 1,
-      ArrowLeft: index - 1,
-      Home: 0,
-      End: tabs.length - 1,
-    };
-    if (!(e.key in moves)) return;
-    e.preventDefault();
-    const next = (moves[e.key] + tabs.length) % tabs.length;
-    setSelectedId(tabs[next].id);
-    tabRefs.current[next]?.focus();
-  };
-
-  const visible = selected.items.slice(0, maxItems);
-  const hidden = selected.items.length - visible.length;
-
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div
-        role="tablist"
+    <TabsPrimitive.Root defaultValue={defaultTabId ?? tabs[0]?.id} className="flex flex-1 flex-col gap-3">
+      <TabsPrimitive.List
         aria-label={label}
         className="grid gap-1 rounded-xl bg-canvas p-1"
         style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
       >
-        {tabs.map((tab, i) => {
-          const isSelected = tab.id === selected.id;
+        {tabs.map((tab) => {
           const count = tab.items.length;
           return (
-            <button
+            <TabsPrimitive.Trigger
               key={tab.id}
-              ref={(el) => {
-                tabRefs.current[i] = el;
-              }}
-              type="button"
-              role="tab"
-              id={`${baseId}-tab-${tab.id}`}
-              aria-selected={isSelected}
-              aria-controls={`${baseId}-panel`}
-              tabIndex={isSelected ? 0 : -1}
-              onClick={() => setSelectedId(tab.id)}
-              onKeyDown={(e) => onKeyDown(e, i)}
+              value={tab.id}
               className={cn(
-                "flex min-w-0 flex-col items-start gap-0.5 rounded-lg px-2 py-2 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-brand-500/40",
-                isSelected
-                  ? "bg-surface shadow-card ring-1 ring-line"
-                  : "hover:bg-surface/60",
+                "group flex min-w-0 flex-col items-start gap-0.5 rounded-lg px-2 py-2 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring/50",
+                "hover:bg-surface/60 data-[state=active]:bg-surface data-[state=active]:shadow-card data-[state=active]:ring-1 data-[state=active]:ring-line",
               )}
             >
               <span
                 className={cn(
-                  "tabular text-xl leading-none font-semibold tracking-tight",
-                  isSelected ? "text-ink" : count > 0 ? "text-ink-2" : "text-ink-3",
+                  "tabular text-xl leading-none font-semibold tracking-tight group-data-[state=active]:text-ink",
+                  count > 0 ? "text-ink-2" : "text-ink-3",
                 )}
               >
                 {formatNumber(count)}
               </span>
               <span className="flex w-full min-w-0 items-center gap-1.5 text-[11px] font-medium text-ink-2">
-                {tab.tone && count > 0 && (
-                  <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", toneDot[tab.tone])} />
-                )}
+                {tab.tone && count > 0 && <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", toneDot[tab.tone])} />}
                 <span className="truncate">{tab.label}</span>
               </span>
-            </button>
+            </TabsPrimitive.Trigger>
           );
         })}
-      </div>
+      </TabsPrimitive.List>
 
-      <div
-        role="tabpanel"
-        id={`${baseId}-panel`}
-        aria-labelledby={`${baseId}-tab-${selected.id}`}
-        className="flex flex-1 flex-col"
-      >
-        {selected.items.length === 0 ? (
-          <EmptyState icon={emptyIcon} message={selected.emptyMessage} />
-        ) : (
-          <ul className="flex flex-col divide-y divide-line">
-            {visible.map((item) => (
-              <li key={item.id} className="flex items-center gap-2.5 py-2 first:pt-0.5">
-                <Avatar name={item.name} size="sm" />
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{item.name}</span>
-                {item.meta && <span className="shrink-0 text-xs text-ink-3">{item.meta}</span>}
-              </li>
-            ))}
-            {hidden > 0 && (
-              <li className="pt-2 text-xs font-medium text-ink-3">
-                + {plural(hidden, "aluno")} nesta lista
-              </li>
+      {tabs.map((tab) => {
+        const visible = tab.items.slice(0, maxItems);
+        const hidden = tab.items.length - visible.length;
+        return (
+          <TabsPrimitive.Content key={tab.id} value={tab.id} className="flex flex-1 flex-col outline-none">
+            {tab.items.length === 0 ? (
+              <EmptyState icon={emptyIcon} message={tab.emptyMessage} />
+            ) : (
+              <ul className="flex flex-col divide-y divide-line">
+                {visible.map((item) => (
+                  <li key={item.id} className="flex items-center gap-2.5 py-2 first:pt-0.5">
+                    <Avatar name={item.name} size="sm" />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{item.name}</span>
+                    {item.meta && <span className="shrink-0 text-xs text-ink-3">{item.meta}</span>}
+                  </li>
+                ))}
+                {hidden > 0 && <li className="pt-2 text-xs font-medium text-ink-3">+ {plural(hidden, "aluno")} nesta lista</li>}
+              </ul>
             )}
-          </ul>
-        )}
-      </div>
-    </div>
+          </TabsPrimitive.Content>
+        );
+      })}
+    </TabsPrimitive.Root>
   );
 }

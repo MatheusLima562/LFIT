@@ -1,5 +1,5 @@
 import { initials } from "@/lib/format";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 const palettes = [
   "bg-brand-100 text-brand-700",

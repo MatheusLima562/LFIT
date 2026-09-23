@@ -226,6 +226,22 @@ export function getPlanUsage(): PlanUsage {
   };
 }
 
+/**
+ * Enquanto o dashboard usa mocks (até a etapa 1.6), plano e "Alunos ativos"
+ * já vêm do banco para não divergirem da sidebar.
+ */
+export function withRealPlan(summary: DashboardSummary, plan: PlanUsage): DashboardSummary {
+  return {
+    ...summary,
+    plan,
+    metrics: summary.metrics.map((m) =>
+      m.id === "ativos"
+        ? { ...m, value: formatNumber(plan.used), hint: `de ${plan.limit} no plano ${plan.planName}` }
+        : m,
+    ),
+  };
+}
+
 export function getSearchableStudents(): SearchableStudent[] {
   return students.map(({ id, name, email, status }) => ({ id, name, email, status }));
 }

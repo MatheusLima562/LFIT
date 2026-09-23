@@ -1,39 +1,111 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-@theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@custom-variant dark (&:is(.dark *));
 
-@theme {
-  /* Marca — laranja/coral */
-  --color-brand-50: #fff5f0;
-  --color-brand-100: #ffe8dc;
-  --color-brand-200: #ffcfb8;
-  --color-brand-300: #ffad88;
-  --color-brand-400: #fa8554;
-  --color-brand-500: #f0642d;
-  --color-brand-600: #db4f19;
-  --color-brand-700: #b53e13;
+/* =============================================================================
+ * Tokens do LFit
+ * Valores brutos por tema em :root / .dark; utilitários via @theme inline.
+ * Contraste AA verificado para texto: ink-3 ≥ 4.9:1, links (brand-700) ≥ 5.7:1,
+ * texto branco no botão primário 4.7:1.
+ * ========================================================================== */
+:root {
+  --canvas: #f7f7f5;
+  --surface: #ffffff;
+  --line: #ebeae6;
+  --line-strong: #dddbd5;
+  --ink: #1c1b19;
+  --ink-2: #57544e;
+  --ink-3: #6f6b63;
 
-  /* Superfícies e linhas */
-  --color-canvas: #f7f7f5;
-  --color-surface: #ffffff;
-  --color-line: #ebeae6;
-  --color-line-strong: #dddbd5;
+  --brand-50: #fff5f0;
+  --brand-100: #ffe8dc;
+  --brand-200: #ffcfb8;
+  --brand-600: #db4f19;
+  --brand-700: #b53e13;
+  /* Fundo do botão primário (texto branco precisa de 4.5:1) */
+  --primary-bg: #c94a18;
+  --primary-bg-hover: #b53e13;
+  --danger: #d92d20;
 
-  /* Texto */
-  --color-ink: #1c1b19;
-  --color-ink-2: #57544e;
-  --color-ink-3: #8a867f;
-
-  /* Séries de gráfico (validadas para daltonismo e contraste) */
-  --color-series-1: #f0642d;
-  --color-series-2: #7c5cfc;
-  --color-series-3: #1ba39c;
+  /* Séries de gráfico — validadas (CVD + contraste) contra a superfície clara */
+  --series-1: #f0642d;
+  --series-2: #7c5cfc;
+  --series-3: #1ba39c;
 
   --shadow-card: 0 1px 2px rgb(28 27 25 / 0.04), 0 1px 1px rgb(28 27 25 / 0.02);
   --shadow-pop: 0 12px 32px -8px rgb(28 27 25 / 0.18), 0 2px 6px rgb(28 27 25 / 0.06);
+
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #0f0f0e;
+  --surface: #181816;
+  --line: #2a2926;
+  --line-strong: #3a3935;
+  --ink: #f1efe9;
+  --ink-2: #b9b5ad;
+  --ink-3: #8f8b83;
+
+  --brand-50: color-mix(in oklab, #f0642d 12%, var(--surface));
+  --brand-100: color-mix(in oklab, #f0642d 20%, var(--surface));
+  --brand-200: color-mix(in oklab, #f0642d 32%, var(--surface));
+  --brand-600: #ff8a55;
+  --brand-700: #ffa27a;
+  --danger: #f97066;
+
+  /* Séries — validadas contra a superfície escura (#181816) */
+  --series-1: #e8622d;
+  --series-2: #8a70f0;
+  --series-3: #1ea39a;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-pop: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
+
+  color-scheme: dark;
+
+  /* Tons de apoio do Tailwind usados em badges/ícones: no escuro, fundos
+   * claros (50–200) viram tintas escuras e textos (700–800) ficam claros. */
+  --color-emerald-50: color-mix(in oklab, var(--color-emerald-500) 14%, var(--surface));
+  --color-emerald-100: color-mix(in oklab, var(--color-emerald-500) 22%, var(--surface));
+  --color-emerald-200: color-mix(in oklab, var(--color-emerald-500) 34%, var(--surface));
+  --color-emerald-700: var(--color-emerald-300);
+  --color-emerald-800: var(--color-emerald-300);
+  --color-amber-50: color-mix(in oklab, var(--color-amber-500) 14%, var(--surface));
+  --color-amber-100: color-mix(in oklab, var(--color-amber-500) 22%, var(--surface));
+  --color-amber-200: color-mix(in oklab, var(--color-amber-500) 34%, var(--surface));
+  --color-amber-700: var(--color-amber-300);
+  --color-amber-800: var(--color-amber-300);
+  --color-violet-50: color-mix(in oklab, var(--color-violet-500) 14%, var(--surface));
+  --color-violet-100: color-mix(in oklab, var(--color-violet-500) 22%, var(--surface));
+  --color-violet-200: color-mix(in oklab, var(--color-violet-500) 34%, var(--surface));
+  --color-violet-600: var(--color-violet-400);
+  --color-violet-700: var(--color-violet-300);
+  --color-red-50: color-mix(in oklab, var(--color-red-500) 14%, var(--surface));
+  --color-red-100: color-mix(in oklab, var(--color-red-500) 22%, var(--surface));
+  --color-red-200: color-mix(in oklab, var(--color-red-500) 34%, var(--surface));
+  --color-red-700: var(--color-red-300);
+  --color-teal-100: color-mix(in oklab, var(--color-teal-500) 22%, var(--surface));
+  --color-teal-700: var(--color-teal-300);
+  --color-sky-100: color-mix(in oklab, var(--color-sky-500) 22%, var(--surface));
+  --color-sky-700: var(--color-sky-300);
+  --color-rose-100: color-mix(in oklab, var(--color-rose-500) 22%, var(--surface));
+  --color-rose-700: var(--color-rose-300);
+  --color-orange-100: color-mix(in oklab, var(--color-orange-500) 22%, var(--surface));
+  --color-orange-200: color-mix(in oklab, var(--color-orange-500) 34%, var(--surface));
+  --color-orange-800: var(--color-orange-300);
+  --color-zinc-100: color-mix(in oklab, var(--color-zinc-400) 18%, var(--surface));
+  --color-zinc-200: color-mix(in oklab, var(--color-zinc-400) 30%, var(--surface));
+  --color-zinc-700: var(--color-zinc-300);
+}
+
+@theme {
+  /* Marca — tons fixos (acentos, ícones, barras) */
+  --color-brand-300: #ffad88;
+  --color-brand-400: #fa8554;
+  --color-brand-500: #f0642d;
 
   --animate-live: live 1.8s ease-out infinite;
 
@@ -49,14 +121,86 @@
   }
 }
 
-html {
-  color-scheme: light;
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+
+  /* Tokens do LFit (variam por tema) */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-primary-hover: var(--primary-bg-hover);
+  --color-danger: var(--danger);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+
+  /* Tokens semânticos do shadcn/ui mapeados para os do LFit */
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--primary-bg);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--canvas);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--canvas);
+  --color-muted-foreground: var(--ink-3);
+  --color-accent: var(--canvas);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-border: var(--line);
+  --color-input: var(--line-strong);
+  --color-ring: #f0642d;
+  --color-chart-1: var(--series-1);
+  --color-chart-2: var(--series-2);
+  --color-chart-3: var(--series-3);
+  --color-sidebar: var(--surface);
+  --color-sidebar-foreground: var(--ink);
+  --color-sidebar-primary: var(--primary-bg);
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: var(--brand-50);
+  --color-sidebar-accent-foreground: var(--brand-700);
+  --color-sidebar-border: var(--line);
+  --color-sidebar-ring: #f0642d;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-body {
-  background: var(--color-canvas);
-  color: var(--color-ink);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+:root {
+  --radius: 0.625rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 /* Números alinhados em métricas */

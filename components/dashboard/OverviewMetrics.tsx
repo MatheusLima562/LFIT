@@ -1,6 +1,6 @@
 import { Activity, HeartHandshake, TrendingUp, Users } from "lucide-react";
 import type { OverviewMetric } from "@/types/dashboard";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 const tones: Record<OverviewMetric["tone"], string> = {
   brand: "bg-brand-50 text-brand-600",

@@ -2,15 +2,16 @@
 
 import { Menu } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import type { CurrentUser, PlanUsage } from "@/types/dashboard";
-import { cn } from "@/lib/cn";
-import { Avatar } from "@/components/ui/Avatar";
-import { Dialog } from "@/components/ui/Dialog";
+import type { PlanUsage, ShellUser } from "@/types/dashboard";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Logo } from "./Logo";
 import { Sidebar } from "./Sidebar";
+import { UserMenu } from "./UserMenu";
 
 interface AppShellProps {
-  user: CurrentUser;
+  user: ShellUser;
   plan: PlanUsage;
   children: ReactNode;
 }
@@ -18,13 +19,12 @@ interface AppShellProps {
 export function AppShell({ user, plan, children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const closeDrawer = () => setDrawerOpen(false);
 
   return (
     <div className="flex min-h-dvh">
       <a
         href="#conteudo"
-        className="fixed top-2 left-2 z-[60] -translate-y-20 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white transition-transform focus:translate-y-0"
+        className="fixed top-2 left-2 z-[60] -translate-y-20 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-surface transition-transform focus:translate-y-0"
       >
         Pular para o conteúdo
       </a>
@@ -40,25 +40,30 @@ export function AppShell({ user, plan, children }: AppShellProps) {
       </aside>
 
       {/* Mobile/tablet: drawer */}
-      <Dialog open={drawerOpen} onClose={closeDrawer} title="Menu" placement="left" hideHeader className="lg:hidden">
-        <Sidebar user={user} plan={plan} onNavigate={closeDrawer} />
-      </Dialog>
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent side="left" showCloseButton={false} className="w-[18rem] max-w-[85vw] gap-0 p-0 lg:hidden">
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          <SheetDescription className="sr-only">Navegação principal do LFit</SheetDescription>
+          <Sidebar user={user} plan={plan} onNavigate={() => setDrawerOpen(false)} />
+        </SheetContent>
+      </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface/90 px-4 backdrop-blur-md lg:hidden">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setDrawerOpen(true)}
               aria-label="Abrir menu"
               aria-expanded={drawerOpen}
-              className="-ml-1.5 grid size-9 place-items-center rounded-lg text-ink-2 outline-none transition-colors hover:bg-canvas focus-visible:ring-2 focus-visible:ring-brand-500/40"
+              className="-ml-1.5 text-ink-2"
             >
               <Menu className="size-5" aria-hidden />
-            </button>
+            </Button>
             <Logo />
           </div>
-          <Avatar name={user.fullName} />
+          <UserMenu user={user} compact />
         </div>
 
         <main id="conteudo" className="flex min-w-0 flex-1 flex-col">
