@@ -168,6 +168,8 @@ export type DashboardCardId =
 export interface NavChild {
   label: string;
   href: string;
+  /** Subitem ainda não implementado (o pai pode estar disponível). */
+  status?: "soon";
 }
 
 export interface NavItem {

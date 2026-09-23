@@ -1033,6 +1033,10 @@ export type Database = {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
       }
+      log_students_export: {
+        Args: { p_count: number; p_filters: Json; p_format: string }
+        Returns: undefined
+      }
       organization_plan_usage: {
         Args: never
         Returns: {
@@ -1076,6 +1080,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_student_access_email: {
+        Args: { p_student_id: string }
+        Returns: {
+          email: string
+          first_name: string
+          organization_id: string
+          student_id: string
+          user_id: string
+        }[]
       }
       regenerate_signup_token: {
         Args: never

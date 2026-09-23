@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronDown, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { quickActions } from "@/data/quick-actions";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
@@ -11,37 +13,55 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DashboardHeaderProps {
   firstName: string;
   onCustomize: () => void;
 }
 
-/** Busca de alunos: ativa junto com o módulo Alunos (etapa 1.2). */
-function StudentSearchSoon() {
+/** Busca rápida: Enter abre "Meus alunos" filtrado (a busca roda no servidor). ⌘K / Ctrl+K foca. */
+function StudentQuickSearch() {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div tabIndex={0} className="relative w-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:w-64 xl:w-72">
-          <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" />
-          <input
-            type="text"
-            disabled
-            aria-label="Buscar aluno (em breve)"
-            placeholder="Buscar aluno"
-            className="h-9 w-full cursor-not-allowed rounded-xl border border-line bg-surface pr-12 pl-9 text-sm text-ink shadow-card outline-none placeholder:text-ink-3 disabled:opacity-70"
-          />
-          <kbd
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded-md border border-line bg-canvas px-1.5 py-0.5 font-sans text-[11px] font-medium text-ink-3 sm:block"
-          >
-            ⌘K
-          </kbd>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>A busca de alunos chega com o módulo Alunos.</TooltipContent>
-    </Tooltip>
+    <form
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const q = inputRef.current?.value.trim();
+        router.push(q ? `/alunos?q=${encodeURIComponent(q)}` : "/alunos");
+      }}
+      className="relative w-full md:w-64 xl:w-72"
+    >
+      <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" />
+      <input
+        ref={inputRef}
+        type="search"
+        name="q"
+        aria-label="Buscar aluno"
+        placeholder="Buscar aluno"
+        className="h-9 w-full rounded-xl border border-line bg-surface pr-12 pl-9 text-sm text-ink shadow-card outline-none transition-colors placeholder:text-ink-3 hover:border-line-strong focus:border-brand-300 focus:ring-3 focus:ring-ring/20"
+      />
+      <kbd
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded-md border border-line bg-canvas px-1.5 py-0.5 font-sans text-[11px] font-medium text-ink-3 sm:block"
+      >
+        ⌘K
+      </kbd>
+    </form>
   );
 }
 
@@ -56,7 +76,7 @@ export function DashboardHeader({ firstName, onCustomize }: DashboardHeaderProps
 
         <div className="flex w-full items-center gap-2 md:w-auto">
           <div className="min-w-0 flex-1 md:flex-none">
-            <StudentSearchSoon />
+            <StudentQuickSearch />
           </div>
           <Button variant="outline" onClick={onCustomize} className="px-3 sm:px-3.5">
             <SlidersHorizontal aria-hidden />

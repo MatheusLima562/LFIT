@@ -33,7 +33,7 @@ export function ExpiringAccessCard({ students }: { students: StudentRef[] }) {
         </ul>
       )}
       <CardFooter>
-        <CardLink href="/alunos">Ver todos</CardLink>
+        <CardLink href="/alunos?sort=expires:asc">Ver todos</CardLink>
       </CardFooter>
     </Card>
   );

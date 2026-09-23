@@ -195,6 +195,16 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
                       <ul className="ml-[21px] overflow-hidden border-l border-line pl-3" inert={!expanded}>
                         {item.children.map((child) => {
                           const childActive = pathname === child.href;
+                          if (child.status === "soon") {
+                            return (
+                              <li key={child.href} className="first:mt-0.5 last:mb-1">
+                                <span aria-disabled="true" className="flex h-8 cursor-default items-center gap-2 rounded-md px-2.5 text-[13px] text-ink-3">
+                                  <span className="truncate">{child.label}</span>
+                                  <SoonBadge />
+                                </span>
+                              </li>
+                            );
+                          }
                           return (
                             <li key={child.href} className="first:mt-0.5 last:mb-1">
                               <Link

@@ -81,6 +81,13 @@ export async function setNewPassword(input: unknown): Promise<ActionResult> {
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { ok: false, error: t.errors.generic };
 
+  // Alunos ainda não têm app (Fase 3): encerra a sessão e mostra a confirmação.
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.claims.sub).maybeSingle();
+  if (profile?.role === "student") {
+    await supabase.auth.signOut();
+    redirect("/acesso/pronto");
+  }
+
   redirect("/");
 }
 

@@ -64,14 +64,20 @@ Atual **[existe]**:
 proxy.ts                   # (Next 16) renova a sessão Supabase e protege a área logada
 app/
   layout.tsx, providers.tsx, globals.css   # tema, tooltips, toasts, tokens
-  (auth)/                  # entrar, esqueci-senha, redefinir-senha, convite, criar-conta (flag)
+  (auth)/                  # entrar, esqueci-senha, redefinir-senha, convite, criar-conta (flag),
+                           # acesso/[token] (link do aluno) e acesso/pronto
   (app)/                   # área logada (requireStaff + AppShell); page.tsx = dashboard
+    alunos/                # "Meus alunos" (lista/cards, filtros na URL) + exportar/route.ts (CSV/XLSX)
   auth/confirm, auth/sair  # route handlers (links de e-mail, logout forçado)
 features/
   auth/                    # schemas.ts (Zod), actions.ts (server actions), components/
   organizations/queries.ts # uso do plano (RPC organization_plan_usage)
+  students/                # search-params.ts (estado da URL), queries.ts, actions.ts, account.ts,
+                           # access-actions.ts (resgate do link do aluno), components/
 components/
-  ui/                      # shadcn (minúsculos) + próprios (Card, StatTabs, EmptyState, ProgressBar…)
+  ui/                      # shadcn (minúsculos) + próprios (Card, StatTabs, EmptyState, ProgressBar,
+                           # data-table, confirm-dialog, password-input…)
+  students/                # StatusBadge, GroupChip, StudentAvatar
   layout/                  # AppShell, Sidebar, UserMenu, ThemeToggle, Logo
   dashboard/               # cards do dashboard (ainda com dados mockados — etapa 1.6)
 lib/
@@ -84,6 +90,7 @@ data/                      # navegação (status de cada módulo), ações rápi
 supabase/migrations/       # schema, RLS e RPCs
 scripts/                   # seed.mts, bootstrap-owner.mts
 tests/db/                  # testes de RLS e regras (Vitest, contra o lfit-dev)
+tests/unit/                # testes de lógica pura (sem banco)
 ```
 
 ## Convenções
@@ -100,6 +107,13 @@ tests/db/                  # testes de RLS e regras (Vitest, contra o lfit-dev)
   só itens com `status: "available"` navegam; `CardLink` e o banner consultam `isAvailableRoute()`.
   Ao entregar um módulo, marque-o como `available`.
 - Remover acentos: use `stripAccents`/`searchKey`/`slugify` de `lib/text.ts` (não reescreva o regex).
+- Server Action que precisa levar a um Route Handler que grava cookies (ex.: `/auth/confirm`): devolva a
+  URL e navegue com `window.location.assign` no cliente. `redirect()` da action faz uma busca RSC e a
+  sessão não chega à página seguinte.
+- Links de uso único enviados por WhatsApp/e-mail: nunca consumir no GET (pré-visualizações fazem GET).
+  Mostre um botão e consuma no POST (ver `/acesso/[token]`).
+- Ações sensíveis com a secret key (Auth admin): primeiro uma RPC com a sessão do usuário autoriza e
+  audita (ex.: `record_student_access_email`); só depois o `createAdminClient()`.
 - Contraste AA: texto pequeno usa `ink`/`ink-2`/`ink-3`; links em `brand-700`; botão primário usa
   `bg-primary` (não `brand-500`, que só passa 3:1 — ok para ícones, barras e gráficos).
 - Tema escuro: use os tokens (`surface`, `canvas`, `line`, `ink*`, `brand-*`). Os tons 50–200 e 700–800
@@ -162,4 +176,6 @@ effective_status =
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
   enviados pelo usuário. "Allow new users to sign up" deve ficar DESLIGADO no Supabase Auth.
 - Autenticação do treinador pronta (login, recuperação, convite, logout, rate limit). Sem deploy ainda.
+- Módulo Alunos disponível: "Meus alunos" (1.2). Novo/editar aluno (1.3), cadastro público (1.4) e
+  grupos/turmas/equipe (1.5) aparecem como "Em breve".
 - Roadmap: Fase 1 alunos → Fase 2 treinos e exercícios → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.

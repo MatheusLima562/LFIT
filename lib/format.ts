@@ -30,3 +30,25 @@ export function initials(name: string) {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
+
+const dateBR = new Intl.DateTimeFormat(LOCALE, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
+
+/** dd/mm/aaaa no fuso de São Paulo. Datas puras (yyyy-mm-dd) não sofrem deslocamento de fuso. */
+export function formatDate(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return dateBR.format(new Date(value));
+}
+
+/** Matrícula com zeros à esquerda (só na exibição). */
+export const formatEnrollment = (n: number) => `#${String(n).padStart(4, "0")}`;
+
+/** Idade completa em anos a partir de yyyy-mm-dd. */
+export function ageFrom(birthDate: string, today = new Date()) {
+  const [y, m, d] = birthDate.split("-").map(Number);
+  let age = today.getFullYear() - y;
+  if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age -= 1;
+  return age;
+}

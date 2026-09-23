@@ -97,7 +97,7 @@ export function SatisfactionCard({ data, referenceDate }: SatisfactionCardProps)
       )}
 
       <CardFooter className="relative">
-        <CardLink href="/alunos?aba=feedbacks">Ver todos feedbacks</CardLink>
+        <CardLink href="/feedbacks">Ver todos feedbacks</CardLink>
       </CardFooter>
     </Card>
   );

@@ -27,10 +27,11 @@ export const navigation: NavSection[] = [
         label: "Alunos",
         href: "/alunos",
         icon: Users,
+        status: "available",
         children: [
           { label: "Todos os alunos", href: "/alunos" },
-          { label: "Anamneses", href: "/alunos/anamneses" },
-          { label: "Grupos", href: "/alunos/grupos" },
+          { label: "Anamneses", href: "/alunos/anamneses", status: "soon" },
+          { label: "Grupos especiais", href: "/alunos/grupos", status: "soon" },
         ],
       },
       { id: "turmas", label: "Turmas", href: "/turmas", icon: UsersRound },
@@ -97,14 +98,18 @@ const allItems = () => navigation.flatMap((section) => section.items);
 
 /**
  * A rota existe no app? Usado para desabilitar links para módulos "em breve"
- * (nada de links mortos). Query string é ignorada.
+ * (nada de links mortos). Query string é ignorada. Subitens têm status próprio.
  */
 export function isAvailableRoute(href: string) {
   const path = href.split("?")[0];
-  const item = allItems().find(
-    (i) => i.href === path || path.startsWith(`${i.href}/`) || i.children?.some((c) => c.href === path),
-  );
-  return item?.status === "available";
+  for (const item of allItems()) {
+    const child = item.children?.find((c) => c.href === path);
+    if (child) return item.status === "available" && child.status !== "soon";
+    if (item.href === path || (item.href !== "/" && path.startsWith(`${item.href}/`))) {
+      return item.status === "available";
+    }
+  }
+  return false;
 }
 
 export function isRouteActive(pathname: string, href: string) {

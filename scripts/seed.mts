@@ -45,6 +45,9 @@ function ok(result: { error: { message: string } | null }, what: string) {
 async function reset() {
   const { data: org } = await admin.from("organizations").select("id").eq("slug", SLUG).maybeSingle();
   if (org) {
+    // Contas de acesso criadas para alunos (link de acesso/convite) também saem.
+    const { data: studentUsers } = await admin.from("students").select("user_id").eq("organization_id", org.id).not("user_id", "is", null);
+    for (const s of studentUsers ?? []) await admin.auth.admin.deleteUser(s.user_id as string);
     const { error } = await admin.from("organizations").delete().eq("id", org.id);
     if (error) throw new Error(`apagar organização: ${error.message}`);
   }
