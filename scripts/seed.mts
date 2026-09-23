@@ -114,6 +114,153 @@ function fakeStudent(i: number) {
   };
 }
 
+/** Fase 2: condições ligadas aos grupos, camada de contraindicações da org (fictícia) e treinos. */
+async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelho, ombro]: string[], ids: string[]) {
+  const conds = must(await owner.from("health_conditions").select("id, key").not("key", "is", null), "condições") as { id: string; key: string }[];
+  const cond = (key: string) => conds.find((c) => c.key === key)!.id;
+  const hernia = must(
+    await owner.from("health_conditions").insert({ organization_id: orgId, name: "Hérnia – intolerância à flexão" }).select("id").single(),
+    "condição própria",
+  ).id;
+  ok(
+    await owner.from("special_group_conditions").insert([
+      { organization_id: orgId, group_id: coluna, condition_id: cond("lombar") },
+      { organization_id: orgId, group_id: coluna, condition_id: hernia },
+      { organization_id: orgId, group_id: joelho, condition_id: cond("joelho") },
+      { organization_id: orgId, group_id: ombro, condition_id: cond("ombro") },
+    ]),
+    "grupos ↔ condições",
+  );
+
+  const exs = must(await owner.from("exercises").select("id, name").is("organization_id", null), "exercícios") as { id: string; name: string }[];
+  const ex = (name: string) => {
+    const found = exs.find((e) => e.name === name);
+    if (!found) throw new Error(`Exercício não encontrado: ${name}`);
+    return found.id;
+  };
+
+  // Exemplos para exercitar os alertas no dev — NÃO são as regras globais (essas só após revisão).
+  ok(
+    await owner.from("exercise_contraindications").insert([
+      { organization_id: orgId, exercise_id: ex("Abdominal supra"), condition_id: hernia, level: "avoid", note: "Flexão repetida da coluna (exemplo do seed)" },
+      { organization_id: orgId, exercise_id: ex("Agachamento livre com barra"), condition_id: cond("lombar"), level: "caution", note: "Carga axial; preferir goblet (exemplo do seed)" },
+      { organization_id: orgId, exercise_id: ex("Levantamento terra romeno"), condition_id: hernia, level: "avoid", note: "Flexão de quadril sob carga (exemplo do seed)" },
+      { organization_id: orgId, exercise_id: ex("Cadeira extensora"), condition_id: cond("joelho"), level: "caution", note: "Limitar amplitude final (exemplo do seed)" },
+      { organization_id: orgId, exercise_id: ex("Tríceps no banco"), condition_id: cond("ombro"), level: "avoid", note: "Extensão de ombro sob carga (exemplo do seed)" },
+    ]),
+    "contraindicações da organização",
+  );
+
+  const item = (name: string, extra: Record<string, unknown> = {}) => ({ exercise_id: ex(name), sets: 3, reps: "10–12", rest_seconds: 60, ...extra });
+  const hipertrofia = must(
+    await owner.rpc("save_training_plan", {
+      p_plan: {
+        name: "Hipertrofia ABC",
+        goal: "Hipertrofia",
+        level: "intermediario",
+        workouts: [
+          {
+            label: "A",
+            name: "Peito, ombro e tríceps",
+            items: [
+              item("Supino reto com barra", { sets: 4, reps: "8–10", load_value: 40, load_unit: "kg", rest_seconds: 90 }),
+              item("Crucifixo com halteres", { group_key: "bi1" }),
+              item("Crossover na polia", { group_key: "bi1" }),
+              item("Desenvolvimento com halteres"),
+              item("Tríceps na polia", { group_key: "bi2" }),
+              item("Tríceps no banco", { group_key: "bi2" }),
+            ],
+          },
+          {
+            label: "B",
+            name: "Costas e bíceps",
+            items: [
+              item("Puxada frontal na polia", { sets: 4 }),
+              item("Remada baixa sentada na polia"),
+              item("Rosca direta com barra", { group_key: "bi1" }),
+              item("Rosca martelo", { group_key: "bi1" }),
+            ],
+          },
+          {
+            label: "C",
+            name: "Pernas",
+            items: [
+              item("Agachamento livre com barra", { sets: 4, reps: "8–10", rest_seconds: 120, tempo: "3010" }),
+              item("Leg press 45°"),
+              item("Cadeira extensora", { group_key: "tri1" }),
+              item("Mesa flexora", { group_key: "tri1" }),
+              item("Panturrilha em pé", { group_key: "tri1", reps: "15" }),
+              item("Abdominal supra", { reps: "20" }),
+            ],
+          },
+        ],
+      },
+    }),
+    "modelo Hipertrofia ABC",
+  ) as string;
+
+  const coluna_ = must(
+    await owner.rpc("save_training_plan", {
+      p_plan: {
+        name: "Coluna saudável",
+        goal: "Estabilidade de tronco e controle motor",
+        level: "iniciante",
+        notes: "Progredir carga só sem dor (≤ 3/10) nas 24h seguintes.",
+        workouts: [
+          {
+            label: "A",
+            name: "Estabilidade",
+            items: [
+              item("Dead bug", { reps: "8 por lado", rest_seconds: 45 }),
+              item("Bird dog", { reps: "8 por lado", rest_seconds: 45 }),
+              item("Prancha lateral", { reps: "20–30 s", rest_seconds: 45 }),
+              item("Pallof press", { reps: "10 por lado" }),
+            ],
+          },
+          {
+            label: "B",
+            name: "Força com coluna neutra",
+            items: [
+              item("Agachamento goblet", {
+                reps: "10",
+                sets_detail: [
+                  { set_type: "warmup", reps: "12", load_value: 8, load_unit: "kg", rest_seconds: 45 },
+                  { set_type: "work", reps: "10", load_value: 14, load_unit: "kg", rest_seconds: 75 },
+                  { set_type: "work", reps: "10", load_value: 14, load_unit: "kg", rest_seconds: 75 },
+                ],
+              }),
+              item("Elevação pélvica", {
+                sets_detail: [
+                  { set_type: "warmup", reps: "12", load_text: "sem carga" },
+                  { set_type: "work", reps: "10", load_value: 30, load_unit: "kg" },
+                  { set_type: "drop", reps: "até a falha", load_value: 20, load_unit: "kg" },
+                ],
+              }),
+              item("Remada unilateral com halter"),
+              item("Levantamento terra romeno", { notes: "Somente sem dor lombar" }),
+            ],
+          },
+        ],
+      },
+    }),
+    "modelo Coluna saudável",
+  ) as string;
+
+  // Planos de alunos: ativo em dia, ativo a vencer, ativo vencido e um rascunho.
+  const assign = async (template: string, student: string, startsIn: number, endsIn: number, activate = true) => {
+    const plan = must(
+      await owner.rpc("apply_template_to_student", { p_template_id: template, p_student_id: student, p_starts_on: dateOnly(startsIn), p_ends_on: dateOnly(endsIn) }),
+      "aplicar modelo",
+    ) as string;
+    if (activate) ok(await owner.rpc("activate_plan", { p_plan_id: plan }), "ativar plano");
+  };
+  await assign(coluna_, ids[0], -10, 50); // Dor na Coluna → alertas
+  await assign(hipertrofia, ids[4], -30, 4); // Dor no Joelho, a vencer
+  await assign(hipertrofia, ids[1], -60, -3); // vencido
+  await assign(hipertrofia, ids[2], -5, 55);
+  await assign(coluna_, ids[12], 0, 60, false); // rascunho
+}
+
 async function seed() {
   const existing = await admin.from("organizations").select("id").eq("slug", SLUG).maybeSingle();
   if (existing.data) {
@@ -222,6 +369,8 @@ async function seed() {
   for (const pnd of pendentes) {
     ok(await admin.rpc("submit_public_signup", { p_token: link.token, p_payload: pnd.payload, p_consent: pnd.consent }), "cadastro pendente");
   }
+
+  await seedTraining(owner, org.id, groups.map((g) => g.id), ids);
 
   const [usage] = must(await owner.rpc("organization_plan_usage"), "uso do plano") as { used: number; student_limit: number }[];
   console.log(`Seed concluído: ${ids.length} alunos (${usage.used}/${usage.student_limit} vagas ocupadas).`);

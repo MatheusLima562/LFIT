@@ -165,6 +165,23 @@ effective_status =
   no banco) — nunca magic link de login.
 - `audit_logs` para: desativar, expirar, excluir, resetar senha/acesso, alterar dados de saúde.
 
+### Treinos e exercícios (Fase 2)
+- `organization_id` nulo = **global** (biblioteca de exercícios, catálogo de condições, regras de
+  contraindicação): somente leitura para as organizações; muda só por migration.
+- **Regras globais de contraindicação só entram após revisão/aprovação do dono** (CSV em
+  `docs/revisao/contraindicacoes-sugeridas.csv`, coluna "aprovar"); aplicar apenas as linhas aprovadas,
+  numa migration própria. A biblioteca inicial foi publicada SEM contraindicações.
+- Organizações têm condições próprias e uma **camada própria de contraindicações** (inclusive sobre
+  exercícios globais). Níveis: `avoid` (evitar) e `caution` (cautela) + nota (≤ 300).
+- Alerta = grupos especiais do aluno → `special_group_conditions` → regras (globais + da org). Não
+  bloqueia o salvar. Nunca aparece na impressão nem em logs.
+- `training_plans` unifica plano de aluno e modelo (`student_id` nulo = modelo). Escrita só por RPC
+  (`save_training_plan` substitui a estrutura inteira). Agrupamentos (`group_key`) precisam ser
+  contíguos; séries detalhadas (`plan_item_sets`) são opcionais.
+- No máximo 1 plano `active` por aluno (ativar arquiva o anterior). O gatilho `sync_student_plan_end`
+  mantém `students.workout_plan_ends_at` = fim do plano ativo às 23:59:59 de São Paulo (base de
+  "treino a vencer / vencido / sem treino" — telas ainda não usam).
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias. A fórmula deve aparecer na UI.
@@ -191,7 +208,8 @@ Escritas em `students` não têm GRANT para `authenticated`: tudo passa por RPCs
 aplicam as regras (permissão, limite do plano, matrícula, auditoria) na mesma transação. Por isso o
 Security Advisor avisa que `authenticated` executa essas funções — **é intencional e aceito**, porque
 cada uma checa internamente `auth.uid()` → perfil → organização → papel antes de agir. Provas:
-`tests/db/security-definer.test.ts` (aluno e anônimo recusados em todas; sem efeitos colaterais).
+`tests/db/security-definer.test.ts` e `tests/db/training.test.ts` (aluno e anônimo recusados em todas;
+sem efeitos colaterais).
 
 | Quem pode | Funções | Checagem interna |
 |---|---|---|
@@ -199,6 +217,8 @@ cada uma checa internamente `auth.uid()` → perfil → organização → papel 
 | Staff (owner/trainer) | `create_student`, `log_students_export` | `private.require_staff()` |
 | Staff com acesso ao aluno | `update_student`, `deactivate_student`, `reactivate_student`, `expire_student`, `clear_student_expiration`, `soft_delete_student`, `create_access_link`, `record_student_access_email`, `request_anamnesis` | `private.lock_accessible_student()`: staff + mesma org + (owner ou professor responsável) |
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
+| Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
+| Alertas de contraindicação (Fase 2) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem só `hidden = true` (não revelam condição/grupo) |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
@@ -248,8 +268,10 @@ Checklist para toda função `SECURITY DEFINER` nova:
   descartados após aprovar/recusar. "Gerar novo link" revoga o anterior.
 - Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
   de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
+- Fase 2 em andamento: 2.1 (banco) pronta — biblioteca global com 52 exercícios, 11 condições
+  globais, sem regras globais de contraindicação (aguardando revisão do CSV). UI a partir da 2.2.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** treinos e exercícios (biblioteca + montador +
   alertas de contraindicação) → **Fase 3 mínima** (app do aluno: treino do dia, registro série a série,
   dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **1.6** dashboard com dados reais + job
-  diário de expiração → **1.7** suíte e2e formal (Playwright) → Fase 4 gestão e retenção. → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.
+  diário de expiração → **1.7** suíte e2e formal (Playwright) → Fase 4 gestão e retenção.
