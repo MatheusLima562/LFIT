@@ -221,7 +221,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
 
 ## Backlog e decisões adiadas
 - **Importação do MFIT** (alunos e treinos via CSV/planilha) — etapa obrigatória **antes do uso com
-  alunos reais**. Deve respeitar limite do plano, matrícula, consentimento de saúde (importar grupos só
+  alunos reais**, depois da Fase 3 mínima. Deve respeitar limite do plano, matrícula, consentimento de saúde (importar grupos só
   como "declarado") e auditoria; relatório de linhas rejeitadas.
 - **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
   `npm run bootstrap:owner` e trainers de teste existem só no seed. O item "Equipe" segue "Em breve".
@@ -249,5 +249,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
   de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap: Fase 1 alunos → Fase 2 treinos e exercícios (biblioteca + montador) → **Importação do MFIT**
-  (antes de alunos reais) → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** treinos e exercícios (biblioteca + montador +
+  alertas de contraindicação) → **Fase 3 mínima** (app do aluno: treino do dia, registro série a série,
+  dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **1.6** dashboard com dados reais + job
+  diário de expiração → **1.7** suíte e2e formal (Playwright) → Fase 4 gestão e retenção. → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.
