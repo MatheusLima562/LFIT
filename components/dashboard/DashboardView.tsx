@@ -58,8 +58,8 @@ export function DashboardView({ firstName, banner, cards }: DashboardViewProps) 
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
         {bannerVisible && <DashboardBanner banner={banner} onDismiss={() => setBannerVisible(false)} />}
 
-        {/* Ações ficam ocultas até existir ao menos uma disponível (etapa 1.3). */}
-        <QuickActions onAction={() => {}} />
+        {/* Só ações disponíveis aparecem (nada de botões mortos). */}
+        <QuickActions />
 
         {!hidden.has("overview") && cards.overview}
 

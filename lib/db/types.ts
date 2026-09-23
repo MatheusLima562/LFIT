@@ -1110,6 +1110,10 @@ export type Database = {
         }
       }
       reject_signups: { Args: { p_ids: string[] }; Returns: number }
+      request_anamnesis: {
+        Args: { p_student_id: string; p_template_id: string }
+        Returns: string
+      }
       soft_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
         Returns: undefined

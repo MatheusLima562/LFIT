@@ -202,6 +202,8 @@ export interface QuickAction {
   id: string;
   /** Só "available" fica clicável; as demais aparecem como "Em breve". */
   status?: "available";
+  /** Destino da ação quando disponível. */
+  href?: string;
   label: string;
   /** Rótulo curto usado no dropdown "+ Novo". */
   menuLabel: string;

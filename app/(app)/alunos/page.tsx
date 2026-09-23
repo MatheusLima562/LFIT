@@ -3,8 +3,17 @@ import { Globe, SearchX, UserPlus, Users } from "lucide-react";
 import { requireStaff } from "@/lib/auth/session";
 import { createClient } from "@/lib/db/server";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
-import { getStudentFilterOptions, getStudentTabCounts, listStudents } from "@/features/students/queries";
-import { parseStudentListParams } from "@/features/students/search-params";
+import Link from "next/link";
+import { z } from "zod";
+import {
+  getStudentFilterOptions,
+  getStudentForEdit,
+  getStudentFormOptions,
+  getStudentTabCounts,
+  listStudents,
+} from "@/features/students/queries";
+import { parseStudentListParams, studentListHref } from "@/features/students/search-params";
+import { StudentFormDialog } from "@/features/students/components/StudentFormDialog";
 import { StudentsCards } from "@/features/students/components/StudentsCards";
 import { StudentsList } from "@/features/students/components/StudentsList";
 import { StudentsPagination } from "@/features/students/components/StudentsPagination";
@@ -43,9 +52,22 @@ function SoonButton({ icon, label, variant }: { icon: React.ReactNode; label: st
   );
 }
 
+/** Modal controlado pela URL: ?novo=1 ou ?editar=<id>. */
+function parseDialog(raw: Record<string, string | string[] | undefined>) {
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const editId = z.uuid().safeParse(first(raw.editar));
+  if (editId.success) return { mode: "edit" as const, id: editId.data };
+  if (first(raw.novo) === "1") return { mode: "create" as const, id: null };
+  return null;
+}
+
 export default async function StudentsPage({ searchParams }: PageProps<"/alunos">) {
   const session = await requireStaff();
-  const params = parseStudentListParams(await searchParams);
+  const raw = await searchParams;
+  const params = parseStudentListParams(raw);
+  const dialog = parseDialog(raw);
+  const listHref = studentListHref(params);
+  const newHref = `${listHref}${listHref.includes("?") ? "&" : "?"}novo=1`;
 
   const [{ rows, total }, counts, plan, filters, view] = await Promise.all([
     listStudents(params),
@@ -54,6 +76,10 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
     getStudentFilterOptions(),
     getViewPreference(session.userId),
   ]);
+
+  const [formOptions, editing] = dialog
+    ? await Promise.all([getStudentFormOptions(), dialog.id ? getStudentForEdit(dialog.id) : Promise.resolve(null)])
+    : [null, null];
 
   const filtered = Boolean(params.q || params.turma || params.grupo);
 
@@ -66,7 +92,13 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
         </div>
         <div className="flex items-center gap-2">
           <SoonButton icon={<Globe aria-hidden />} label={t.publicSignups} variant="outline" />
-          <SoonButton icon={<UserPlus aria-hidden />} label={t.add} />
+          <Button asChild>
+            <Link href={newHref} scroll={false}>
+              <UserPlus aria-hidden />
+              <span className="hidden sm:inline">{t.add}</span>
+              <span className="sr-only sm:hidden">{t.add}</span>
+            </Link>
+          </Button>
         </div>
       </header>
 
@@ -91,6 +123,20 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
           )}
           <StudentsPagination params={params} total={total} />
         </>
+      )}
+
+      {dialog && formOptions && (
+        <StudentFormDialog
+          key={dialog.id ?? "novo"}
+          mode={dialog.mode}
+          student={editing}
+          options={formOptions}
+          role={session.role === "owner" ? "owner" : "trainer"}
+          currentUserId={session.userId}
+          organizationId={session.organizationId}
+          planLimit={plan.limit}
+          closeHref={listHref}
+        />
       )}
     </div>
   );

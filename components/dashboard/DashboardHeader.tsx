@@ -66,6 +66,7 @@ function StudentQuickSearch() {
 }
 
 export function DashboardHeader({ firstName, onCustomize }: DashboardHeaderProps) {
+  const router = useRouter();
   return (
     <header className="border-b border-line bg-surface/85 backdrop-blur-md lg:sticky lg:top-0 lg:z-20">
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
@@ -96,7 +97,12 @@ export function DashboardHeader({ firstName, onCustomize }: DashboardHeaderProps
                 const Icon = action.icon;
                 const available = action.status === "available";
                 return (
-                  <DropdownMenuItem key={action.id} disabled={!available} className="gap-3 py-2">
+                  <DropdownMenuItem
+                    key={action.id}
+                    disabled={!available}
+                    onSelect={() => available && action.href && router.push(action.href)}
+                    className="gap-3 py-2"
+                  >
                     <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
                       <Icon className="size-4" />
                     </span>

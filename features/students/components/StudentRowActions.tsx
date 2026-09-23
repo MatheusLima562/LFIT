@@ -12,6 +12,8 @@ import {
   Trash2,
   TimerOff,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { messages } from "@/messages/pt-BR";
@@ -58,6 +60,12 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
   const [confirm, setConfirm] = useState<Pending>(null);
   const [pending, startTransition] = useTransition();
   const wa = whatsappHref(student);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const editParams = new URLSearchParams(searchParams);
+  editParams.delete("novo");
+  editParams.set("editar", student.id);
+  const editHref = `${pathname}?${editParams}`;
 
   const report = (result: StudentActionResult) => {
     if (result.ok) toast.success(result.message);
@@ -99,13 +107,13 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <span tabIndex={0} aria-label={`${t.menu.edit} (${messages.app.soon})`} className="grid size-7 place-items-center rounded-lg text-ink-3/50">
-            <Pencil aria-hidden className="size-4" />
-          </span>
+          <Button asChild variant="ghost" size="icon-sm" className="text-ink-3 hover:text-ink">
+            <Link href={editHref} scroll={false} aria-label={`${t.menu.edit}: ${student.fullName}`}>
+              <Pencil aria-hidden />
+            </Link>
+          </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          {t.menu.edit} · {messages.app.soon}
-        </TooltipContent>
+        <TooltipContent>{t.menu.edit}</TooltipContent>
       </Tooltip>
 
       <DropdownMenu>

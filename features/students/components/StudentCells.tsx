@@ -12,7 +12,7 @@ const t = messages.students;
 export function StudentIdentity({ student, showEnrollment = true }: { student: StudentRow; showEnrollment?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      <StudentAvatar name={student.fullName} size="lg" />
+      <StudentAvatar name={student.fullName} photoUrl={student.photoUrl} size="lg" />
       <div className="min-w-0">
         <p className="truncate text-[13.5px] font-semibold text-ink">{student.fullName}</p>
         {showEnrollment && (

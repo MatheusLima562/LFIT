@@ -18,7 +18,8 @@ por isso tudo é **multi-tenant desde o início**.
 | Ícones / gráficos | lucide-react / recharts | [existe] |
 | Banco, Auth, Storage | Supabase (Postgres 17 + RLS), migrations em `supabase/migrations/` | [existe — schema da Fase 1] |
 | Validação / formulários | Zod 4 (mesmo schema no client e no server) + React Hook Form | [existe] |
-| Dados no client | TanStack Query | [planejado] |
+| Telefone / datas | libphonenumber-js (E.164, máscara por país) · react-day-picker (calendário) | [existe] |
+| Dados no client | Server Components + Server Actions (TanStack Query **não** adotado por enquanto: sem necessidade de cache no cliente até a 1.3; reavaliar quando houver listas interativas no cliente) | — |
 | Testes | Vitest (banco/RLS em `tests/db/`) · Playwright (e2e) | [existe] · [planejado] |
 | Deploy | Vercel (+ Vercel Cron para jobs diários) | [planejado] |
 
@@ -72,8 +73,8 @@ app/
 features/
   auth/                    # schemas.ts (Zod), actions.ts (server actions), components/
   organizations/queries.ts # uso do plano (RPC organization_plan_usage)
-  students/                # search-params.ts (estado da URL), queries.ts, actions.ts, account.ts,
-                           # access-actions.ts (resgate do link do aluno), components/
+  students/                # search-params.ts (estado da URL), schemas.ts (form Zod), queries.ts, actions.ts,
+                           # account.ts, access-actions.ts (link do aluno), components/ (lista, form/, modal)
 components/
   ui/                      # shadcn (minúsculos) + próprios (Card, StatTabs, EmptyState, ProgressBar,
                            # data-table, confirm-dialog, password-input…)
@@ -85,6 +86,8 @@ lib/
   auth/session.ts          # getSession / requireStaff
   security/rate-limit.ts   # rate limit via RPC hit_rate_limit
   text.ts, format.ts, utils.ts
+  dates.ts                 # dd/mm/aaaa ↔ ISO, fim do dia em SP, máscara
+  phone.ts                 # países (pt-BR), máscara, E.164
 messages/pt-BR.ts          # textos da UI + tradução dos códigos de erro das RPCs
 data/                      # navegação (status de cada módulo), ações rápidas, mocks do dashboard
 supabase/migrations/       # schema, RLS e RPCs
@@ -184,6 +187,9 @@ effective_status =
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
   enviados pelo usuário. "Allow new users to sign up" deve ficar DESLIGADO no Supabase Auth.
 - Autenticação do treinador pronta (login, recuperação, convite, logout, rate limit). Sem deploy ainda.
-- Módulo Alunos disponível: "Meus alunos" (1.2). Novo/editar aluno (1.3), cadastro público (1.4) e
-  grupos/turmas/equipe (1.5) aparecem como "Em breve".
+- Módulo Alunos disponível: "Meus alunos" (1.2) e modal Novo/Editar (1.3, via `?novo=1` / `?editar=<id>`).
+  Cadastro público (1.4) e grupos/turmas/equipe (1.5) aparecem como "Em breve".
+- Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
+  de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
+- Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - Roadmap: Fase 1 alunos → Fase 2 treinos e exercícios → Fase 3 app do aluno (PWA) → Fase 4 gestão e retenção.

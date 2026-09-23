@@ -11,6 +11,8 @@ import type { QuickAction } from "@/types/dashboard";
 export const quickActions: QuickAction[] = [
   {
     id: "aluno",
+    status: "available",
+    href: "/alunos?novo=1",
     label: "Cadastrar aluno",
     menuLabel: "Aluno",
     description: "Convide um aluno para o app com acesso aos treinos.",
