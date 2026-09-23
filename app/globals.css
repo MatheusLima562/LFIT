@@ -1,26 +1,65 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  /* Marca — laranja/coral */
+  --color-brand-50: #fff5f0;
+  --color-brand-100: #ffe8dc;
+  --color-brand-200: #ffcfb8;
+  --color-brand-300: #ffad88;
+  --color-brand-400: #fa8554;
+  --color-brand-500: #f0642d;
+  --color-brand-600: #db4f19;
+  --color-brand-700: #b53e13;
+
+  /* Superfícies e linhas */
+  --color-canvas: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-line: #ebeae6;
+  --color-line-strong: #dddbd5;
+
+  /* Texto */
+  --color-ink: #1c1b19;
+  --color-ink-2: #57544e;
+  --color-ink-3: #8a867f;
+
+  /* Séries de gráfico (validadas para daltonismo e contraste) */
+  --color-series-1: #f0642d;
+  --color-series-2: #7c5cfc;
+  --color-series-3: #1ba39c;
+
+  --shadow-card: 0 1px 2px rgb(28 27 25 / 0.04), 0 1px 1px rgb(28 27 25 / 0.02);
+  --shadow-pop: 0 12px 32px -8px rgb(28 27 25 / 0.18), 0 2px 6px rgb(28 27 25 / 0.06);
+
+  --animate-live: live 1.8s ease-out infinite;
+
+  @keyframes live {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
   }
 }
 
+html {
+  color-scheme: light;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Números alinhados em métricas */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
