@@ -11,7 +11,7 @@ import { parseStudentListParams } from "@/features/students/search-params";
 const EXPORT_LIMIT = 5000;
 const t = messages.students;
 
-const headers = [
+const baseHeaders = [
   t.columns.enrollment,
   "Nome",
   t.columns.email,
@@ -21,11 +21,11 @@ const headers = [
   t.columns.trainer,
   t.columns.status,
   "Expiração do acesso",
-  t.columns.groups,
 ];
 
-function toCells(s: StudentRow) {
-  return [
+/** Grupos especiais são dado de saúde: só entram com opt-in explícito (`saude=1`). */
+function toCells(s: StudentRow, includeHealth: boolean) {
+  const cells: (string | number)[] = [
     formatEnrollment(s.enrollmentNumber),
     s.fullName,
     s.email,
@@ -35,12 +35,15 @@ function toCells(s: StudentRow) {
     s.trainerName ?? "",
     t.status[s.status],
     s.accessExpiresAt ? formatDate(s.accessExpiresAt) : "",
-    s.groups.map((g) => g.name).join(", "),
   ];
+  if (includeHealth) cells.push(s.groups.map((g) => g.name).join(", "));
+  return cells;
 }
 
+const headersFor = (includeHealth: boolean) => (includeHealth ? [...baseHeaders, t.columns.groups] : baseHeaders);
+
 /** CSV com ";" e BOM UTF-8 — abre corretamente no Excel em pt-BR. */
-function toCsv(rows: StudentRow[]) {
+function toCsv(rows: StudentRow[], includeHealth: boolean) {
   const escape = (v: string | number) => {
     const s = String(v);
     // Prefixo contra injeção de fórmula em planilhas (=, +, -, @). Telefones E.164
@@ -49,16 +52,18 @@ function toCsv(rows: StudentRow[]) {
     const safe = !isE164 && /^[=+\-@]/.test(s) ? `'${s}` : s;
     return /[";\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
   };
-  const lines = [headers, ...rows.map(toCells)].map((cells) => cells.map(escape).join(";"));
+  const lines = [headersFor(includeHealth), ...rows.map((r) => toCells(r, includeHealth))].map((cells) =>
+    cells.map(escape).join(";"),
+  );
   return `\uFEFF${lines.join("\r\n")}`;
 }
 
-async function toXlsx(rows: StudentRow[]) {
+async function toXlsx(rows: StudentRow[], includeHealth: boolean) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "LFit";
   const sheet = workbook.addWorksheet(t.title);
-  sheet.addRow(headers).font = { bold: true };
-  rows.forEach((s) => sheet.addRow(toCells(s)));
+  sheet.addRow(headersFor(includeHealth)).font = { bold: true };
+  rows.forEach((s) => sheet.addRow(toCells(s, includeHealth)));
   sheet.columns.forEach((col) => (col.width = 22));
   sheet.views = [{ state: "frozen", ySplit: 1 }];
   return workbook.xlsx.writeBuffer();
@@ -71,18 +76,32 @@ export async function GET(request: NextRequest) {
   const search = Object.fromEntries(request.nextUrl.searchParams);
   const format = search.format === "xlsx" ? "xlsx" : "csv";
   const params = parseStudentListParams(search);
+  const includeHealth = search.saude === "1";
+
+  // Filtrar por grupo especial também revela dado de saúde: exige o mesmo opt-in.
+  if (params.grupo && !includeHealth) {
+    return new NextResponse("Exportar filtrando por grupo especial exige confirmação de dados de saúde.", { status: 400 });
+  }
+
   const { rows } = await listStudents(params, { limit: EXPORT_LIMIT });
 
   const supabase = await createClient();
   await supabase.rpc("log_students_export", {
     p_format: format,
     p_count: rows.length,
-    p_filters: { status: params.status, sort: params.sort, turma: params.turma ?? null, grupo: params.grupo ?? null, busca: Boolean(params.q) },
+    p_filters: {
+      status: params.status,
+      sort: params.sort,
+      turma: params.turma ?? null,
+      grupo: params.grupo ?? null,
+      busca: Boolean(params.q),
+      dados_saude: includeHealth,
+    },
   });
 
   const stamp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
   const filename = `alunos-${params.status}-${stamp}.${format}`;
-  const body = format === "xlsx" ? await toXlsx(rows) : toCsv(rows);
+  const body = format === "xlsx" ? await toXlsx(rows, includeHealth) : toCsv(rows, includeHealth);
 
   return new NextResponse(body as BodyInit, {
     headers: {

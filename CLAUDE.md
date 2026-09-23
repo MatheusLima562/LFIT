@@ -110,6 +110,8 @@ tests/unit/                # testes de lógica pura (sem banco)
 - Server Action que precisa levar a um Route Handler que grava cookies (ex.: `/auth/confirm`): devolva a
   URL e navegue com `window.location.assign` no cliente. `redirect()` da action faz uma busca RSC e a
   sessão não chega à página seguinte.
+- Exportações: grupos especiais (dado de saúde) só com opt-in explícito (`saude=1` + confirmação na UI).
+  Filtrar por grupo especial também revela saúde e exige o mesmo opt-in — regra aplicada no servidor.
 - Links de uso único enviados por WhatsApp/e-mail: nunca consumir no GET (pré-visualizações fazem GET).
   Mostre um botão e consuma no POST (ver `/acesso/[token]`).
 - Ações sensíveis com a secret key (Auth admin): primeiro uma RPC com a sessão do usuário autoriza e
@@ -168,6 +170,12 @@ effective_status =
 - Rate limit em login, link público de cadastro e reset.
 - Direitos do titular: exportação dos dados do aluno e exclusão definitiva.
 - Segredos só em `.env*` (já no `.gitignore`); `service_role` do Supabase **somente no servidor**.
+
+## Decisões pendentes (rever antes de comercializar)
+- **"1 e-mail = 1 conta"**: cada usuário do Auth tem um único `profile` (uma organização). Um aluno que
+  treina com dois personais (duas organizações) não consegue ter acesso nas duas com o mesmo e-mail —
+  hoje o convite falha com "Este e-mail já tem acesso ao LFit em outra conta". Para vender a outros
+  personais, avaliar vínculo N:N usuário↔organização (ex.: `memberships`) e seleção de organização.
 
 ## Estado atual (set/2026)
 - Dashboard "Início" ainda com **dados mockados** (`data/dashboard.ts`).

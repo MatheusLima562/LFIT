@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileSpreadsheet, LayoutGrid, List, Search, X } from "lucide-react";
+import { Download, FileSpreadsheet, HeartPulse, LayoutGrid, List, Search, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { messages } from "@/messages/pt-BR";
@@ -10,8 +10,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { setStudentsView } from "../actions";
@@ -46,10 +49,15 @@ export function StudentsToolbar({ params, view, classes, groups }: StudentsToolb
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dispara só quando o texto muda
   }, [query]);
 
-  const exportHref = (format: "csv" | "xlsx") => {
+  type ExportFormat = "csv" | "xlsx";
+  const [healthExport, setHealthExport] = useState<ExportFormat | null>(null);
+  const exportHref = (format: ExportFormat, includeHealth = false) => {
     const href = studentListHref({ ...params, page: 1 }, "/alunos/exportar");
-    return `${href}${href.includes("?") ? "&" : "?"}format=${format}`;
+    return `${href}${href.includes("?") ? "&" : "?"}format=${format}${includeHealth ? "&saude=1" : ""}`;
   };
+  // Filtrar por grupo especial revela dado de saúde: toda exportação exige confirmação.
+  const groupFilterActive = Boolean(params.grupo);
+  const formatLabel = { csv: "CSV", xlsx: "XLSX" } as const;
 
   const hasFilters = Boolean(params.q || params.turma || params.grupo);
 
@@ -154,23 +162,53 @@ export function StudentsToolbar({ params, view, classes, groups }: StudentsToolb
                 {t.export}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <a href={exportHref("csv")} download>
+            <DropdownMenuContent align="end" className="w-60">
+              {!groupFilterActive && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <a href={exportHref("csv")} download>
+                      <FileSpreadsheet aria-hidden />
+                      {t.exportCsv}
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href={exportHref("xlsx")} download>
+                      <FileSpreadsheet aria-hidden />
+                      {t.exportXlsx}
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-ink-3">
+                <HeartPulse aria-hidden className="size-3.5" />
+                Com dados de saúde
+              </DropdownMenuLabel>
+              {(["csv", "xlsx"] as const).map((format) => (
+                <DropdownMenuItem key={format} onSelect={() => setHealthExport(format)}>
                   <FileSpreadsheet aria-hidden />
-                  {t.exportCsv}
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href={exportHref("xlsx")} download>
-                  <FileSpreadsheet aria-hidden />
-                  {t.exportXlsx}
-                </a>
-              </DropdownMenuItem>
+                  {format === "csv" ? t.exportCsv : t.exportXlsx}
+                  {!groupFilterActive && <span className="ml-auto text-xs text-ink-3">+ grupos</span>}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={healthExport !== null}
+        onOpenChange={(open) => !open && setHealthExport(null)}
+        title={t.exportHealthTitle}
+        description={groupFilterActive ? t.exportGroupFilterText : t.exportHealthText}
+        confirmLabel={t.exportConfirm(healthExport ? formatLabel[healthExport] : "")}
+        cancelLabel={t.confirm.cancel}
+        onConfirm={() => {
+          if (!healthExport) return;
+          window.location.assign(exportHref(healthExport, true));
+          setHealthExport(null);
+        }}
+      />
     </div>
   );
 }

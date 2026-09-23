@@ -85,6 +85,14 @@ export const messages = {
     export: "Exportar",
     exportCsv: "Planilha CSV",
     exportXlsx: "Excel (XLSX)",
+    exportHealthTitle: "Exportar dados de saúde?",
+    exportHealthText:
+      "Grupos especiais (ex.: “Dor na Coluna”) são dados de saúde — dados sensíveis pela LGPD. " +
+      "O arquivo sairá do sistema sem as proteções de acesso do LFit. Guarde-o com segurança e não o compartilhe.",
+    exportGroupFilterText:
+      "O filtro por grupo especial está ativo: o arquivo revela que todos os alunos listados pertencem a esse grupo " +
+      "(dado de saúde, sensível pela LGPD). Guarde-o com segurança e não o compartilhe.",
+    exportConfirm: (format: string) => `Exportar ${format} com dados de saúde`,
     add: "Adicionar aluno",
     searchPlaceholder: "Buscar por nome, e-mail ou matrícula",
     searchLabel: "Buscar alunos",
