@@ -43,7 +43,6 @@ describe.runIf(dbTestsEnabled)("isolamento multi-tenant (RLS)", () => {
       "students",
       "students_with_status",
       "special_groups",
-      "student_groups",
       "profiles",
       "organizations",
       "audit_logs",
@@ -71,10 +70,10 @@ describe.runIf(dbTestsEnabled)("isolamento multi-tenant (RLS)", () => {
       expect((await ids(trainerA2, "students")).map((r) => r.id)).toEqual([sA2.id]);
     });
 
-    it("grupos especiais do aluno (dado de saúde) só para o responsável e o owner", async () => {
+    it("grupos declarados pelo professor: só o responsável vê até o aluno confirmar", async () => {
       expect(await ids(trainerA1, "student_groups")).toHaveLength(1);
       expect(await ids(trainerA2, "student_groups")).toHaveLength(0);
-      expect(await ids(ownerA, "student_groups")).toHaveLength(1);
+      expect(await ids(ownerA, "student_groups")).toHaveLength(0);
     });
 
     it("trainer não lê auditoria nem cadastros pendentes", async () => {

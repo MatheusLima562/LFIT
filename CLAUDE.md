@@ -113,6 +113,8 @@ tests/unit/                # testes de lógica pura (sem banco)
 - Server Action que precisa levar a um Route Handler que grava cookies (ex.: `/auth/confirm`): devolva a
   URL e navegue com `window.location.assign` no cliente. `redirect()` da action faz uma busca RSC e a
   sessão não chega à página seguinte.
+- Constraints (CHECK) executam com o privilégio de quem faz o UPDATE: se chamarem função do schema
+  `private`, dê `grant execute` ao papel que escreve (ex.: `valid_signup_form_config`).
 - Exportações: grupos especiais (dado de saúde) só com opt-in explícito (`saude=1` + confirmação na UI).
   Filtrar por grupo especial também revela saúde e exige o mesmo opt-in — regra aplicada no servidor.
 - Links de uso único enviados por WhatsApp/e-mail: nunca consumir no GET (pré-visualizações fazem GET).
@@ -166,13 +168,53 @@ effective_status =
 
 ## Segurança e LGPD (obrigatório)
 - Grupos especiais (ex.: "Dor na Coluna"), anamnese e escala de dor são **dados de saúde**
-  (dados sensíveis, LGPD art. 11): exigem consentimento explícito com data (`consent_at`),
-  RLS restrita ao treinador responsável + owner, e **nunca** aparecem em URLs, logs ou e-mails.
+  (dados sensíveis, LGPD art. 11) e **nunca** aparecem em URLs, logs ou e-mails.
+- **Consentimento em duas etapas:** no cadastro pelo professor, ele DECLARA ter obtido o consentimento
+  (`health_consent_declared_at/_by`); o aluno CONFIRMA pessoalmente no primeiro acesso
+  (`health_data_consent_at`, tela `/acesso/consentimento`) ou recusa (dados de saúde apagados).
+  Sem a confirmação do titular, só o professor responsável (ou o owner, se não houver professor)
+  vê e altera os grupos — regra no RLS (`private.can_view_student_health`) e em `update_student`.
+- No cadastro público o consentimento é do próprio aluno (checkbox) e a saúde vem em texto livre; a
+  lista de grupos nunca é exposta publicamente — o owner classifica ao aprovar.
 - **Nunca** armazenar ou exibir senha em texto puro. Acesso do aluno é por link de convite /
   magic link com token de uso único e expiração.
 - Rate limit em login, link público de cadastro e reset.
 - Direitos do titular: exportação dos dados do aluno e exclusão definitiva.
 - Segredos só em `.env*` (já no `.gitignore`); `service_role` do Supabase **somente no servidor**.
+
+## Funções SECURITY DEFINER (aviso "authenticated can execute" do Security Advisor)
+
+Escritas em `students` não têm GRANT para `authenticated`: tudo passa por RPCs `SECURITY DEFINER` que
+aplicam as regras (permissão, limite do plano, matrícula, auditoria) na mesma transação. Por isso o
+Security Advisor avisa que `authenticated` executa essas funções — **é intencional e aceito**, porque
+cada uma checa internamente `auth.uid()` → perfil → organização → papel antes de agir. Provas:
+`tests/db/security-definer.test.ts` (aluno e anônimo recusados em todas; sem efeitos colaterais).
+
+| Quem pode | Funções | Checagem interna |
+|---|---|---|
+| **Aluno (titular), de propósito** | `get_my_health_consent_request`, `respond_my_health_consent` | escopo `students.user_id = auth.uid()`; só o próprio cadastro |
+| Staff (owner/trainer) | `create_student`, `log_students_export` | `private.require_staff()` |
+| Staff com acesso ao aluno | `update_student`, `deactivate_student`, `reactivate_student`, `expire_student`, `clear_student_expiration`, `soft_delete_student`, `create_access_link`, `record_student_access_email`, `request_anamnesis` | `private.lock_accessible_student()`: staff + mesma org + (owner ou professor responsável) |
+| Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
+| Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
+| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+
+Checklist para toda função `SECURITY DEFINER` nova:
+1. `set search_path = ''` e nomes totalmente qualificados.
+2. Primeira linha valida o chamador (`require_staff`/`require_owner`/`lock_accessible_student` ou
+   escopo por `auth.uid()`); nunca confiar em ids recebidos sem checar organização.
+3. Não receber linhas inteiras (`tabela`) como argumento em função DEFINER — o chamador monta a linha
+   que quiser (foi o bug de `student_effective_status`, hoje `SECURITY INVOKER`).
+4. `revoke execute ... from public, anon` (os privilégios padrão já fazem isso; manter explícito) e
+   `grant execute` só a quem precisa. Helpers de RLS ficam no schema `private` (fora da API).
+5. Teste em `tests/db/security-definer.test.ts` com usuário `student` e anônimo.
+
+## Auth: política de senha
+- Mínimo de **10 caracteres**: configurado em *Authentication → Sign In / Providers → Email →
+  Minimum password length* (projeto hospedado), em `supabase/config.toml` (local) e no schema Zod
+  (`PASSWORD_MIN_LENGTH` em `features/auth/schemas.ts`).
+- **Pendente (produção): ativar "Leaked password protection" (HaveIBeenPwned) — exige plano pago do
+  Supabase.** Aviso `auth_leaked_password_protection` do advisor é aceito no lfit-dev.
 
 ## Decisões pendentes (rever antes de comercializar)
 - **"1 e-mail = 1 conta"**: cada usuário do Auth tem um único `profile` (uma organização). Um aluno que
@@ -187,8 +229,13 @@ effective_status =
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
   enviados pelo usuário. "Allow new users to sign up" deve ficar DESLIGADO no Supabase Auth.
 - Autenticação do treinador pronta (login, recuperação, convite, logout, rate limit). Sem deploy ainda.
-- Módulo Alunos disponível: "Meus alunos" (1.2) e modal Novo/Editar (1.3, via `?novo=1` / `?editar=<id>`).
-  Cadastro público (1.4) e grupos/turmas/equipe (1.5) aparecem como "Em breve".
+- Módulo Alunos disponível: "Meus alunos" (1.2), modal Novo/Editar (1.3, via `?novo=1` / `?editar=<id>`)
+  e cadastro público (1.4: `/cadastro/[token]` + `/alunos/cadastros-publicos`, só owner). Grupos/turmas/
+  equipe (1.5) aparecem como "Em breve".
+- Cadastro público: honeypot → rate limit (5/h por IP, 100/h por link) → Turnstile → RPC com secret key.
+  Sem chaves do Turnstile em produção, o formulário mostra "temporariamente indisponível" (fail-closed);
+  em `npm run dev` usa as chaves de teste oficiais. Pendentes não ocupam vaga; dados enviados são
+  descartados após aprovar/recusar. "Gerar novo link" revoga o anterior.
 - Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
   de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.

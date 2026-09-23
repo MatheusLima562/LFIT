@@ -14,6 +14,7 @@ import {
 } from "@/features/students/queries";
 import { parseStudentListParams, studentListHref } from "@/features/students/search-params";
 import { StudentFormDialog } from "@/features/students/components/StudentFormDialog";
+import { countPendingSignups } from "@/features/signup/queries";
 import { StudentsCards } from "@/features/students/components/StudentsCards";
 import { StudentsList } from "@/features/students/components/StudentsList";
 import { StudentsPagination } from "@/features/students/components/StudentsPagination";
@@ -22,7 +23,6 @@ import { StudentsToolbar } from "@/features/students/components/StudentsToolbar"
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const t = messages.students;
 
@@ -33,23 +33,6 @@ async function getViewPreference(userId: string): Promise<"list" | "cards"> {
   const { data } = await supabase.from("profiles").select("preferences").eq("id", userId).single();
   const prefs = (data?.preferences ?? {}) as { studentsView?: string };
   return prefs.studentsView === "cards" ? "cards" : "list";
-}
-
-/** Botão de funcionalidade de etapa futura: visível, desabilitado e explicado. */
-function SoonButton({ icon, label, variant }: { icon: React.ReactNode; label: string; variant?: "outline" }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span tabIndex={0} className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-          <Button variant={variant} disabled aria-label={`${label} (${messages.app.soon})`}>
-            {icon}
-            <span className="hidden sm:inline">{label}</span>
-          </Button>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{messages.app.soon}</TooltipContent>
-    </Tooltip>
-  );
 }
 
 /** Modal controlado pela URL: ?novo=1 ou ?editar=<id>. */
@@ -69,12 +52,13 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
   const listHref = studentListHref(params);
   const newHref = `${listHref}${listHref.includes("?") ? "&" : "?"}novo=1`;
 
-  const [{ rows, total }, counts, plan, filters, view] = await Promise.all([
+  const [{ rows, total }, counts, plan, filters, view, pendingSignups] = await Promise.all([
     listStudents(params),
     getStudentTabCounts(),
     getOrganizationPlanUsage(),
     getStudentFilterOptions(),
     getViewPreference(session.userId),
+    session.role === "owner" ? countPendingSignups() : Promise.resolve(0),
   ]);
 
   const [formOptions, editing] = dialog
@@ -91,7 +75,21 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
           <p className="tabular mt-0.5 text-[13px] text-ink-2">{t.counter(plan.used, plan.limit)}</p>
         </div>
         <div className="flex items-center gap-2">
-          <SoonButton icon={<Globe aria-hidden />} label={t.publicSignups} variant="outline" />
+          {session.role === "owner" && (
+            <Button asChild variant="outline">
+              <Link href="/alunos/cadastros-publicos">
+                <Globe aria-hidden />
+                <span className="hidden sm:inline">{t.publicSignups}</span>
+                <span className="sr-only sm:hidden">{t.publicSignups}</span>
+                {pendingSignups > 0 && (
+                  <span className="tabular rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+                    {pendingSignups}
+                    <span className="sr-only"> pendentes</span>
+                  </span>
+                )}
+              </Link>
+            </Button>
+          )}
           <Button asChild>
             <Link href={newHref} scroll={false}>
               <UserPlus aria-hidden />

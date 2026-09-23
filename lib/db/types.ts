@@ -633,6 +633,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string
@@ -658,6 +660,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
           health_data_consent_at?: string | null
           id?: string
           last_name: string
@@ -683,6 +687,8 @@ export type Database = {
           email?: string
           enrollment_number?: number
           first_name?: string
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
           health_data_consent_at?: string | null
           id?: string
           last_name?: string
@@ -823,6 +829,42 @@ export type Database = {
       }
     }
     Functions: {
+      approve_signup: {
+        Args: { p_group_ids?: string[]; p_id: string; p_trainer_id?: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       approve_signups: {
         Args: { p_ids: string[]; p_trainer_id?: string }
         Returns: {
@@ -835,6 +877,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string
@@ -857,6 +901,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      can_view_student_health: {
+        Args: { p_student_id: string }
+        Returns: boolean
+      }
       clear_student_expiration: {
         Args: { p_student_id: string }
         Returns: {
@@ -869,6 +917,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string
@@ -914,6 +964,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string
@@ -948,6 +1000,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string
@@ -1000,6 +1054,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string
@@ -1021,6 +1077,23 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_my_health_consent_request: {
+        Args: never
+        Returns: {
+          declared_at: string
+          group_names: string[]
+          organization_name: string
+          student_id: string
+          trainer_name: string
+        }[]
+      }
+      get_public_signup_form: {
+        Args: { p_token: string }
+        Returns: {
+          form_config: Json
+          organization_name: string
+        }[]
       }
       hard_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
@@ -1059,6 +1132,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string
@@ -1114,6 +1189,10 @@ export type Database = {
         Args: { p_student_id: string; p_template_id: string }
         Returns: string
       }
+      respond_my_health_consent: {
+        Args: { p_accept: boolean }
+        Returns: undefined
+      }
       soft_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
         Returns: undefined
@@ -1146,6 +1225,8 @@ export type Database = {
           email: string
           enrollment_number: number
           first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
           last_name: string

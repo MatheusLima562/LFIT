@@ -56,7 +56,7 @@ function initialValues(student: StudentForEdit | null, role: "owner" | "trainer"
     phone: phone.national,
     trainerId: student.trainerId ?? "",
     groupIds: student.groupIds,
-    consentOnFile: Boolean(student.healthConsentAt),
+    consentOnFile: Boolean(student.healthConsentAt || student.healthConsentDeclaredAt),
     accessExpiresOn: student.accessExpiresAt ? isoToBR(timestampToISODate(student.accessExpiresAt)) : "",
     trainingLocation: student.trainingLocation ?? "",
     notes: student.notes ?? "",
@@ -277,50 +277,61 @@ export function StudentFormDialog({
                   )}
                 </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="groups">{t.groups}</FieldLabel>
-                  <Controller
-                    control={control}
-                    name="groupIds"
-                    render={({ field }) => (
-                      <GroupsField
-                        id="groups"
-                        groups={groups}
-                        value={field.value}
-                        onChange={field.onChange}
-                        onGroupCreated={(g) => setGroups((prev) => [...prev, g].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")))}
-                        describedBy="groups-hint"
-                      />
-                    )}
-                  />
-                  <FieldDescription id="groups-hint">{t.groupsHint}</FieldDescription>
-                </Field>
-
-                {groupIds.length > 0 &&
-                  (defaults.consentOnFile && student?.healthConsentAt ? (
-                    <p className="text-[13px] text-ink-2">{t.consentOnFile(formatDate(student.healthConsentAt))}</p>
-                  ) : (
-                    <Field orientation="horizontal" data-invalid={!!errors.healthConsent}>
+                {student && !student.healthVisible ? (
+                  <Field>
+                    <FieldLabel>{t.groups}</FieldLabel>
+                    <p className="rounded-xl border border-line bg-canvas px-3.5 py-3 text-[13px] text-ink-2">{t.healthHidden}</p>
+                  </Field>
+                ) : (
+                  <>
+                    <Field>
+                      <FieldLabel htmlFor="groups">{t.groups}</FieldLabel>
                       <Controller
                         control={control}
-                        name="healthConsent"
+                        name="groupIds"
                         render={({ field }) => (
-                          <Checkbox
-                            id="healthConsent"
-                            checked={field.value}
-                            onCheckedChange={(v) => field.onChange(v === true)}
-                            aria-invalid={!!errors.healthConsent}
+                          <GroupsField
+                            id="groups"
+                            groups={groups}
+                            value={field.value}
+                            onChange={field.onChange}
+                            onGroupCreated={(g) => setGroups((prev) => [...prev, g].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")))}
+                            describedBy="groups-hint"
                           />
                         )}
                       />
-                      <div className="flex flex-col gap-1">
-                        <FieldLabel htmlFor="healthConsent" className="font-normal leading-snug">
-                          {t.consent}
-                        </FieldLabel>
-                        <FieldError errors={[errors.healthConsent]} />
-                      </div>
+                      <FieldDescription id="groups-hint">{t.groupsHint}</FieldDescription>
                     </Field>
-                  ))}
+
+                    {groupIds.length > 0 &&
+                      (student?.healthConsentAt ? (
+                        <p className="text-[13px] text-ink-2">{t.consentConfirmed(formatDate(student.healthConsentAt))}</p>
+                      ) : student?.healthConsentDeclaredAt ? (
+                        <p className="text-[13px] text-ink-2">{t.consentDeclared(formatDate(student.healthConsentDeclaredAt))}</p>
+                      ) : (
+                        <Field orientation="horizontal" data-invalid={!!errors.healthConsent}>
+                          <Controller
+                            control={control}
+                            name="healthConsent"
+                            render={({ field }) => (
+                              <Checkbox
+                                id="healthConsent"
+                                checked={field.value}
+                                onCheckedChange={(v) => field.onChange(v === true)}
+                                aria-invalid={!!errors.healthConsent}
+                              />
+                            )}
+                          />
+                          <div className="flex flex-col gap-1">
+                            <FieldLabel htmlFor="healthConsent" className="leading-snug font-normal">
+                              {t.consent}
+                            </FieldLabel>
+                            <FieldError errors={[errors.healthConsent]} />
+                          </div>
+                        </Field>
+                      ))}
+                  </>
+                )}
 
                 <Field>
                   <FieldLabel htmlFor="trainingLocation">{t.trainingLocation}</FieldLabel>

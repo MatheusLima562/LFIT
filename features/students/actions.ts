@@ -124,9 +124,12 @@ export async function saveStudent(input: unknown, studentId?: string): Promise<S
   if (!session || session.role === "student") return { ok: false, error: messages.dbErrors.FORBIDDEN };
   const values = parsed.data;
   // Só o owner escolhe/reatribui professor; para trainers o banco fixa o próprio usuário.
-  const payload = toStudentPayload(values, { includeTrainer: session.role === "owner" });
-
   const supabase = await createClient();
+  const includeGroups = studentId
+    ? (await supabase.rpc("can_view_student_health", { p_student_id: studentId })).data === true
+    : true;
+  const payload = toStudentPayload(values, { includeTrainer: session.role === "owner", includeGroups });
+
   const { data, error } = studentId
     ? await supabase.rpc("update_student", { p_student_id: studentId, p_patch: payload as Json })
     : await supabase.rpc("create_student", { p_data: payload as Json });

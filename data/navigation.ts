@@ -30,6 +30,7 @@ export const navigation: NavSection[] = [
         status: "available",
         children: [
           { label: "Todos os alunos", href: "/alunos" },
+          { label: "Cadastros públicos", href: "/alunos/cadastros-publicos" },
           { label: "Anamneses", href: "/alunos/anamneses", status: "soon" },
           { label: "Grupos especiais", href: "/alunos/grupos", status: "soon" },
         ],

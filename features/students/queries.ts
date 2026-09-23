@@ -165,7 +165,12 @@ export interface StudentForEdit {
   whatsapp: string | null;
   trainerId: string | null;
   groupIds: string[];
+  /** Consentimento do titular (aluno). */
   healthConsentAt: string | null;
+  /** Declaração do professor (aguardando o titular). */
+  healthConsentDeclaredAt: string | null;
+  /** O usuário atual pode ver/editar os dados de saúde deste aluno? */
+  healthVisible: boolean;
   accessExpiresAt: string | null;
   trainingLocation: string | null;
   notes: string | null;
@@ -181,13 +186,16 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
   const { data } = await supabase
     .from("students")
     .select(
-      "id, first_name, last_name, email, birth_date, sex, whatsapp_e164, trainer_id, health_data_consent_at, access_expires_at, training_location, notes, block_if_overdue, photo_path, user_id, student_groups(group_id)",
+      "id, first_name, last_name, email, birth_date, sex, whatsapp_e164, trainer_id, health_data_consent_at, health_consent_declared_at, access_expires_at, training_location, notes, block_if_overdue, photo_path, user_id, student_groups(group_id)",
     )
     .eq("id", id)
     .maybeSingle();
   if (!data) return null;
 
-  const photoUrls = await signPhotoUrls(supabase, data.photo_path ? [data.photo_path] : []);
+  const [photoUrls, healthVisible] = await Promise.all([
+    signPhotoUrls(supabase, data.photo_path ? [data.photo_path] : []),
+    supabase.rpc("can_view_student_health", { p_student_id: id }).then((r) => r.data === true),
+  ]);
   return {
     id: data.id,
     firstName: data.first_name,
@@ -199,6 +207,8 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
     trainerId: data.trainer_id,
     groupIds: data.student_groups.map((g) => g.group_id),
     healthConsentAt: data.health_data_consent_at,
+    healthConsentDeclaredAt: data.health_consent_declared_at,
+    healthVisible,
     accessExpiresAt: data.access_expires_at,
     trainingLocation: data.training_location,
     notes: data.notes,

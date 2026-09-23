@@ -77,7 +77,7 @@ export const emptyStudentForm: StudentFormInput = {
 };
 
 /** Converte o formulário validado no payload das RPCs create_student / update_student. */
-export function toStudentPayload(d: StudentFormValues, options: { includeTrainer: boolean }) {
+export function toStudentPayload(d: StudentFormValues, options: { includeTrainer: boolean; includeGroups?: boolean }) {
   const expiresISO = d.accessExpiresOn ? parseBRDate(d.accessExpiresOn) : null;
   const payload: Record<string, unknown> = {
     first_name: d.firstName,
@@ -90,9 +90,12 @@ export function toStudentPayload(d: StudentFormValues, options: { includeTrainer
     notes: d.notes || null,
     access_expires_at: expiresISO ? endOfDayBR(expiresISO) : null,
     block_if_overdue: d.blockIfOverdue,
-    group_ids: d.groupIds,
-    health_data_consent: d.healthConsent,
   };
   if (options.includeTrainer) payload.trainer_id = d.trainerId || null;
+  // Quem não vê os dados de saúde (aguardando o titular) não os envia — senão apagaria grupos ocultos.
+  if (options.includeGroups ?? true) {
+    payload.group_ids = d.groupIds;
+    payload.health_data_consent = d.healthConsent;
+  }
   return payload;
 }

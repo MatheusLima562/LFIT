@@ -205,6 +205,24 @@ async function seed() {
     "vincular turmas",
   );
 
+  // Consentimento de saúde: metade dos alunos com grupo já confirmou como titular;
+  // os demais têm só a declaração do professor (dados visíveis apenas ao responsável).
+  const withGroups = ids.filter((_, i) => i % 4 === 0);
+  const confirmed = withGroups.filter((_, i) => i % 2 === 0);
+  ok(await admin.from("students").update({ health_data_consent_at: new Date().toISOString() }).in("id", confirmed), "consentimento do titular");
+
+  // Link público ativo + cadastros pendentes fictícios.
+  const link = must(await owner.rpc("ensure_signup_link"), "link público") as { token: string };
+  ok(await owner.from("public_signup_links").update({ is_active: true }).eq("organization_id", org.id), "ativar link");
+  const pendentes = [
+    { payload: { first_name: "Laura", last_name: "Pendente", email: "laura.pendente@example.com", birth_date: "1994-03-08", whatsapp_e164: "+5541988887777", health_description: "Tenho hérnia de disco lombar (L5-S1), sem crise há 6 meses." }, consent: true },
+    { payload: { first_name: "Mário", last_name: "Pendente", email: "mario.pendente@example.com", sex: "M" }, consent: false },
+    { payload: { first_name: "Nina", last_name: "Pendente", email: "nina.pendente@example.com", birth_date: "2001-11-20" }, consent: false },
+  ];
+  for (const pnd of pendentes) {
+    ok(await admin.rpc("submit_public_signup", { p_token: link.token, p_payload: pnd.payload, p_consent: pnd.consent }), "cadastro pendente");
+  }
+
   const [usage] = must(await owner.rpc("organization_plan_usage"), "uso do plano") as { used: number; student_limit: number }[];
   console.log(`Seed concluído: ${ids.length} alunos (${usage.used}/${usage.student_limit} vagas ocupadas).`);
   console.log("Usuários de exemplo (senha = SEED_USER_PASSWORD):");
