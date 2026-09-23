@@ -37,6 +37,11 @@ function must<R extends { data: unknown; error: { message: string } | null }>(re
   return result.data as NonNullable<R["data"]>;
 }
 
+/** Para escritas sem retorno (insert sem select, RPC void): só verifica o erro. */
+function ok(result: { error: { message: string } | null }, what: string) {
+  if (result.error) throw new Error(`${what}: ${result.error.message}`);
+}
+
 async function reset() {
   const { data: org } = await admin.from("organizations").select("id").eq("slug", SLUG).maybeSingle();
   if (org) {
@@ -75,7 +80,7 @@ const LAST = ["Almeida", "Barbosa", "Cardoso", "Duarte", "Esteves", "Freitas", "
   "Jardim", "Lacerda", "Moura", "Nogueira"];
 const LOCATIONS = ["Academia Centro", "Condomínio Jardins", "Online", "Studio"];
 
-const pick = <T>(list: readonly T[], i: number) => list[i % list.length];
+const pick = <T,>(list: readonly T[], i: number) => list[i % list.length];
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
 const dateOnly = (n: number) => daysFromNow(n).slice(0, 10);
 
@@ -128,7 +133,7 @@ async function seed() {
     "criar turmas",
   );
 
-  must(
+  ok(
     await owner.from("anamnesis_templates").insert({
       organization_id: org.id,
       title: "Anamnese padrão",
@@ -169,15 +174,15 @@ async function seed() {
     must(await owner.rpc("update_student", { p_student_id: id, p_patch: { access_expires_at: daysFromNow(n * 2 + 1) } }), "expirando");
   }
   for (const id of [ids[0], ids[5], ids[10]]) {
-    must(await admin.from("payments").insert({ organization_id: org.id, student_id: id, amount_cents: 18000, due_date: dateOnly(-12) }), "pagamento vencido");
+    ok(await admin.from("payments").insert({ organization_id: org.id, student_id: id, amount_cents: 18000, due_date: dateOnly(-12) }), "pagamento vencido");
   }
-  must(await admin.from("payments").insert({ organization_id: org.id, student_id: ids[15], amount_cents: 18000, due_date: dateOnly(-2) }), "pagamento na carência");
+  ok(await admin.from("payments").insert({ organization_id: org.id, student_id: ids[15], amount_cents: 18000, due_date: dateOnly(-2) }), "pagamento na carência");
 
   const toDelete = fakeStudent(28);
-  must(await owner.rpc("soft_delete_student", { p_student_id: ids[28], p_confirm_name: `${toDelete.first_name} ${toDelete.last_name}` }), "excluir");
+  ok(await owner.rpc("soft_delete_student", { p_student_id: ids[28], p_confirm_name: `${toDelete.first_name} ${toDelete.last_name}` }), "excluir");
 
   // Turmas
-  must(
+  ok(
     await owner.from("class_students").insert([
       ...ids.slice(0, 8).map((id) => ({ class_id: classes[0].id, student_id: id, organization_id: org.id })),
       ...ids.slice(8, 14).map((id) => ({ class_id: classes[1].id, student_id: id, organization_id: org.id })),

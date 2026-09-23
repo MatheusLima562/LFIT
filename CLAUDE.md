@@ -78,7 +78,7 @@ features/<modulo>/         # components/, hooks/, schemas.ts (Zod), actions.ts (
 lib/                       # db/ (clientes Supabase, tipos gerados), auth/, utils
 components/ui/             # primitivas genéricas sem regra de negócio
 supabase/migrations/       # migrations versionadas
-scripts/seed.ts            # dados FICTÍCIOS (usa as RPCs; projeto Supabase é hospedado, sem seed.sql)
+scripts/seed.mts            # dados FICTÍCIOS (usa as RPCs; projeto Supabase é hospedado, sem seed.sql)
 messages/pt-BR.ts          # textos da UI centralizados (preparo para i18n)
 ```
 
