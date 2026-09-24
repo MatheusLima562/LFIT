@@ -250,6 +250,12 @@ effective_status =
   exercícios" (outra divisão, outro plano do aluno ou modelo; `importItems` gera chaves novas e preserva grupos e
   séries), "Expandir/Recolher todos" e "Copiar para alunos" (`BulkApplyDialog`: prévia de alertas por aluno →
   `apply_plan_to_students`, resultado por aluno; até 50).
+- **Ajustes após o teste do dono:** intensidade num controle só (RPE | RIR | %1RM + valor com sufixo e dica; **RIR
+  0–5 no formulário**, o CHECK do banco aceita até 10 para importações); clique no exercício abre o item com foco
+  no primeiro campo, "+ Rápido" entra recolhido com resumo no toast; dica com editor de formatação visível
+  (`TipEditor`, contentEditable convertido para o texto saneado; `sanitizeTip` normaliza negrito duplicado);
+  item e séries mostram só Séries · Quantidade (mín–máx) · Carga · Pausa, o resto em "Mais opções" (abre sozinho
+  se algo estiver preenchido ou com erro).
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos

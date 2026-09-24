@@ -6,7 +6,8 @@ _Atualizado em 24/09/2026 (fim da 2.8 — aguardando seu teste)._
 **Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. **2.8.0 (banco) aprovada** + ajustes pedidos:
 alerta **restrito** (nível + texto genérico, sem condição/grupo/nota) para o professor do plano sem acesso ao aluno e
 para o owner com consentimento só declarado; trava `organizations.is_seed` no `seed --reset`. 2.8.1 (plano), 2.8.2 (exercício no plano), 2.8.3 (prescrição da série) e **2.8.4 (produtividade) ✔**. Colunas legadas removidas.
-**Parado para o seu teste da 2.8.** Nada em andamento no código.
+Ajustes do seu teste aplicados (intensidade, adicionar exercício, dica, densidade do item).
+**Parado para o seu novo teste da 2.8.** Nada em andamento no código.
 
 ## Concluído (branch `feat/fase-2-treinos`)
 - 2.1 Banco: biblioteca global (52 exercícios), 11 condições, planos/divisões/itens/séries, RPCs e alertas.
@@ -28,7 +29,8 @@ para o owner com consentimento só declarado; trava `organizations.is_seed` no `
 3. **2.8** Ajustes do montador — plano aprovado (`~/.claude/plans/…` e `docs/planos/etapa-2.8.md`). 2.8.0 banco ✔
    (migrations `20261004120000`–`20261005120100`, 253 testes no total). 2.8.1 plano ✔, 2.8.2 exercício no plano ✔, 2.8.3 série ✔ (colunas legadas removidas), 2.8.4 produtividade ✔
    (padrões editáveis, "+ Rápido", importar exercícios, expandir/recolher, copiar para alunos). 274 testes.
-   **Aguardando o seu teste**; ajustes que surgirem entram aqui.
+   Ajustes do 1º teste ✔ (intensidade num controle só, clique/+ Rápido, editor da dica, "Mais opções"). 290 testes.
+   **Aguardando o seu novo teste**; ajustes que surgirem entram aqui.
 4. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
 5. **C1** Contas com múltiplos vínculos (sem cobrança).
