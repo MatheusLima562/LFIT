@@ -320,14 +320,16 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Próximos passos da Fase 2: 2.6 impressão (`/treinos/[planId]/imprimir`, sem dados de saúde) e 2.7
   verificação final. Regras globais de contraindicação: aguardando o CSV revisado.
 - Vídeo próprio nos exercícios (MP4/WebM, cota por plano): ver seção "Vídeo próprio de exercício".
+- **Notas para a Fase 3:** "Iniciar treino" pelo professor (modo presencial, registrando pelo aluno), evolução de
+  cargas por exercício e volume de treino (séries × reps × carga) por sessão/semana.
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.5 ✔; faltam **2.6** impressão e **2.7**
-  verificação) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.5 ✔; faltam **2.6** impressão, **2.7**
+  verificação e **2.8** ajustes do montador) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
   registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
-  Fase 4 gestão e retenção. Plano detalhado da Fase C: `~/.claude/plans/magical-fluttering-nygaard.md`.
+  Fase 4 gestão e retenção. Planos: `docs/planos/fase-c.md` e `docs/planos/etapa-2.8.md`; retomada em `docs/PROXIMOS_PASSOS.md`.
   - **C1 (antes da Fase 3):** só o modelo de contas com múltiplos vínculos (`memberships` + vínculo ativo por
     sessão via claim `session_id`; `current_org_id()`/`current_user_role()` passam a ler o vínculo ativo;
     `students.user_id` único por organização), seletor de vínculo no login e revisão de RLS e testes de
