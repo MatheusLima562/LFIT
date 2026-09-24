@@ -34,7 +34,7 @@ export function PlanCard({
           {plan.level && <span className="text-[12px] text-ink-3">{t.levels[plan.level]}</span>}
         </div>
         <p className="mt-0.5 text-[13px] text-ink-2">
-          {isTemplate ? (plan.goal ?? t.manage.workouts(plan.workoutLabels)) : planPeriod(plan.startsOn, plan.endsOn)}
+          {isTemplate ? (plan.goal ?? t.manage.workouts(plan.workoutLabels)) : planPeriod(plan.startsOn, plan.endsOn, plan.noEnd)}
           {situation && (
             <span className={cn("ml-2 font-medium", situation.kind === "expired" ? "text-red-700" : situation.kind === "soon" ? "text-amber-800" : "text-ink-3")}>
               · {situation.label}
@@ -42,7 +42,14 @@ export function PlanCard({
           )}
         </p>
         <p className="mt-0.5 text-[12px] text-ink-3">
-          {t.manage.workouts(plan.workoutLabels)} · {t.manage.updated(formatDate(plan.updatedAt))}
+          {[
+            t.manage.workouts(plan.workoutLabels),
+            plan.plannedSessions ? t.manage.sessions(plan.plannedSessions) : null,
+            !isTemplate && plan.trainerName ? t.manage.trainer(plan.trainerName) : null,
+            t.manage.updated(formatDate(plan.updatedAt)),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           {authorName ? ` · ${t.templates.author(authorName)}` : ""}
         </p>
       </div>

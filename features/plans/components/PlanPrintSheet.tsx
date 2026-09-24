@@ -33,7 +33,8 @@ export function PlanPrintSheet({
     ? [
         [t.student, data.studentName],
         [t.trainer, data.trainerName],
-        [t.period, planPeriod(plan.startsOn, plan.endsOn)],
+        [t.period, planPeriod(plan.startsOn, plan.endsOn, plan.noEnd)],
+        [t.sessions, plan.plannedSessions ? String(plan.plannedSessions) : null],
         [t.goal, plan.goal],
         [t.level, plan.level ? messages.plans.levels[plan.level] : null],
       ]

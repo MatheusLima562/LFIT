@@ -14,6 +14,7 @@ const t = messages.plans.overview;
 export const metadata: Metadata = { title: t.title };
 
 function Situation({ row }: { row: ActivePlanRow }) {
+  if (row.noEnd) return <span className="text-[13px] text-ink-2">{messages.students.plan.noEnd}</span>;
   const s = planSituation(row.endsOn);
   if (!s) return <span className="text-[13px] text-ink-3">{t.noEnd}</span>;
   return (
@@ -43,7 +44,7 @@ const columns: DataTableColumn<ActivePlanRow>[] = [
       </Link>
     ),
   },
-  { id: "period", header: t.columns.period, cell: (r) => <span className="text-[13px] whitespace-nowrap text-ink-2">{planPeriod(r.startsOn, r.endsOn)}</span>, hideBelow: "md" },
+  { id: "period", header: t.columns.period, cell: (r) => <span className="text-[13px] whitespace-nowrap text-ink-2">{planPeriod(r.startsOn, r.endsOn, r.noEnd)}</span>, hideBelow: "md" },
   { id: "situation", header: t.columns.situation, cell: (r) => <Situation row={r} /> },
 ];
 

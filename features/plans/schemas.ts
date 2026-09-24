@@ -69,11 +69,14 @@ export const planPayloadSchema = z
     level: z.enum(PLAN_LEVELS).nullable(),
     starts_on: isoDate,
     ends_on: isoDate,
+    no_end: z.boolean(),
+    planned_sessions: z.number({ error: v.sessions }).int(v.sessions).min(1, v.sessions).max(500, v.sessions).nullable(),
+    trainer_id: z.uuid().nullable(),
     notes: optionalText(2000),
     workouts: z.array(workoutSchema).max(MAX_WORKOUTS, messages.plans.workouts.max),
   })
   .superRefine((p, ctx) => {
-    if (p.starts_on && p.ends_on && p.ends_on < p.starts_on) {
+    if (!p.no_end && p.starts_on && p.ends_on && p.ends_on < p.starts_on) {
       ctx.addIssue({ code: "custom", path: ["ends_on"], message: v.endBeforeStart });
     }
     p.workouts.forEach((w, wi) => {

@@ -10,6 +10,8 @@ export interface PlanForBuilder {
   plan: SavedPlan;
   status: PlanStatus;
   student: { id: string; name: string } | null;
+  /** Professores da organização (select "Professor do plano"). */
+  trainers: { id: string; name: string }[];
   /** Modelo: owner ou autor. Plano de aluno: quem acessa o aluno (RLS). Arquivado: ninguém. */
   canEdit: boolean;
   /** Outro plano ativo do mesmo aluno (será arquivado ao ativar este). */
@@ -40,6 +42,9 @@ type PlanRow = {
   level: PlanLevel | null;
   starts_on: string | null;
   ends_on: string | null;
+  no_end: boolean;
+  planned_sessions: number | null;
+  trainer_id: string | null;
   notes: string | null;
   status: PlanStatus;
   created_by: string | null;
@@ -48,7 +53,7 @@ type PlanRow = {
 };
 
 const PLAN_SELECT =
-  "id, student_id, name, goal, level, starts_on, ends_on, notes, status, created_by, " +
+  "id, student_id, name, goal, level, starts_on, ends_on, no_end, planned_sessions, trainer_id, notes, status, created_by, " +
   "student:students!training_plans_student_id_organization_id_fkey(id, first_name, last_name), " +
   "plan_workouts(label, name, notes, position, plan_workout_items(position, group_key, sets, reps, load_value, load_unit, load_text, rest_seconds, tempo, rpe_target, notes, " +
   "exercise:exercises(id, name), plan_item_sets(position, set_type, reps, load_value, load_unit, load_text, rest_seconds)))";
@@ -64,6 +69,9 @@ export function toSavedPlan(row: PlanRow): SavedPlan {
     level: row.level,
     startsOn: row.starts_on,
     endsOn: row.ends_on,
+    noEnd: row.no_end,
+    plannedSessions: row.planned_sessions,
+    trainerId: row.trainer_id,
     notes: row.notes,
     workouts: [...row.plan_workouts].sort(byPosition).map((w) => ({
       label: w.label,
@@ -103,15 +111,43 @@ export async function getPlan(planId: string) {
   return (data as unknown as PlanRow | null) ?? null;
 }
 
+/**
+ * Nome do aluno do plano. O professor do plano que não é o responsável não lê o cadastro (RLS de
+ * students): o embed vem nulo e o nome sai de get_plan_header (só nome, nada de cadastro/saúde).
+ */
+async function planStudentName(row: PlanRow): Promise<string | null> {
+  if (row.student) return `${row.student.first_name} ${row.student.last_name}`;
+  if (!row.student_id) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("get_plan_header", { p_plan_id: row.id }).maybeSingle();
+  return data?.student_name ?? null;
+}
+
+/** Professores (owner e trainers) da organização. */
+export async function listOrgTrainers() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("profiles").select("id, full_name").in("role", ["owner", "trainer"]).order("full_name");
+  return (data ?? []).map((p) => ({ id: p.id, name: p.full_name }));
+}
+
+/** Professor responsável pelo aluno (padrão do "Professor do plano" em um treino novo). */
+export async function getStudentTrainerId(studentId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("students").select("trainer_id").eq("id", studentId).maybeSingle();
+  return data?.trainer_id ?? null;
+}
+
 export async function getPlanForBuilder(planId: string, session: { userId: string; role: string }): Promise<PlanForBuilder | null> {
   const row = await getPlan(planId);
   if (!row) return null;
   const isTemplate = row.student_id === null;
   const canEdit = row.status !== "archived" && (!isTemplate || session.role === "owner" || row.created_by === session.userId);
+  const [studentName, trainers] = await Promise.all([planStudentName(row), isTemplate ? Promise.resolve([]) : listOrgTrainers()]);
   return {
     plan: toSavedPlan(row),
     status: row.status,
-    student: row.student ? { id: row.student.id, name: `${row.student.first_name} ${row.student.last_name}` } : null,
+    student: row.student_id ? { id: row.student_id, name: studentName ?? "—" } : null,
+    trainers,
     canEdit,
     otherActive: row.student_id ? await getActivePlan(row.student_id, row.id) : null,
   };
@@ -136,8 +172,10 @@ export interface StudentRule {
   exerciseId: string;
   level: ContraindicationLevel;
   note: string | null;
-  conditionName: string;
-  groupName: string;
+  /** null no modo restrito (quem não vê a saúde completa: só o nível). */
+  conditionName: string | null;
+  groupName: string | null;
+  restricted: boolean;
 }
 
 /**
@@ -157,6 +195,7 @@ export async function getStudentRules(studentId: string): Promise<{ hidden: bool
       note: r.note,
       conditionName: r.condition_name,
       groupName: r.group_name,
+      restricted: Boolean(r.restricted),
     })),
   };
 }
@@ -173,6 +212,9 @@ export interface PlanSummary {
   level: PlanLevel | null;
   startsOn: string | null;
   endsOn: string | null;
+  noEnd: boolean;
+  plannedSessions: number | null;
+  trainerName: string | null;
   updatedAt: string;
   workoutLabels: string[];
   createdBy: string | null;
@@ -188,13 +230,18 @@ type SummaryRow = {
   level: PlanLevel | null;
   starts_on: string | null;
   ends_on: string | null;
+  no_end: boolean;
+  planned_sessions: number | null;
+  trainer: { full_name: string } | null;
   updated_at: string;
   created_by: string | null;
   student_id: string | null;
   plan_workouts: { label: string; position: number }[];
 };
 
-const SUMMARY_SELECT = "id, name, status, goal, level, starts_on, ends_on, updated_at, created_by, student_id, plan_workouts(label, position)";
+const SUMMARY_SELECT =
+  "id, name, status, goal, level, starts_on, ends_on, no_end, planned_sessions, updated_at, created_by, student_id, " +
+  "trainer:profiles!training_plans_trainer_fkey(full_name), plan_workouts(label, position)";
 
 function toSummary(r: SummaryRow, session: { userId: string; role: string }): PlanSummary {
   return {
@@ -205,6 +252,9 @@ function toSummary(r: SummaryRow, session: { userId: string; role: string }): Pl
     level: r.level,
     startsOn: r.starts_on,
     endsOn: r.ends_on,
+    noEnd: r.no_end,
+    plannedSessions: r.planned_sessions,
+    trainerName: r.trainer?.full_name ?? null,
     updatedAt: r.updated_at,
     workoutLabels: [...r.plan_workouts].sort(byPosition).map((w) => w.label),
     createdBy: r.created_by,
@@ -271,6 +321,7 @@ export interface ActivePlanRow {
   name: string;
   startsOn: string | null;
   endsOn: string | null;
+  noEnd: boolean;
   student: { id: string; name: string };
 }
 
@@ -279,17 +330,18 @@ export async function listActivePlans(): Promise<ActivePlanRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("training_plans")
-    .select("id, name, starts_on, ends_on, student:students!training_plans_student_id_organization_id_fkey!inner(id, first_name, last_name, deleted_at)")
+    .select("id, name, starts_on, ends_on, no_end, student:students!training_plans_student_id_organization_id_fkey!inner(id, first_name, last_name, deleted_at)")
     .eq("status", "active")
     .is("student.deleted_at", null)
     .order("ends_on", { ascending: true, nullsFirst: false })
     .limit(500);
   if (error) throw new Error(`Falha ao listar treinos ativos: ${error.message}`);
-  return ((data ?? []) as unknown as { id: string; name: string; starts_on: string | null; ends_on: string | null; student: { id: string; first_name: string; last_name: string } }[]).map((r) => ({
+  return ((data ?? []) as unknown as { id: string; name: string; starts_on: string | null; ends_on: string | null; no_end: boolean; student: { id: string; first_name: string; last_name: string } }[]).map((r) => ({
     id: r.id,
     name: r.name,
     startsOn: r.starts_on,
     endsOn: r.ends_on,
+    noEnd: r.no_end,
     student: { id: r.student.id, name: `${r.student.first_name} ${r.student.last_name}` },
   }));
 }
@@ -309,21 +361,14 @@ export interface PlanForPrint {
 export async function getPlanForPrint(planId: string, organizationName: string): Promise<PlanForPrint | null> {
   const row = await getPlan(planId);
   if (!row) return null;
+  // Professor do plano e nome do aluno pelo cabeçalho (funciona também para o professor do plano).
+  let studentName: string | null = null;
   let trainerName: string | null = null;
   if (row.student_id) {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("students")
-      .select("trainer:profiles!students_trainer_id_organization_id_fkey(full_name)")
-      .eq("id", row.student_id)
-      .maybeSingle();
-    trainerName = (data?.trainer as { full_name: string } | null)?.full_name ?? null;
+    const { data } = await supabase.rpc("get_plan_header", { p_plan_id: row.id }).maybeSingle();
+    studentName = data?.student_name ?? null;
+    trainerName = data?.trainer_name ?? null;
   }
-  return {
-    plan: toSavedPlan(row),
-    status: row.status,
-    organizationName,
-    studentName: row.student ? `${row.student.first_name} ${row.student.last_name}` : null,
-    trainerName,
-  };
+  return { plan: toSavedPlan(row), status: row.status, organizationName, studentName, trainerName };
 }

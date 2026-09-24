@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireStaff } from "@/lib/auth/session";
 import { newKey, type PlanDraft } from "@/features/plans/builder";
 import { PlanBuilder } from "@/features/plans/components/PlanBuilder";
-import { getActivePlan, getStudentName, getStudentRules } from "@/features/plans/queries";
+import { getActivePlan, getStudentName, getStudentRules, getStudentTrainerId, listOrgTrainers } from "@/features/plans/queries";
 import { messages } from "@/messages/pt-BR";
 
 export const metadata: Metadata = { title: messages.plans.newTitle };
@@ -18,9 +18,9 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
 
   const student = studentId ? await getStudentName(studentId) : null;
   if (studentId && !student) notFound();
-  const [rules, otherActive] = student
-    ? await Promise.all([getStudentRules(student.id), getActivePlan(student.id)])
-    : [{ hidden: false, rules: [] }, null];
+  const [rules, otherActive, trainers, defaultTrainerId] = student
+    ? await Promise.all([getStudentRules(student.id), getActivePlan(student.id), listOrgTrainers(), getStudentTrainerId(student.id)])
+    : [{ hidden: false, rules: [] }, null, [], null];
 
   const initial: PlanDraft = {
     id: null,
@@ -30,6 +30,10 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
     level: "",
     startsOn: "",
     endsOn: "",
+    noEnd: false,
+    plannedSessions: "",
+    // Padrão: o professor responsável pelo aluno (editável no cabeçalho).
+    trainerId: defaultTrainerId ?? "",
     notes: "",
     workouts: [{ key: newKey(), label: "A", name: "", notes: "", items: [] }],
   };
@@ -40,6 +44,7 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
         initial={initial}
         status={null}
         student={student}
+        trainers={trainers}
         rules={rules}
         canEdit
         otherActive={otherActive}

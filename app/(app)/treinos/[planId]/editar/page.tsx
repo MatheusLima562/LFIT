@@ -24,6 +24,7 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
         initial={fromSaved(data.plan)}
         status={data.status}
         student={data.student}
+        trainers={data.trainers}
         rules={rules}
         canEdit={data.canEdit}
         otherActive={data.otherActive}

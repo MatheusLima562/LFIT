@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronLeft, CircleCheck, EyeOff, Link2, Link2Off, Lock, Plus, Printer, ShieldAlert, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, ChevronLeft, CircleCheck, EyeOff, Link2, Link2Off, Lock, Plus, Printer, ShieldAlert, Trash2 } from "lucide-react";
 import { useEffect, useId, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,9 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { parseBRDate, todayISO } from "@/lib/dates";
 import { DateField } from "@/features/students/components/form/DateField";
 import { activatePlan, savePlan, type PickerExercise } from "../actions";
 import {
@@ -58,13 +60,15 @@ export interface PlanBuilderProps {
   initial: PlanDraft;
   status: PlanStatus | null;
   student: { id: string; name: string } | null;
+  /** Professores da organização (select "Professor do plano"); vazio em modelos. */
+  trainers?: { id: string; name: string }[];
   rules: { hidden: boolean; rules: StudentRule[] };
   canEdit: boolean;
   otherActive: { id: string; name: string } | null;
   backHref: string;
 }
 
-export function PlanBuilder({ initial, status, student, rules, canEdit, otherActive, backHref }: PlanBuilderProps) {
+export function PlanBuilder({ initial, status, student, trainers = [], rules, canEdit, otherActive, backHref }: PlanBuilderProps) {
   const router = useRouter();
   const [draft, setDraft] = useState<PlanDraft>(initial);
   const [dirty, setDirty] = useState(false);
@@ -77,6 +81,9 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
 
   const isTemplate = draft.studentId === null;
   const readOnly = !canEdit;
+  // Início futuro → "Agendar" (vira ativo sozinho na data; job diário no banco).
+  const startIso = parseBRDate(draft.startsOn);
+  const willSchedule = startIso !== null && startIso > todayISO();
   const workout = draft.workouts.find((w) => w.key === activeKey) ?? draft.workouts[0];
 
   // Aviso ao fechar/recarregar a aba com alterações não salvas.
@@ -91,7 +98,16 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
     setDraft(fn);
     setDirty(true);
   };
-  const setField = <K extends keyof PlanDraft>(key: K, value: PlanDraft[K]) => change((d) => ({ ...d, [key]: value }));
+  const setField = <K extends keyof PlanDraft>(key: K, value: PlanDraft[K]) => {
+    change((d) => ({ ...d, [key]: value }));
+    // O erro do campo some assim que ele é editado (volta a ser checado ao salvar).
+    setErrors((e) => {
+      if (!(`plan.${String(key)}` in e)) return e;
+      const next = { ...e };
+      delete next[`plan.${String(key)}`];
+      return next;
+    });
+  };
   const updateWorkout = (key: string, fn: (w: WorkoutDraft) => WorkoutDraft) =>
     change((d) => ({ ...d, workouts: d.workouts.map((w) => (w.key === key ? fn(w) : w)) }));
   const setItems = (fn: (items: ItemDraft[]) => ItemDraft[]) => workout && updateWorkout(workout.key, (w) => ({ ...w, items: fn(w.items) }));
@@ -169,11 +185,12 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
     });
 
   const askActivate = () => {
-    if (!draft.startsOn.trim() || !draft.endsOn.trim()) {
+    const needsEnd = !draft.noEnd && !draft.endsOn.trim();
+    if (!draft.startsOn.trim() || needsEnd) {
       setErrors((e) => ({
         ...e,
         ...(draft.startsOn.trim() ? {} : { "plan.startsOn": t.actions.datesRequired }),
-        ...(draft.endsOn.trim() ? {} : { "plan.endsOn": t.actions.datesRequired }),
+        ...(needsEnd ? { "plan.endsOn": t.actions.datesRequired } : {}),
       }));
       toast.error(t.actions.datesRequired);
       return;
@@ -299,11 +316,58 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
               )}
             </LabeledField>
             <LabeledField id="plan-ends" label={t.header.endsOn} error={errors["plan.endsOn"]}>
-              {readOnly ? (
+              {draft.noEnd ? (
+                <Input id="plan-ends" value={t.header.noEnd} disabled />
+              ) : readOnly ? (
                 <Input id="plan-ends" value={draft.endsOn} disabled />
               ) : (
                 <DateField id="plan-ends" value={draft.endsOn} onChange={(v) => setField("endsOn", v)} invalid={!!errors["plan.endsOn"]} min="2020-01-01" />
               )}
+            </LabeledField>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="plan-no-end"
+                  checked={draft.noEnd}
+                  disabled={readOnly}
+                  onCheckedChange={(v) => change((d) => ({ ...d, noEnd: v, endsOn: v ? "" : d.endsOn }))}
+                />
+                <label htmlFor="plan-no-end" className="text-sm font-medium text-ink">
+                  {t.header.noEnd}
+                </label>
+              </div>
+              <p className="text-xs text-ink-3">{t.header.noEndHint}</p>
+            </div>
+            <LabeledField id="plan-sessions" label={t.header.plannedSessions} error={errors["plan.plannedSessions"]}>
+              <Input
+                id="plan-sessions"
+                inputMode="numeric"
+                value={draft.plannedSessions}
+                disabled={readOnly}
+                aria-invalid={!!errors["plan.plannedSessions"]}
+                aria-describedby="plan-sessions-hint"
+                onChange={(e) => setField("plannedSessions", e.target.value)}
+              />
+              <p id="plan-sessions-hint" className="text-xs text-ink-3">
+                {t.header.plannedSessionsHint}
+              </p>
+            </LabeledField>
+            <LabeledField id="plan-trainer" label={t.header.trainer} error={errors["plan.trainerId"]}>
+              <Select value={draft.trainerId || undefined} disabled={readOnly || trainers.length === 0} onValueChange={(v) => setField("trainerId", v)}>
+                <SelectTrigger id="plan-trainer" className="w-full" aria-describedby="plan-trainer-hint">
+                  <SelectValue placeholder={t.header.trainerHint} />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainers.map((tr) => (
+                    <SelectItem key={tr.id} value={tr.id}>
+                      {tr.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p id="plan-trainer-hint" className="text-xs text-ink-3">
+                {t.header.trainerHint}
+              </p>
             </LabeledField>
           </>
         )}
@@ -313,7 +377,7 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
       </section>
 
       {/* Alertas (só plano de aluno) */}
-      {student && <AlertsPanel hidden={rules.hidden} counts={alertCounts} />}
+      {student && <AlertsPanel hidden={rules.hidden} restricted={rules.rules.some((r) => r.restricted)} counts={alertCounts} />}
 
       {/* Divisões */}
       <section aria-label={t.workouts.label} className="flex flex-col gap-3">
@@ -463,8 +527,8 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
             </Button>
             {student && status !== "active" && (
               <Button type="button" onClick={askActivate} disabled={pending}>
-                <CircleCheck aria-hidden />
-                {t.actions.activate}
+                {willSchedule ? <CalendarClock aria-hidden /> : <CircleCheck aria-hidden />}
+                {willSchedule ? t.actions.schedule : t.actions.activate}
               </Button>
             )}
           </div>
@@ -485,14 +549,18 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
       <ConfirmDialog
         open={confirm === "activate"}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title={t.actions.activateTitle}
+        title={willSchedule ? t.actions.scheduleTitle : t.actions.activateTitle}
         description={
-          <>
-            {t.actions.activateText}
-            {otherActive && <strong className="mt-2 block text-ink">{t.actions.activateReplace(otherActive.name)}</strong>}
-          </>
+          willSchedule ? (
+            t.actions.scheduleText(draft.startsOn)
+          ) : (
+            <>
+              {t.actions.activateText}
+              {otherActive && <strong className="mt-2 block text-ink">{t.actions.activateReplace(otherActive.name)}</strong>}
+            </>
+          )
         }
-        confirmLabel={t.actions.activate}
+        confirmLabel={willSchedule ? t.actions.schedule : t.actions.activate}
         cancelLabel={messages.students.confirm.cancel}
         pending={pending}
         onConfirm={onActivate}
@@ -544,7 +612,7 @@ function StatusBadge({ status }: { status: PlanStatus }) {
   return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", style)}>{t.status[status]}</span>;
 }
 
-function AlertsPanel({ hidden, counts }: { hidden: boolean; counts: { avoid: number; caution: number } }) {
+function AlertsPanel({ hidden, restricted, counts }: { hidden: boolean; restricted: boolean; counts: { avoid: number; caution: number } }) {
   if (hidden) {
     return (
       <p className="flex items-start gap-2 rounded-2xl border border-line bg-canvas px-4 py-3 text-[13px] text-ink-2">
@@ -566,6 +634,7 @@ function AlertsPanel({ hidden, counts }: { hidden: boolean; counts: { avoid: num
       <div>
         <p className="font-semibold">{t.alerts.title}</p>
         <p>{any ? `${t.alerts.summary(counts.avoid, counts.caution)}. ${t.alerts.notBlocking}` : t.alerts.none}</p>
+        {restricted && <p className="mt-1 text-xs opacity-90">{t.alerts.restrictedPanel}</p>}
       </div>
     </div>
   );

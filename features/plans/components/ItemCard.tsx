@@ -95,8 +95,14 @@ export function ItemCard(props: ItemCardProps) {
                 <li key={i} className="flex flex-wrap items-center gap-1.5 text-[12px] text-ink-2">
                   <LevelBadge level={r.level} />
                   <span>
-                    {r.note ? `${r.note} · ` : ""}
-                    {r.conditionName} ({r.groupName})
+                    {r.restricted ? (
+                      t.alerts.restricted
+                    ) : (
+                      <>
+                        {r.note ? `${r.note} · ` : ""}
+                        {r.conditionName} ({r.groupName})
+                      </>
+                    )}
                   </span>
                 </li>
               ))}

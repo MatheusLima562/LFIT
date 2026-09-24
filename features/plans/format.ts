@@ -4,7 +4,8 @@ import { messages } from "@/messages/pt-BR";
 
 const t = messages.plans.manage;
 
-export function planPeriod(startsOn: string | null, endsOn: string | null) {
+export function planPeriod(startsOn: string | null, endsOn: string | null, noEnd = false) {
+  if (noEnd) return t.periodNoEnd(startsOn ? formatDate(startsOn) : "…");
   if (!startsOn && !endsOn) return t.noPeriod;
   return t.period(startsOn ? formatDate(startsOn) : "…", endsOn ? formatDate(endsOn) : "…");
 }

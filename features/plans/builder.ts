@@ -51,6 +51,11 @@ export interface PlanDraft {
   /** dd/mm/aaaa */
   startsOn: string;
   endsOn: string;
+  /** Sem data de expiração (o Fim fica vazio). */
+  noEnd: boolean;
+  plannedSessions: string;
+  /** Professor do plano; "" = padrão do servidor (professor responsável pelo aluno). */
+  trainerId: string;
   notes: string;
   workouts: WorkoutDraft[];
 }
@@ -219,7 +224,10 @@ export function toPayload(draft: PlanDraft): unknown {
     goal: text(draft.goal),
     level: draft.level || null,
     starts_on: date(draft.startsOn),
-    ends_on: date(draft.endsOn),
+    ends_on: draft.noEnd ? null : date(draft.endsOn),
+    no_end: draft.noEnd,
+    planned_sessions: parseNumber(draft.plannedSessions),
+    trainer_id: draft.trainerId || null,
     notes: text(draft.notes),
     workouts: draft.workouts.map((w) => ({
       label: w.label.trim(),
@@ -267,6 +275,8 @@ const FIELD: Record<string, string> = {
   level: "level",
   starts_on: "startsOn",
   ends_on: "endsOn",
+  planned_sessions: "plannedSessions",
+  trainer_id: "trainerId",
 };
 
 export type DraftErrors = Record<string, string>;
@@ -311,6 +321,9 @@ export interface SavedPlan {
   level: PlanLevel | null;
   startsOn: string | null;
   endsOn: string | null;
+  noEnd: boolean;
+  plannedSessions: number | null;
+  trainerId: string | null;
   notes: string | null;
   workouts: {
     label: string;
@@ -352,6 +365,9 @@ export function fromSaved(plan: SavedPlan): PlanDraft {
     level: plan.level ?? "",
     startsOn: plan.startsOn ? isoToBR(plan.startsOn) : "",
     endsOn: plan.endsOn ? isoToBR(plan.endsOn) : "",
+    noEnd: plan.noEnd,
+    plannedSessions: plan.plannedSessions === null ? "" : String(plan.plannedSessions),
+    trainerId: plan.trainerId ?? "",
     notes: plan.notes ?? "",
     workouts: plan.workouts.map((w) => ({
       key: newKey(),

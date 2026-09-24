@@ -33,6 +33,9 @@ function draft(items: ItemDraft[], extra: Partial<PlanDraft> = {}): PlanDraft {
     level: "",
     startsOn: "",
     endsOn: "",
+    noEnd: false,
+    plannedSessions: "",
+    trainerId: "",
     notes: "",
     workouts: [{ key: "w1", label: "A", name: "", notes: "", items }],
     ...extra,
@@ -190,6 +193,9 @@ describe("validação e payload", () => {
       level: "iniciante",
       startsOn: "2026-10-01",
       endsOn: null,
+      noEnd: false,
+      plannedSessions: 24,
+      trainerId: null,
       notes: null,
       workouts: [
         {
@@ -248,5 +254,30 @@ describe("formatação para impressão", async () => {
     expect(formatLoad(40, "lb", "barra W")).toBe("40 lb · barra W");
     expect(formatLoad(null, null, "  ")).toBeNull();
     expect(formatDecimal(7.5)).toBe("7,5");
+  });
+});
+
+describe("cabeçalho do plano (2.8.1)", () => {
+  it("sem expiração: payload sem fim e sem erro de fim antes do início", () => {
+    const r = validateDraft(draft([], { startsOn: "01/10/2026", endsOn: "01/09/2026", noEnd: true, plannedSessions: "36" }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload).toMatchObject({ no_end: true, ends_on: null, planned_sessions: 36, trainer_id: null });
+  });
+  it("sessões previstas: 1–500, inteiras", () => {
+    for (const bad of ["0", "501", "2,5", "abc"]) {
+      const r = validateDraft(draft([], { plannedSessions: bad }));
+      expect(!r.ok && r.errors["plan.plannedSessions"]).toBeTruthy();
+    }
+  });
+  it("professor do plano vai no payload; vazio = padrão do servidor", () => {
+    const T = "22222222-2222-4222-8222-222222222222";
+    const r = validateDraft(draft([], { trainerId: T }));
+    expect(r.ok && r.payload.trainer_id).toBe(T);
+  });
+  it("ida e volta preserva sem expiração, sessões e professor", async () => {
+    const { fromSaved } = await import("@/features/plans/builder");
+    const d = fromSaved({ id: EX, studentId: EX, name: "P", goal: null, level: null, startsOn: "2026-10-01", endsOn: null, noEnd: true, plannedSessions: 12, trainerId: EX, notes: null, workouts: [] });
+    expect([d.noEnd, d.plannedSessions, d.trainerId, d.endsOn]).toEqual([true, "12", EX, ""]);
   });
 });

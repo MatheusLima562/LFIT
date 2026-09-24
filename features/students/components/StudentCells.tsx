@@ -62,6 +62,8 @@ export function StudentGroups({ student }: { student: StudentRow }) {
 export function StudentPlan({ student }: { student: StudentRow }) {
   const ends = student.workoutPlanEndsAt;
   if (!ends) return <span className="text-[13px] whitespace-nowrap text-ink-3">{t.plan.none}</span>;
+  // Plano sem data de expiração: o banco guarda 'infinity' (não é data formatável).
+  if (ends === "infinity") return <span className="text-[13px] whitespace-nowrap text-ink-2">{t.plan.noEnd}</span>;
   const state = planSituation(timestampToISODate(ends))?.kind ?? "ok";
   return (
     <span
