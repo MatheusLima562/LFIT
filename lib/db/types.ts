@@ -337,6 +337,67 @@ export type Database = {
           },
         ]
       }
+      exercise_defaults: {
+        Row: {
+          exercise_id: string
+          id: string
+          organization_id: string | null
+          quantity_max: number | null
+          quantity_min: number | null
+          quantity_unit: Database["public"]["Enums"]["quantity_unit"]
+          rest_max: number | null
+          rest_min: number | null
+          sets: number | null
+          updated_at: string
+        }
+        Insert: {
+          exercise_id: string
+          id?: string
+          organization_id?: string | null
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          sets?: number | null
+          updated_at?: string
+        }
+        Update: {
+          exercise_id?: string
+          id?: string
+          organization_id?: string | null
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          sets?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_defaults_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_defaults_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_defaults_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           archived_at: string | null
@@ -641,43 +702,116 @@ export type Database = {
       plan_item_sets: {
         Row: {
           id: string
+          intensity_type: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value: number | null
           item_id: string
           load_text: string | null
           load_unit: Database["public"]["Enums"]["load_unit"] | null
           load_value: number | null
           organization_id: string
           position: number
+          quantity_max: number | null
+          quantity_min: number | null
+          quantity_note: string | null
+          quantity_unit: Database["public"]["Enums"]["quantity_unit"]
           reps: string | null
+          rest_max: number | null
+          rest_min: number | null
           rest_seconds: number | null
           set_type: Database["public"]["Enums"]["set_type"]
+          speed: Database["public"]["Enums"]["speed_preset"] | null
+          tempo: string | null
         }
         Insert: {
           id?: string
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
           item_id: string
           load_text?: string | null
           load_unit?: Database["public"]["Enums"]["load_unit"] | null
           load_value?: number | null
           organization_id: string
           position: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
           reps?: string | null
+          rest_max?: number | null
+          rest_min?: number | null
           rest_seconds?: number | null
           set_type?: Database["public"]["Enums"]["set_type"]
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
+          tempo?: string | null
         }
         Update: {
           id?: string
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
           item_id?: string
           load_text?: string | null
           load_unit?: Database["public"]["Enums"]["load_unit"] | null
           load_value?: number | null
           organization_id?: string
           position?: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
           reps?: string | null
+          rest_max?: number | null
+          rest_min?: number | null
           rest_seconds?: number | null
           set_type?: Database["public"]["Enums"]["set_type"]
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
+          tempo?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "plan_item_sets_item_id_organization_id_fkey"
+            columns: ["item_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      plan_item_substitutes: {
+        Row: {
+          exercise_id: string
+          item_id: string
+          organization_id: string
+          position: number
+        }
+        Insert: {
+          exercise_id: string
+          item_id: string
+          organization_id: string
+          position: number
+        }
+        Update: {
+          exercise_id?: string
+          item_id?: string
+          organization_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_item_substitutes_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_item_substitutes_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_item_substitutes_item_id_organization_id_fkey"
             columns: ["item_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "plan_workout_items"
@@ -708,51 +842,87 @@ export type Database = {
           exercise_id: string
           group_key: string | null
           id: string
+          intensity_type: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value: number | null
           load_text: string | null
           load_unit: Database["public"]["Enums"]["load_unit"] | null
           load_value: number | null
+          method_id: string | null
           notes: string | null
+          objective_id: string | null
           organization_id: string
           position: number
+          quantity_max: number | null
+          quantity_min: number | null
+          quantity_note: string | null
+          quantity_unit: Database["public"]["Enums"]["quantity_unit"]
           reps: string | null
+          rest_max: number | null
+          rest_min: number | null
           rest_seconds: number | null
           rpe_target: number | null
           sets: number | null
+          speed: Database["public"]["Enums"]["speed_preset"] | null
           tempo: string | null
+          tip: string | null
           workout_id: string
         }
         Insert: {
           exercise_id: string
           group_key?: string | null
           id?: string
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
           load_text?: string | null
           load_unit?: Database["public"]["Enums"]["load_unit"] | null
           load_value?: number | null
+          method_id?: string | null
           notes?: string | null
+          objective_id?: string | null
           organization_id: string
           position: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
           reps?: string | null
+          rest_max?: number | null
+          rest_min?: number | null
           rest_seconds?: number | null
           rpe_target?: number | null
           sets?: number | null
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
           tempo?: string | null
+          tip?: string | null
           workout_id: string
         }
         Update: {
           exercise_id?: string
           group_key?: string | null
           id?: string
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
           load_text?: string | null
           load_unit?: Database["public"]["Enums"]["load_unit"] | null
           load_value?: number | null
+          method_id?: string | null
           notes?: string | null
+          objective_id?: string | null
           organization_id?: string
           position?: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
           reps?: string | null
+          rest_max?: number | null
+          rest_min?: number | null
           rest_seconds?: number | null
           rpe_target?: number | null
           sets?: number | null
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
           tempo?: string | null
+          tip?: string | null
           workout_id?: string
         }
         Relationships: [
@@ -769,6 +939,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "exercises"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_workout_items_method_fkey"
+            columns: ["method_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "training_methods"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "plan_workout_items_objective_fkey"
+            columns: ["objective_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "training_objectives"
+            referencedColumns: ["id", "organization_id"]
           },
           {
             foreignKeyName: "plan_workout_items_workout_id_organization_id_fkey"
@@ -1124,6 +1308,76 @@ export type Database = {
           },
         ]
       }
+      training_methods: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          position: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          position?: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_methods_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_objectives: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          position: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          position?: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_objectives_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_plans: {
         Row: {
           activated_at: string | null
@@ -1135,12 +1389,15 @@ export type Database = {
           id: string
           level: string | null
           name: string
+          no_end: boolean
           notes: string | null
           organization_id: string
+          planned_sessions: number | null
           source_plan_id: string | null
           starts_on: string | null
           status: Database["public"]["Enums"]["plan_status"]
           student_id: string | null
+          trainer_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1153,12 +1410,15 @@ export type Database = {
           id?: string
           level?: string | null
           name: string
+          no_end?: boolean
           notes?: string | null
           organization_id: string
+          planned_sessions?: number | null
           source_plan_id?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           student_id?: string | null
+          trainer_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1171,12 +1431,15 @@ export type Database = {
           id?: string
           level?: string | null
           name?: string
+          no_end?: boolean
           notes?: string | null
           organization_id?: string
+          planned_sessions?: number | null
           source_plan_id?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           student_id?: string | null
+          trainer_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1206,6 +1469,13 @@ export type Database = {
             columns: ["student_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "training_plans_trainer_fkey"
+            columns: ["trainer_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id", "organization_id"]
           },
         ]
@@ -1403,7 +1673,27 @@ export type Database = {
       }
     }
     Functions: {
-      activate_plan: { Args: { p_plan_id: string }; Returns: undefined }
+      activate_plan: {
+        Args: { p_plan_id: string }
+        Returns: Database["public"]["Enums"]["plan_status"]
+      }
+      admin_activate_due_plans: { Args: never; Returns: number }
+      apply_plan_to_students: {
+        Args: {
+          p_activate: boolean
+          p_ends_on: string
+          p_no_end: boolean
+          p_source: string
+          p_starts_on: string
+          p_students: string[]
+        }
+        Returns: {
+          error: string
+          plan_id: string
+          status: Database["public"]["Enums"]["plan_status"]
+          student_id: string
+        }[]
+      }
       apply_template_to_student: {
         Args: {
           p_ends_on?: string
@@ -1681,6 +1971,15 @@ export type Database = {
           trainer_name: string
         }[]
       }
+      get_plan_header: {
+        Args: { p_plan_id: string }
+        Returns: {
+          student_id: string
+          student_name: string
+          trainer_id: string
+          trainer_name: string
+        }[]
+      }
       get_public_signup_form: {
         Args: { p_token: string }
         Returns: {
@@ -1724,11 +2023,23 @@ export type Database = {
         Args: { p_plan_id: string }
         Returns: {
           condition_name: string
+          exercise_id: string
           group_name: string
           hidden: boolean
           item_id: string
           level: Database["public"]["Enums"]["contraindication_level"]
           note: string
+          substitute: boolean
+        }[]
+      }
+      preview_plan_alerts_for_students: {
+        Args: { p_source: string; p_students: string[] }
+        Returns: {
+          avoid: number
+          caution: number
+          error: string
+          hidden: boolean
+          student_id: string
         }[]
       }
       reactivate_student: {
@@ -1894,14 +2205,24 @@ export type Database = {
     Enums: {
       contraindication_level: "avoid" | "caution"
       effective_status: "active" | "blocked" | "inactive" | "expired"
+      intensity_type: "pct_1rm" | "rpe" | "rir"
       load_unit: "kg" | "lb"
       payment_method: "pix" | "card" | "cash" | "transfer" | "other"
       payment_status: "pending" | "paid" | "canceled"
-      plan_status: "draft" | "active" | "archived"
+      plan_status: "draft" | "active" | "scheduled" | "archived"
       plan_tier: "free" | "pro" | "gold"
+      quantity_unit:
+        | "reps"
+        | "failure"
+        | "seconds"
+        | "minutes"
+        | "meters"
+        | "km"
+        | "arrivals"
       set_type: "warmup" | "work" | "drop"
       sex: "M" | "F"
       signup_status: "pending" | "approved" | "rejected"
+      speed_preset: "slow" | "moderate" | "fast" | "explosive"
       student_source: "manual" | "public_link"
       student_status: "active" | "inactive"
       user_role: "owner" | "trainer" | "student"
@@ -2034,14 +2355,25 @@ export const Constants = {
     Enums: {
       contraindication_level: ["avoid", "caution"],
       effective_status: ["active", "blocked", "inactive", "expired"],
+      intensity_type: ["pct_1rm", "rpe", "rir"],
       load_unit: ["kg", "lb"],
       payment_method: ["pix", "card", "cash", "transfer", "other"],
       payment_status: ["pending", "paid", "canceled"],
-      plan_status: ["draft", "active", "archived"],
+      plan_status: ["draft", "active", "scheduled", "archived"],
       plan_tier: ["free", "pro", "gold"],
+      quantity_unit: [
+        "reps",
+        "failure",
+        "seconds",
+        "minutes",
+        "meters",
+        "km",
+        "arrivals",
+      ],
       set_type: ["warmup", "work", "drop"],
       sex: ["M", "F"],
       signup_status: ["pending", "approved", "rejected"],
+      speed_preset: ["slow", "moderate", "fast", "explosive"],
       student_source: ["manual", "public_link"],
       student_status: ["active", "inactive"],
       user_role: ["owner", "trainer", "student"],

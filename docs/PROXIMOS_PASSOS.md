@@ -3,7 +3,7 @@
 _Atualizado em 24/09/2026._
 
 ## Etapa atual
-**Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas e commitadas; próxima: planejar a 2.8. Você está testando o montador (2.5) com um
+**Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. **2.8: checkpoint do banco (2.8.0) — aguardando sua revisão antes das telas.** Você está testando o montador (2.5) com um
 treino real. **Nada em andamento no código** (working tree limpo, `tsc` sem erros).
 
 ## Concluído (branch `feat/fase-2-treinos`)
@@ -21,9 +21,13 @@ treino real. **Nada em andamento no código** (working tree limpo, `tsc` sem err
 1. ~~2.6 Impressão~~ ✔
 2. ~~2.7 Verificação final da Fase 2~~ ✔ (228 testes; todos os roteiros de navegador das Fases 1 e 2 no build de
    produção; advisors revisados; índices de FKs adicionados)
-3. **2.8** Ajustes do montador — **pendente**, plano em `docs/planos/etapa-2.8.md` (planejar e mostrar antes de implementar).
-4. **C1** Contas com múltiplos vínculos (sem cobrança).
-5. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
+3. **2.8** Ajustes do montador — plano aprovado (`~/.claude/plans/…` e `docs/planos/etapa-2.8.md`). 2.8.0 banco ✔
+   (migrations `20261004120000`–`20261004120700`, 24 testes novos). Faltam as telas: 2.8.1 plano, 2.8.2 exercício no
+   plano, 2.8.3 série (depois dela, remover as colunas legadas), 2.8.4 produtividade.
+4. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
+   Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
+5. **C1** Contas com múltiplos vínculos (sem cobrança).
+6. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
 
 ## Arquivos em andamento
 Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `app/(app)/treinos/**`,
@@ -42,7 +46,7 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 - Security Advisor: 29 avisos "authenticated can execute SECURITY DEFINER" (todos documentados no CLAUDE.md) + senha vazada (plano pago).
 
 ## Próximo comando
-Depois do seu teste do montador, peça: **"Siga com a 2.6 (impressão)"**. Antes, confira o estado com:
+Depois de revisar o checkpoint do banco da 2.8, peça: **"Siga com as telas da 2.8 (2.8.1)"**. Antes, confira o estado com:
 ```bash
 git status && npx tsc --noEmit && npm test
 ```

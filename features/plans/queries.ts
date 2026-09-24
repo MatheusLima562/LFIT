@@ -4,7 +4,7 @@ import type { ContraindicationLevel } from "@/features/exercises/constants";
 import type { SavedPlan } from "./builder";
 import type { LoadUnit, PlanLevel, SetType } from "./schemas";
 
-export type PlanStatus = "draft" | "active" | "archived";
+export type PlanStatus = "draft" | "active" | "scheduled" | "archived";
 
 export interface PlanForBuilder {
   plan: SavedPlan;
@@ -223,6 +223,7 @@ export async function listStudentPlans(studentId: string, session: { userId: str
   const rows = ((data ?? []) as unknown as SummaryRow[]).map((r) => toSummary(r, session));
   return {
     active: rows.find((r) => r.status === "active") ?? null,
+    scheduled: rows.filter((r) => r.status === "scheduled"),
     drafts: rows.filter((r) => r.status === "draft"),
     archived: rows.filter((r) => r.status === "archived"),
   };

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { anon, dbTestsEnabled, Fixture, rpc, studentData, type TestOrg, type TestUser } from "./helpers";
+import { anon, dbTestsEnabled, Fixture, rpc, spDateDaysAgo, studentData, type TestOrg, type TestUser } from "./helpers";
 
 const BUCKET = "exercise-media";
 const bytes = (n: number) => new Uint8Array(n).fill(7);
@@ -88,7 +88,7 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
     expect((await ownerB.client.storage.from(BUCKET).list(org.id)).data ?? []).toHaveLength(0);
 
     const planId = await rpc<string>(owner.client, "save_training_plan", {
-      p_plan: { student_id: studentId, name: "Plano", starts_on: "2026-10-01", ends_on: "2026-12-01", workouts: [{ label: "A", items: [{ exercise_id: ex, sets: 3, reps: "10" }] }] },
+      p_plan: { student_id: studentId, name: "Plano", starts_on: spDateDaysAgo(5), ends_on: spDateDaysAgo(-60), workouts: [{ label: "A", items: [{ exercise_id: ex, sets: 3, reps: "10" }] }] },
     });
     expect(await canRead(student, video), "rascunho").toBe(false); // rascunho não conta
     await rpc(owner.client, "activate_plan", { p_plan_id: planId });

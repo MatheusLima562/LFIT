@@ -242,7 +242,8 @@ async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelh
                 ],
               }),
               item("Remada unilateral com halter"),
-              item("Levantamento terra romeno", { notes: "Somente sem dor lombar" }),
+              // Substitutos (2.8): alternativas quando faltar equipamento — também passam pelos alertas.
+              item("Levantamento terra romeno", { notes: "Somente sem dor lombar", substitutes: [ex("Elevação pélvica"), ex("Ponte de glúteos")] }),
             ],
           },
         ],
@@ -264,6 +265,15 @@ async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelh
   await assign(hipertrofia, ids[1], -60, -3); // vencido
   await assign(hipertrofia, ids[2], -5, 55);
   await assign(coluna_, ids[12], 0, 60, false); // rascunho
+  await assign(hipertrofia, ids[4], 5, 60); // agendado: começa quando o atual (a vencer) terminar
+  // Sem data de expiração (2.8): fora de "A vencer/Vencidos".
+  const semFim = must(
+    await owner.rpc("apply_template_to_student", { p_template_id: coluna_, p_student_id: ids[6], p_starts_on: dateOnly(-3) }),
+    "modelo sem expiração",
+  ) as string;
+  // Só os campos do plano (salvar pelo RPC exigiria reenviar a estrutura inteira).
+  ok(await admin.from("training_plans").update({ no_end: true, ends_on: null, planned_sessions: 36 }).eq("id", semFim), "sem expiração");
+  ok(await owner.rpc("activate_plan", { p_plan_id: semFim }), "ativar sem expiração");
 }
 
 async function seed() {

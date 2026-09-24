@@ -71,6 +71,7 @@ export default async function StudentPlansPage({ params }: PageProps<"/alunos/[i
           <EmptyState icon={<Dumbbell />} message={t.noActive} className="min-h-32 bg-surface" />
         )}
       </section>
+      {plans.scheduled.length > 0 && section(t.scheduledTitle, plans.scheduled, "")}
       {section(t.drafts, plans.drafts, t.noDrafts)}
       {section(t.history, plans.archived, t.noHistory)}
     </div>

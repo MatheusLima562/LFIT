@@ -40,10 +40,11 @@ export async function activatePlan(planId: string, studentId: string): Promise<P
   if (!z.uuid().safeParse(planId).success || !z.uuid().safeParse(studentId).success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
   if (!(await isStaff())) return { ok: false, error: messages.dbErrors.FORBIDDEN };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("activate_plan", { p_plan_id: planId });
+  const { data, error } = await supabase.rpc("activate_plan", { p_plan_id: planId });
   if (error) return { ok: false, error: dbErrorMessage(error) };
   revalidatePlan(studentId, planId);
-  return { ok: true, id: planId, message: messages.plans.actions.activated };
+  // Início futuro → agendado (ativado pelo job diário na data).
+  return { ok: true, id: planId, message: data === "scheduled" ? messages.plans.actions.scheduled : messages.plans.actions.activated };
 }
 
 export interface PickerExercise {

@@ -213,6 +213,25 @@ effective_status =
   (só owner, exercício sem uso em treinos) apaga os arquivos com a secret key **depois** que o RLS autorizou a
   exclusão da linha. Arquivar não apaga. `npm run db:seed -- --reset` limpa a pasta da org de exemplo.
 
+### Montador — etapa 2.8 (banco pronto; telas em andamento)
+- **Plano:** `no_end` (sem data de expiração → `students.workout_plan_ends_at = 'infinity'`: fora de A vencer/Vencidos
+  e diferente de "Sem treino"), `planned_sessions`, `trainer_id` (professor do plano; padrão = do aluno). O professor
+  do plano **vê e edita só aquele plano** (`can_access_plan`/`lock_editable_plan`); não vê o cadastro, outros planos nem
+  saúde (alertas `hidden`). Nome do aluno para ele via `get_plan_header`.
+- **Agendado:** `activate_plan` devolve o status; início futuro → `scheduled` (sem sobrepor outro agendado:
+  `PLAN_OVERLAP`). Job **pg_cron `lfit-activate-due-plans` às 03:05 UTC (= 00:05 SP)** roda
+  `private.activate_due_plans()` (ativa e arquiva o anterior). Disparo manual: `admin_activate_due_plans()` (service_role).
+- **Prescrição** (item e série, mesmos campos): `quantity_unit` (reps, failure, seconds, minutes, meters, km, arrivals) +
+  `quantity_min/max` + `quantity_note` ("por lado"), `intensity_type/value` (%1RM 1–120, RPE 1–10, RIR 0–10),
+  `speed` (preset) **ou** `tempo`, `rest_min/max`. Item: `method_id`, `objective_id` (listas por org; só o owner
+  gerencia), `tip` (substitui a observação), até 3 substitutos (`plan_item_substitutes`; alertas incluem substitutos).
+- **Colunas legadas** `reps`, `rest_seconds`, `rpe_target`, `notes` (itens e séries): o `save_training_plan` aceita o
+  formato antigo e **grava as duas fontes de forma consistente** (legadas derivadas das novas por
+  `private.format_quantity`). **Remover as legadas na etapa seguinte à migração da interface (2.8.3)**, junto com a
+  leitura delas em `features/plans/queries.ts` e na impressão.
+- **Padrões por exercício** (`exercise_defaults`): camada global (migration) + camada da org (global: qualquer staff;
+  próprio: owner ou autor). Métodos/objetivos iniciais semeados em toda org nova (gatilho em `organizations`).
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias. A fórmula deve aparecer na UI.
@@ -250,8 +269,9 @@ sem efeitos colaterais).
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
 | Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
 | Alertas de contraindicação (Fase 2) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem só `hidden = true` (não revelam condição/grupo) |
+| Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
-| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
 Checklist para toda função `SECURITY DEFINER` nova:
 1. `set search_path = ''` e nomes totalmente qualificados.
@@ -329,7 +349,8 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; falta **2.8** ajustes do montador) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador em andamento — banco ✔; **2.9** página do aluno
+  `/alunos/[id]`, planejar antes) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
   registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
   Fase 4 gestão e retenção. Planos: `docs/planos/fase-c.md` e `docs/planos/etapa-2.8.md`; retomada em `docs/PROXIMOS_PASSOS.md`.

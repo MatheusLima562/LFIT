@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { anon, dbTestsEnabled, Fixture, rpc, studentData, type TestOrg, type TestUser } from "./helpers";
+import { anon, dbTestsEnabled, Fixture, rpc, spDateDaysAgo, studentData, type TestOrg, type TestUser } from "./helpers";
 
 type Alert = { item_id: string | null; level: string | null; note: string | null; condition_name: string | null; group_name: string | null; hidden: boolean };
 
@@ -286,7 +286,7 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
 
     it("sem consentimento do titular, owner não responsável só vê 'oculto'", async () => {
       const alerts = await rpc<Alert[]>(owner.client, "plan_contraindication_alerts", { p_plan_id: planId });
-      expect(alerts).toEqual([{ item_id: null, level: null, note: null, condition_name: null, group_name: null, hidden: true }]);
+      expect(alerts).toEqual([{ item_id: null, exercise_id: null, substitute: null, level: null, note: null, condition_name: null, group_name: null, hidden: true }]);
       const rules = await rpc<Alert[]>(owner.client, "student_contraindication_rules", { p_student_id: s1 });
       expect(rules).toHaveLength(1);
       expect(rules[0].hidden).toBe(true);
@@ -304,19 +304,21 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
     it("ativar exige datas, sincroniza o vencimento e mantém 1 ativo por aluno", async () => {
       await expect(rpc(trainer.client, "activate_plan", { p_plan_id: planId })).rejects.toThrow("PLAN_DATES_REQUIRED");
 
-      await rpc(trainer.client, "save_training_plan", { p_plan: planPayload(s1, { id: planId, starts_on: "2026-10-01", ends_on: "2026-11-30" }) });
+      // Início no passado → ativa na hora (início futuro agenda; ver training-2-8.test.ts).
+      const end1 = spDateDaysAgo(-60), end2 = spDateDaysAgo(-120);
+      await rpc(trainer.client, "save_training_plan", { p_plan: planPayload(s1, { id: planId, starts_on: spDateDaysAgo(30), ends_on: end1 }) });
       await rpc(trainer.client, "activate_plan", { p_plan_id: planId });
       const read = async () => (await fx.db.from("students").select("workout_plan_ends_at").eq("id", s1).single()).data!.workout_plan_ends_at;
-      expect(new Date(await read()).toISOString()).toBe(new Date("2026-11-30T23:59:59-03:00").toISOString());
+      expect(new Date(await read()).toISOString()).toBe(new Date(`${end1}T23:59:59-03:00`).toISOString());
 
       const second = await rpc<string>(trainer.client, "save_training_plan", {
-        p_plan: planPayload(s1, { name: "Treino novo", starts_on: "2026-12-01", ends_on: "2027-01-31" }),
+        p_plan: planPayload(s1, { name: "Treino novo", starts_on: spDateDaysAgo(1), ends_on: end2 }),
       });
       await rpc(trainer.client, "activate_plan", { p_plan_id: second });
       const { data } = await fx.db.from("training_plans").select("id, status").eq("student_id", s1);
       expect(data!.filter((p) => p.status === "active").map((p) => p.id)).toEqual([second]);
       expect(data!.find((p) => p.id === planId)!.status).toBe("archived");
-      expect(new Date(await read()).toISOString()).toBe(new Date("2027-01-31T23:59:59-03:00").toISOString());
+      expect(new Date(await read()).toISOString()).toBe(new Date(`${end2}T23:59:59-03:00`).toISOString());
 
       await rpc(trainer.client, "archive_plan", { p_plan_id: second });
       expect(await read()).toBeNull();
