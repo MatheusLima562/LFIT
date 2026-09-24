@@ -345,11 +345,14 @@ export type Database = {
           equipment: string | null
           id: string
           instructions: string | null
+          media_bytes: number
           muscle_groups: string[]
           name: string
           organization_id: string | null
+          poster_path: string | null
           source_exercise_id: string | null
           updated_at: string
+          video_path: string | null
           video_url: string | null
         }
         Insert: {
@@ -359,11 +362,14 @@ export type Database = {
           equipment?: string | null
           id?: string
           instructions?: string | null
+          media_bytes?: number
           muscle_groups?: string[]
           name: string
           organization_id?: string | null
+          poster_path?: string | null
           source_exercise_id?: string | null
           updated_at?: string
+          video_path?: string | null
           video_url?: string | null
         }
         Update: {
@@ -373,11 +379,14 @@ export type Database = {
           equipment?: string | null
           id?: string
           instructions?: string | null
+          media_bytes?: number
           muscle_groups?: string[]
           name?: string
           organization_id?: string | null
+          poster_path?: string | null
           source_exercise_id?: string | null
           updated_at?: string
+          video_path?: string | null
           video_url?: string | null
         }
         Relationships: [
@@ -481,6 +490,7 @@ export type Database = {
           slug: string
           student_limit: number
           updated_at: string
+          video_quota_bytes: number | null
         }
         Insert: {
           created_at?: string
@@ -491,6 +501,7 @@ export type Database = {
           slug: string
           student_limit?: number
           updated_at?: string
+          video_quota_bytes?: number | null
         }
         Update: {
           created_at?: string
@@ -501,6 +512,7 @@ export type Database = {
           slug?: string
           student_limit?: number
           updated_at?: string
+          video_quota_bytes?: number | null
         }
         Relationships: []
       }
@@ -672,6 +684,24 @@ export type Database = {
             referencedColumns: ["id", "organization_id"]
           },
         ]
+      }
+      plan_tier_limits: {
+        Row: {
+          plan: Database["public"]["Enums"]["plan_tier"]
+          updated_at: string
+          video_quota_bytes: number
+        }
+        Insert: {
+          plan: Database["public"]["Enums"]["plan_tier"]
+          updated_at?: string
+          video_quota_bytes: number
+        }
+        Update: {
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          updated_at?: string
+          video_quota_bytes?: number
+        }
+        Relationships: []
       }
       plan_workout_items: {
         Row: {
@@ -1189,6 +1219,7 @@ export type Database = {
           created_by: string | null
           customized: boolean | null
           equipment: string | null
+          has_video: boolean | null
           id: string | null
           instructions: string | null
           is_global: boolean | null
@@ -1205,6 +1236,7 @@ export type Database = {
           created_by?: string | null
           customized?: never
           equipment?: string | null
+          has_video?: never
           id?: string | null
           instructions?: string | null
           is_global?: never
@@ -1221,6 +1253,7 @@ export type Database = {
           created_by?: string | null
           customized?: never
           equipment?: string | null
+          has_video?: never
           id?: string | null
           instructions?: string | null
           is_global?: never
@@ -1678,6 +1711,13 @@ export type Database = {
           remaining: number
           student_limit: number
           used: number
+        }[]
+      }
+      organization_video_usage: {
+        Args: never
+        Returns: {
+          quota_bytes: number
+          used_bytes: number
         }[]
       }
       plan_contraindication_alerts: {

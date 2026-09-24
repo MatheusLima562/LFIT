@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
+import { exerciseMediaUrl } from "@/lib/media";
 import { searchKey } from "@/lib/text";
 import type { ContraindicationLevel, MuscleGroup } from "./constants";
 import { EXERCISE_PAGE_SIZE, type ExerciseListParams } from "./search-params";
@@ -12,6 +13,8 @@ export interface ExerciseRow {
   isGlobal: boolean;
   archived: boolean;
   customizedFrom: string | null;
+  /** Tem vídeo enviado ou link. */
+  hasVideo: boolean;
   rules: { avoid: number; caution: number };
 }
 
@@ -23,6 +26,8 @@ type ListRow = {
   is_global: boolean;
   archived_at: string | null;
   source_exercise_id: string | null;
+  has_video: boolean;
+  video_url: string | null;
   rules: { level: ContraindicationLevel }[];
 };
 
@@ -34,7 +39,7 @@ function sanitizeTerm(term: string) {
 /** Lista paginada no servidor (RLS: biblioteca global + exercícios da organização). */
 export async function listExercises(params: ExerciseListParams) {
   const supabase = await createClient();
-  let select = "id, name, muscle_groups, equipment, is_global, archived_at, source_exercise_id, rules:exercise_contraindications(level)";
+  let select = "id, name, muscle_groups, equipment, is_global, archived_at, source_exercise_id, has_video, video_url, rules:exercise_contraindications(level)";
   if (params.condicao) select += ", cond:exercise_contraindications!inner(condition_id)";
 
   let query = supabase.from("exercise_library").select(select, { count: "exact" });
@@ -65,6 +70,7 @@ export async function listExercises(params: ExerciseListParams) {
     isGlobal: r.is_global,
     archived: r.archived_at !== null,
     customizedFrom: r.source_exercise_id,
+    hasVideo: r.has_video || r.video_url !== null,
     rules: {
       avoid: r.rules.filter((x) => x.level === "avoid").length,
       caution: r.rules.filter((x) => x.level === "caution").length,
@@ -114,6 +120,10 @@ export interface ExerciseDetail {
   isGlobal: boolean;
   archived: boolean;
   customizedFrom: string | null;
+  /** Vídeo enviado (URL assinada de 7 dias, reaproveitada entre acessos). Tem prioridade sobre o link. */
+  video: { url: string; posterUrl: string | null } | null;
+  /** Bytes do vídeo atual (para descontar na checagem de cota ao trocar). */
+  mediaBytes: number;
   /** Dados do exercício editáveis pelo usuário (próprio + owner ou autor). */
   canEdit: boolean;
   rules: ExerciseRule[];
@@ -124,7 +134,7 @@ export async function getExerciseDetail(id: string, session: { userId: string; r
   const { data } = await supabase
     .from("exercises")
     .select(
-      "id, organization_id, name, muscle_groups, equipment, instructions, video_url, archived_at, created_by, source_exercise_id, " +
+      "id, organization_id, name, muscle_groups, equipment, instructions, video_url, video_path, poster_path, media_bytes, archived_at, created_by, source_exercise_id, " +
         "exercise_contraindications(organization_id, level, note, condition:health_conditions(id, name))",
     )
     .eq("id", id)
@@ -138,12 +148,17 @@ export async function getExerciseDetail(id: string, session: { userId: string; r
     equipment: string | null;
     instructions: string | null;
     video_url: string | null;
+    video_path: string | null;
+    poster_path: string | null;
+    media_bytes: number;
     archived_at: string | null;
     created_by: string | null;
     source_exercise_id: string | null;
     exercise_contraindications: { organization_id: string | null; level: ContraindicationLevel; note: string | null; condition: { id: string; name: string } | null }[];
   };
   const isGlobal = row.organization_id === null;
+  // Caminhos vindos de uma linha que o RLS já liberou ao usuário: pode assinar.
+  const [videoUrl, posterUrl] = await Promise.all([exerciseMediaUrl(row.video_path), exerciseMediaUrl(row.poster_path)]);
   return {
     id: row.id,
     name: row.name,
@@ -154,6 +169,8 @@ export async function getExerciseDetail(id: string, session: { userId: string; r
     isGlobal,
     archived: row.archived_at !== null,
     customizedFrom: row.source_exercise_id,
+    video: videoUrl ? { url: videoUrl, posterUrl } : null,
+    mediaBytes: row.media_bytes,
     canEdit: !isGlobal && (session.role === "owner" || row.created_by === session.userId),
     rules: row.exercise_contraindications
       .flatMap((r) =>
@@ -163,4 +180,15 @@ export async function getExerciseDetail(id: string, session: { userId: string; r
       )
       .sort((a, b) => Number(b.isGlobal) - Number(a.isGlobal) || a.conditionName.localeCompare(b.conditionName, "pt-BR")),
   };
+}
+
+export interface VideoUsage {
+  usedBytes: number;
+  quotaBytes: number;
+}
+
+export async function getVideoUsage(): Promise<VideoUsage> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("organization_video_usage").single();
+  return { usedBytes: Number(data?.used_bytes ?? 0), quotaBytes: Number(data?.quota_bytes ?? 0) };
 }

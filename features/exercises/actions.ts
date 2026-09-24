@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
+import { createAdminClient } from "@/lib/db/admin";
 import { createClient } from "@/lib/db/server";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
 import { exerciseFormSchema } from "./schemas";
@@ -75,4 +76,87 @@ export async function setExerciseArchived(id: string, archived: boolean): Promis
   if (!data?.length) return { ok: false, error: t.readOnlyOther };
   revalidate();
   return { ok: true, id, message: archived ? t.archived : t.unarchived };
+}
+
+// ---------------------------------------------------------------------------
+// Vídeo próprio (arquivo no bucket exercise-media)
+// ---------------------------------------------------------------------------
+
+const MEDIA_BUCKET = "exercise-media";
+
+export type VideoQuotaResult = { ok: true } | { ok: false; error: string; quota: true };
+
+/** Checagem prévia da cota (evita subir um arquivo que o banco recusaria). O gatilho reconfere. */
+export async function checkVideoQuota(exerciseId: string, bytes: number): Promise<VideoQuotaResult> {
+  if (!z.uuid().safeParse(exerciseId).success || !Number.isFinite(bytes) || bytes < 0) return { ok: false, error: messages.dbErrors.INVALID_INPUT, quota: true };
+  const supabase = await createClient();
+  const [{ data: usage }, { data: ex }] = await Promise.all([
+    supabase.rpc("organization_video_usage").single(),
+    supabase.from("exercises").select("media_bytes").eq("id", exerciseId).maybeSingle(),
+  ]);
+  if (!usage) return { ok: false, error: messages.dbErrors.FORBIDDEN, quota: true };
+  const used = Number(usage.used_bytes) - Number(ex?.media_bytes ?? 0);
+  if (used + bytes > Number(usage.quota_bytes)) return { ok: false, error: t.media.errors.quota, quota: true };
+  return { ok: true };
+}
+
+const mediaPath = (orgId: string, exerciseId: string, exts: string) => new RegExp(`^${orgId}/${exerciseId}/[0-9a-f-]{36}\\.(${exts})$`);
+
+/**
+ * Grava os caminhos já enviados pelo cliente. O gatilho valida tipo/tamanho/cota lendo o
+ * Storage. Falhou → apaga os arquivos novos; deu certo → apaga os antigos (sem órfãos).
+ */
+export async function setExerciseVideo(exerciseId: string, videoPath: string, posterPath: string | null): Promise<ExerciseActionResult> {
+  const session = await staffOrError();
+  if (!session || !z.uuid().safeParse(exerciseId).success) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  const cleanupNew = () => supabase.storage.from(MEDIA_BUCKET).remove([videoPath, ...(posterPath ? [posterPath] : [])]);
+  if (!mediaPath(session.organizationId, exerciseId, "mp4|webm").test(videoPath) || (posterPath && !mediaPath(session.organizationId, exerciseId, "jpg|webp").test(posterPath))) {
+    await cleanupNew();
+    return { ok: false, error: messages.dbErrors.INVALID_MEDIA };
+  }
+
+  const { data: old } = await supabase.from("exercises").select("video_path, poster_path").eq("id", exerciseId).maybeSingle();
+  const { data, error } = await supabase
+    .from("exercises")
+    .update({ video_path: videoPath, poster_path: posterPath })
+    .eq("id", exerciseId)
+    .select("id");
+  if (error || !data?.length) {
+    await cleanupNew();
+    return { ok: false, error: error ? dbErrorMessage(error) : t.readOnlyOther };
+  }
+  const stale = [old?.video_path, old?.poster_path].filter((p): p is string => Boolean(p) && p !== videoPath && p !== posterPath);
+  if (stale.length) await supabase.storage.from(MEDIA_BUCKET).remove(stale);
+  revalidate();
+  return { ok: true, id: exerciseId, message: t.media.saved };
+}
+
+export async function removeExerciseVideo(exerciseId: string): Promise<ExerciseActionResult> {
+  if (!(await staffOrError()) || !z.uuid().safeParse(exerciseId).success) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  const { data: old } = await supabase.from("exercises").select("video_path, poster_path").eq("id", exerciseId).maybeSingle();
+  // O gatilho zera poster_path e media_bytes junto.
+  const { data, error } = await supabase.from("exercises").update({ video_path: null }).eq("id", exerciseId).select("id");
+  if (error || !data?.length) return { ok: false, error: error ? dbErrorMessage(error) : t.readOnlyOther };
+  const stale = [old?.video_path, old?.poster_path].filter((p): p is string => Boolean(p));
+  if (stale.length) await supabase.storage.from(MEDIA_BUCKET).remove(stale);
+  revalidate();
+  return { ok: true, id: exerciseId, message: t.media.removed };
+}
+
+/** Exclusão definitiva (só owner, RLS). Apaga o vídeo depois que a linha foi excluída. */
+export async function deleteExercise(exerciseId: string): Promise<ExerciseActionResult> {
+  const session = await staffOrError();
+  if (!session || session.role !== "owner" || !z.uuid().safeParse(exerciseId).success) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  const { data: old } = await supabase.from("exercises").select("video_path, poster_path").eq("id", exerciseId).maybeSingle();
+  const { data, error } = await supabase.from("exercises").delete().eq("id", exerciseId).select("id");
+  if (error?.code === "23503") return { ok: false, error: t.inUse };
+  if (error || !data?.length) return { ok: false, error: dbErrorMessage(error) };
+  // A linha (que autorizava o acesso à pasta) já não existe: remoção com a secret key, depois do RLS autorizar a exclusão.
+  const stale = [old?.video_path, old?.poster_path].filter((p): p is string => Boolean(p));
+  if (stale.length) await createAdminClient().storage.from(MEDIA_BUCKET).remove(stale);
+  revalidate();
+  return { ok: true, id: exerciseId, message: t.deleted };
 }

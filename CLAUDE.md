@@ -189,6 +189,30 @@ effective_status =
 - A view `students_with_status` usa `s.*`, que o Postgres congela na criação: coluna nova em `students`
   exige recriar a view (drop + create + grant), como em `20261001120000_student_plan_filters.sql`.
 
+### Vídeo próprio de exercício (bucket `exercise-media`)
+- **Limites: MP4/WebM, até 15 MB e até 30 s por vídeo; poster JPEG até 1 MB.** Motivo: custo de storage e
+  principalmente de *egress* no plano grátis do Supabase (cada aluno assistindo baixa o arquivo). Por isso o
+  cliente recodifica para **720p sem áudio** (canvas + `MediaRecorder`, nativo, sem ffmpeg.wasm) e só troca
+  pelo original se ficar menor; navegadores sem suporte enviam o original, desde que dentro dos limites.
+- Onde cada limite é garantido: tipo e 15 MB pelo **bucket** (`allowed_mime_types`, `file_size_limit`) e de
+  novo pelo gatilho `private.exercise_media_guard` (lê `storage.objects`); extensão/nome pela política de
+  INSERT; **duração só no cliente** (o banco não decodifica vídeo).
+- **Cota por plano** em `plan_tier_limits.video_quota_bytes` (free = 0 → só link; pro = 500 MB; gold = 2 GB),
+  exceção por organização em `organizations.video_quota_bytes`. Nada fixo no código. `media_bytes` do exercício
+  é calculado pelo gatilho a partir do Storage (o cliente não tem grant nessa coluna).
+- Caminho `<org_id>/<exercise_id>/<uuid>.(mp4|webm|jpg|webp)`; `global/...` só por service_role. Leitura:
+  staff da própria org (+ `global/`); **aluno só de exercícios do próprio plano ativo** (Fase 3). Escrita e
+  remoção: quem edita o exercício (owner ou autor).
+- Um vídeo de cada tipo: link (YouTube/Vimeo) e arquivo; o arquivo tem prioridade na exibição. `<video muted
+  loop playsInline preload="none">` com poster, só carrega no clique.
+- URLs assinadas de **7 dias**, reaproveitadas (`lib/media.ts`, `unstable_cache` por caminho) para o navegador
+  usar o cache. Consequência aceita: revogar acesso (ex.: plano arquivado) não invalida uma URL já emitida até
+  ela vencer; o download autenticado também é servido de cache do Storage por alguns minutos. Vídeos de
+  demonstração não são dado de saúde.
+- Sem órfãos: trocar/remover apaga os arquivos antigos; falha ao gravar apaga os novos; exclusão definitiva
+  (só owner, exercício sem uso em treinos) apaga os arquivos com a secret key **depois** que o RLS autorizou a
+  exclusão da linha. Arquivar não apaga. `npm run db:seed -- --reset` limpa a pasta da org de exemplo.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias. A fórmula deve aparecer na UI.
@@ -295,6 +319,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
   por vencimento) e entrada "Treinos" no menu da linha de Meus alunos.
 - Próximos passos da Fase 2: 2.6 impressão (`/treinos/[planId]/imprimir`, sem dados de saúde) e 2.7
   verificação final. Regras globais de contraindicação: aguardando o CSV revisado.
+- Vídeo próprio nos exercícios (MP4/WebM, cota por plano): ver seção "Vídeo próprio de exercício".
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Dumbbell, Plus, SearchX } from "lucide-react";
 import { z } from "zod";
 import { requireStaff } from "@/lib/auth/session";
-import { getExerciseDetail, getExerciseFilterOptions, listExercises } from "@/features/exercises/queries";
+import { getExerciseDetail, getExerciseFilterOptions, getVideoUsage, listExercises } from "@/features/exercises/queries";
+import { VideoUsageBar } from "@/features/exercises/components/VideoUsageBar";
 import { exerciseListHref, parseExerciseListParams } from "@/features/exercises/search-params";
 import { ExerciseDetailDialog } from "@/features/exercises/components/ExerciseDetailDialog";
 import { ExerciseFormDialog } from "@/features/exercises/components/ExerciseFormDialog";
@@ -35,10 +36,11 @@ export default async function ExercisesPage({ searchParams }: PageProps<"/treino
   const dialog = parseDialog(raw);
   const listHref = exerciseListHref(params);
 
-  const [{ rows, total }, options, detail] = await Promise.all([
+  const [{ rows, total }, options, detail, videoUsage] = await Promise.all([
     listExercises(params),
     getExerciseFilterOptions(),
     dialog?.id ? getExerciseDetail(dialog.id, session) : Promise.resolve(null),
+    getVideoUsage(),
   ]);
   const filtered = Boolean(params.q || params.grupo || params.equip || params.condicao);
   // Sem permissão para editar → mostra a ficha em vez do formulário.
@@ -59,6 +61,8 @@ export default async function ExercisesPage({ searchParams }: PageProps<"/treino
         </Button>
       </header>
 
+      <VideoUsageBar usage={videoUsage} />
+
       <ExercisesToolbar params={params} equipment={options.equipment} conditions={options.conditions} />
 
       {rows.length === 0 ? (
@@ -75,10 +79,10 @@ export default async function ExercisesPage({ searchParams }: PageProps<"/treino
       )}
 
       {dialog?.mode === "view" && (
-        <ExerciseDetailDialog key={dialog.id} exercise={detail} closeHref={listHref} />
+        <ExerciseDetailDialog key={dialog.id} exercise={detail} closeHref={listHref} isOwner={session.role === "owner"} />
       )}
       {dialog?.mode === "edit" && !editable && (
-        <ExerciseDetailDialog key={dialog.id} exercise={detail} closeHref={listHref} />
+        <ExerciseDetailDialog key={dialog.id} exercise={detail} closeHref={listHref} isOwner={session.role === "owner"} />
       )}
       {(dialog?.mode === "create" || (dialog?.mode === "edit" && editable)) && (
         <ExerciseFormDialog
@@ -87,6 +91,9 @@ export default async function ExercisesPage({ searchParams }: PageProps<"/treino
           conditions={options.conditions}
           equipment={options.equipment}
           closeHref={listHref}
+          organizationId={session.organizationId}
+          videoQuotaBytes={videoUsage.quotaBytes}
+          videoUsedBytes={videoUsage.usedBytes}
         />
       )}
     </div>

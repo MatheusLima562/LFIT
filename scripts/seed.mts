@@ -46,8 +46,8 @@ function ok(result: { error: { message: string } | null }, what: string) {
   if (result.error) throw new Error(`${what}: ${result.error.message}`);
 }
 
-async function removeOrgPhotos(orgId: string) {
-  const bucket = admin.storage.from("student-photos");
+async function removeOrgPhotos(orgId: string, bucketName = "student-photos") {
+  const bucket = admin.storage.from(bucketName);
   const { data: folders } = await bucket.list(orgId, { limit: 1000 });
   for (const folder of folders ?? []) {
     const { data: files } = await bucket.list(`${orgId}/${folder.name}`, { limit: 1000 });
@@ -64,6 +64,7 @@ async function reset() {
     for (const s of studentUsers ?? []) await admin.auth.admin.deleteUser(s.user_id as string);
     // Fotos no Storage não são apagadas em cascata: remove a pasta da organização.
     await removeOrgPhotos(org.id);
+    await removeOrgPhotos(org.id, "exercise-media");
     const { error } = await admin.from("organizations").delete().eq("id", org.id);
     if (error) throw new Error(`apagar organização: ${error.message}`);
   }

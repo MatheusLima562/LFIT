@@ -116,7 +116,8 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
       const upd = await owner.client.from("exercises").update({ name: "Hack" }).eq("id", ex.supra).select("id");
       expect(upd.data ?? []).toHaveLength(0);
       const del = await owner.client.from("exercises").delete().eq("id", ex.supra).select("id");
-      expect(del.error ?? del.data?.length).toBeTruthy();
+      // Exclusão definitiva vale só para exercícios da própria org (RLS): no global afeta 0 linhas.
+      expect(del.data ?? []).toHaveLength(0);
       expect((await owner.client.from("exercises").insert({ organization_id: null, name: "Global falso" })).error).not.toBeNull();
       expect((await owner.client.from("health_conditions").insert({ organization_id: null, name: "Global falsa" })).error).not.toBeNull();
       expect(

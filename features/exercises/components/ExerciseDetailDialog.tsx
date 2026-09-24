@@ -2,30 +2,33 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, Copy, Pencil, ShieldAlert } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Pencil, ShieldAlert, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { customizeExercise, setExerciseArchived } from "../actions";
+import { customizeExercise, deleteExercise, setExerciseArchived } from "../actions";
 import type { ExerciseDetail } from "../queries";
 import { LevelBadge } from "./LevelBadge";
 import { VideoEmbed } from "./VideoEmbed";
+import { VideoPlayer } from "./VideoPlayer";
 
 const t = messages.exercises;
 
 interface Props {
   exercise: ExerciseDetail | null;
   closeHref: string;
+  isOwner: boolean;
 }
 
-export function ExerciseDetailDialog({ exercise, closeHref }: Props) {
+export function ExerciseDetailDialog({ exercise, closeHref, isOwner }: Props) {
   const editHref = (id: string) => `${closeHref}${closeHref.includes("?") ? "&" : "?"}editar=${id}`;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const close = () => router.replace(closeHref, { scroll: false });
 
   const run = (fn: () => Promise<{ ok: true; id: string; message: string } | { ok: false; error: string }>, then?: (id: string) => void) =>
@@ -62,10 +65,15 @@ export function ExerciseDetailDialog({ exercise, closeHref }: Props) {
                 <h3 className="mb-1.5 text-sm font-semibold text-ink">{t.instructions}</h3>
                 <p className="text-[13px] whitespace-pre-line text-ink-2">{exercise.instructions ?? t.noInstructions}</p>
               </section>
-              {exercise.videoUrl && (
+              {(exercise.video || exercise.videoUrl) && (
                 <section>
                   <h3 className="mb-1.5 text-sm font-semibold text-ink">{t.video}</h3>
-                  <VideoEmbed url={exercise.videoUrl} title={exercise.name} />
+                  {/* Vídeo enviado tem prioridade sobre o link. */}
+                  {exercise.video ? (
+                    <VideoPlayer url={exercise.video.url} posterUrl={exercise.video.posterUrl} title={exercise.name} />
+                  ) : (
+                    <VideoEmbed url={exercise.videoUrl!} title={exercise.name} />
+                  )}
                 </section>
               )}
               <section>
@@ -92,6 +100,12 @@ export function ExerciseDetailDialog({ exercise, closeHref }: Props) {
               </section>
             </div>
             <DialogFooter className="flex-wrap border-t border-line px-5 py-3 sm:px-6">
+              {isOwner && !exercise.isGlobal && (
+                <Button variant="ghost" className="text-danger hover:text-danger sm:mr-auto" disabled={pending} onClick={() => setConfirmDelete(true)}>
+                  <Trash2 aria-hidden />
+                  {t.delete}
+                </Button>
+              )}
               {exercise.isGlobal && (
                 <Button
                   variant="outline"
@@ -125,6 +139,19 @@ export function ExerciseDetailDialog({ exercise, closeHref }: Props) {
           </>
         )}
       </DialogContent>
+      {exercise && (
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={t.deleteTitle}
+          description={t.deleteText(exercise.name)}
+          confirmLabel={t.delete}
+          cancelLabel={messages.students.confirm.cancel}
+          destructive
+          pending={pending}
+          onConfirm={() => run(() => deleteExercise(exercise.id))}
+        />
+      )}
       {exercise && (
         <ConfirmDialog
           open={confirmArchive}

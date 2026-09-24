@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Film } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { cn } from "@/lib/utils";
@@ -41,9 +41,17 @@ const muscles = (row: ExerciseRow) => row.muscleGroups.map((g) => messages.muscl
 export function ExercisesList({ rows, params }: { rows: ExerciseRow[]; params: ExerciseListParams }) {
   const detailHref = (id: string) => exerciseListHref(params, { ver: id });
   const name = (row: ExerciseRow) => (
-    <Link href={detailHref(row.id)} scroll={false} className="rounded font-semibold text-ink hover:text-brand-700 hover:underline">
-      {row.name}
-    </Link>
+    <span className="inline-flex items-center gap-1.5">
+      <Link href={detailHref(row.id)} scroll={false} className="rounded font-semibold text-ink hover:text-brand-700 hover:underline">
+        {row.name}
+      </Link>
+      {row.hasVideo && (
+        <>
+          <Film aria-hidden className="size-3.5 text-ink-3" />
+          <span className="sr-only">{t.video}</span>
+        </>
+      )}
+    </span>
   );
 
   const columns: DataTableColumn<ExerciseRow>[] = [

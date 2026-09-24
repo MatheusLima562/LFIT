@@ -52,3 +52,10 @@ export function ageFrom(birthDate: string, today = new Date()) {
   if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age -= 1;
   return age;
 }
+
+/** Tamanho em MB/GB (pt-BR): 12,3 MB · 2 GB. */
+const upToOneDecimal = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 });
+export function formatBytes(bytes: number) {
+  const mb = bytes / 1024 / 1024;
+  return mb >= 1024 ? `${upToOneDecimal.format(mb / 1024)} GB` : `${upToOneDecimal.format(mb)} MB`;
+}

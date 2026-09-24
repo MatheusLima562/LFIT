@@ -14,7 +14,10 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { saveExercise } from "../actions";
+import { checkVideoQuota, removeExerciseVideo, saveExercise, setExerciseVideo } from "../actions";
+import { VIDEO_TYPES } from "../video";
+import { VideoField, type VideoFieldState } from "./VideoField";
+import { createClient } from "@/lib/db/client";
 import { CONTRAINDICATION_LEVELS, MUSCLE_GROUPS, type ContraindicationLevel } from "../constants";
 import type { ConditionOption, ExerciseDetail } from "../queries";
 import { emptyExerciseForm, exerciseFormSchema, type ExerciseFormInput } from "../schemas";
@@ -27,6 +30,9 @@ interface Props {
   conditions: ConditionOption[];
   equipment: string[];
   closeHref: string;
+  organizationId: string;
+  videoQuotaBytes: number;
+  videoUsedBytes: number;
 }
 
 function initialValues(exercise: ExerciseDetail | null): ExerciseFormInput {
@@ -42,12 +48,42 @@ function initialValues(exercise: ExerciseDetail | null): ExerciseFormInput {
   };
 }
 
-export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref }: Props) {
+export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref, organizationId, videoQuotaBytes, videoUsedBytes }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
   const defaults = useMemo(() => initialValues(exercise), [exercise]);
   const rulesOnly = exercise?.isGlobal ?? false;
+  const [video, setVideo] = useState<VideoFieldState>({ prepared: null, removeCurrent: false, busy: false });
+  const [uploading, setUploading] = useState(false);
+
+  /** Envia o vídeo preparado depois de o exercício existir (o caminho usa o id). Devolve avisos. */
+  const commitVideo = async (id: string): Promise<string[]> => {
+    if (video.prepared) {
+      const p = video.prepared;
+      const quota = await checkVideoQuota(id, p.file.size + (p.poster?.size ?? 0));
+      if (!quota.ok) return [quota.error];
+      setUploading(true);
+      const storage = createClient().storage.from("exercise-media");
+      const base = `${organizationId}/${id}/`;
+      const videoPath = `${base}${crypto.randomUUID()}.${VIDEO_TYPES[p.mime]}`;
+      const up = await storage.upload(videoPath, p.file, { contentType: p.mime, cacheControl: "604800" });
+      if (up.error) return [t.media.errors.upload];
+      let posterPath: string | null = null;
+      if (p.poster) {
+        const candidate = `${base}${crypto.randomUUID()}.jpg`;
+        const pu = await storage.upload(candidate, p.poster, { contentType: "image/jpeg", cacheControl: "604800" });
+        if (!pu.error) posterPath = candidate;
+      }
+      const r = await setExerciseVideo(id, videoPath, posterPath);
+      return r.ok ? [] : [r.error];
+    }
+    if (video.removeCurrent && exercise?.video) {
+      const r = await removeExerciseVideo(id);
+      return r.ok ? [] : [r.error];
+    }
+    return [];
+  };
 
   const {
     register,
@@ -72,7 +108,10 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref 
         else setServerError(r.error);
         return;
       }
+      const warnings = rulesOnly ? [] : await commitVideo(r.id);
+      setUploading(false);
       toast.success(rulesOnly ? t.rulesSaved : r.message);
+      warnings.forEach((w) => toast.warning(w, { duration: 10_000 }));
       router.replace(closeHref.includes("?") ? `${closeHref}&ver=${r.id}` : `${closeHref}?ver=${r.id}`, { scroll: false });
     });
   });
@@ -140,11 +179,21 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref 
                 <Textarea id="ex-instructions" rows={4} maxLength={2000} placeholder={t.form.instructionsPlaceholder} {...register("instructions")} />
               </Field>
 
-              <Field data-invalid={!!errors.videoUrl}>
-                <FieldLabel htmlFor="ex-video">{t.form.videoUrl}</FieldLabel>
-                <Input id="ex-video" type="url" inputMode="url" placeholder="https://www.youtube.com/watch?v=…" aria-invalid={!!errors.videoUrl} {...register("videoUrl")} />
-                {errors.videoUrl ? <FieldError>{errors.videoUrl.message}</FieldError> : <FieldDescription>{t.form.videoUrlHint}</FieldDescription>}
-              </Field>
+              <VideoField
+                hasCurrent={Boolean(exercise?.video)}
+                quotaBytes={videoQuotaBytes}
+                usedBytes={videoUsedBytes - (exercise?.mediaBytes ?? 0)}
+                state={video}
+                onChange={setVideo}
+                initialTab={exercise?.video ? "upload" : "link"}
+                linkField={
+                  <Field data-invalid={!!errors.videoUrl}>
+                    <FieldLabel htmlFor="ex-video">{t.form.videoUrl}</FieldLabel>
+                    <Input id="ex-video" type="url" inputMode="url" placeholder="https://www.youtube.com/watch?v=…" aria-invalid={!!errors.videoUrl} {...register("videoUrl")} />
+                    {errors.videoUrl ? <FieldError>{errors.videoUrl.message}</FieldError> : <FieldDescription>{t.form.videoUrlHint}</FieldDescription>}
+                  </Field>
+                }
+              />
             </>
           )}
 
@@ -252,7 +301,12 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref 
           <Button variant="ghost" onClick={close} disabled={pending}>
             {messages.students.confirm.cancel}
           </Button>
-          <Button type="submit" form="exercise-form" disabled={pending}>
+          {uploading && (
+            <span role="status" className="mr-auto self-center text-[13px] text-ink-2">
+              {t.media.uploading}
+            </span>
+          )}
+          <Button type="submit" form="exercise-form" disabled={pending || video.busy}>
             {exercise ? messages.groups.save : t.new}
           </Button>
         </DialogFooter>
