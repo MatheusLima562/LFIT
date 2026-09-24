@@ -167,7 +167,7 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
   });
 
   describe("prescrição nova e compatibilidade com o formato antigo", () => {
-    it("campos novos gravados e colunas legadas derivadas de forma consistente", async () => {
+    it("campos novos gravados (colunas legadas removidas)", async () => {
       const id = await rpc<string>(owner.client, "save_training_plan", {
         p_plan: plan(null, [
           item(ex.prancha, { quantity_unit: "seconds", quantity_min: 20, quantity_max: 30, intensity_type: "rpe", intensity_value: 7.5, speed: "slow", rest_min: 60, rest_max: 90, tip: "**Coluna neutra**\n- respire" }),
@@ -176,23 +176,24 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
       const it = await firstItem(id);
       expect(it).toMatchObject({
         quantity_unit: "seconds", quantity_min: 20, quantity_max: 30, intensity_type: "rpe", intensity_value: 7.5, speed: "slow", rest_min: 60, rest_max: 90,
-        reps: "20–30 s", rest_seconds: 60, rpe_target: 7.5, notes: "**Coluna neutra**\n- respire", tip: "**Coluna neutra**\n- respire",
+        tip: "**Coluna neutra**\n- respire",
       });
+      for (const legacy of ["reps", "rest_seconds", "rpe_target", "notes"]) expect(it).not.toHaveProperty(legacy);
     });
 
-    it("formato antigo (reps/rest_seconds/rpe_target/notes) é convertido", async () => {
+    it("formato antigo na entrada (reps/rest_seconds/rpe_target/notes) continua aceito e é convertido", async () => {
       const id = await rpc<string>(owner.client, "save_training_plan", {
         p_plan: plan(null, [{ exercise_id: ex.deadbug, sets: 3, reps: "8 por lado", rest_seconds: 45, rpe_target: 8, notes: "Lento", sets_detail: [{ set_type: "work", reps: "até a falha", rest_seconds: 30 }] }]),
       });
       const it = await firstItem(id);
-      expect(it).toMatchObject({ quantity_unit: "reps", quantity_min: 8, quantity_max: null, quantity_note: "por lado", rest_min: 45, intensity_type: "rpe", intensity_value: 8, tip: "Lento", reps: "8 por lado" });
-      const { data: set } = await fx.db.from("plan_item_sets").select("quantity_unit, quantity_min, reps, rest_min").eq("item_id", it.id as string).single();
-      expect(set).toEqual({ quantity_unit: "failure", quantity_min: null, reps: "até a falha", rest_min: 30 });
+      expect(it).toMatchObject({ quantity_unit: "reps", quantity_min: 8, quantity_max: null, quantity_note: "por lado", rest_min: 45, intensity_type: "rpe", intensity_value: 8, tip: "Lento" });
+      const { data: set } = await fx.db.from("plan_item_sets").select("quantity_unit, quantity_min, rest_min").eq("item_id", it.id as string).single();
+      expect(set).toEqual({ quantity_unit: "failure", quantity_min: null, rest_min: 30 });
     });
 
     it("unidade 'até a falha' descarta quantidade enviada (normalização no servidor)", async () => {
       const id = await rpc<string>(owner.client, "save_training_plan", { p_plan: plan(null, [item(ex.supra, { quantity_unit: "failure", quantity_min: 5 })]) });
-      expect(await firstItem(id)).toMatchObject({ quantity_unit: "failure", quantity_min: null, quantity_max: null, reps: "até a falha" });
+      expect(await firstItem(id)).toMatchObject({ quantity_unit: "failure", quantity_min: null, quantity_max: null });
     });
 
     it.each([

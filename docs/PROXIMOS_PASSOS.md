@@ -5,7 +5,7 @@ _Atualizado em 24/09/2026 (após o checkpoint da 2.8)._
 ## Etapa atual
 **Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. **2.8.0 (banco) aprovada** + ajustes pedidos:
 alerta **restrito** (nível + texto genérico, sem condição/grupo/nota) para o professor do plano sem acesso ao aluno e
-para o owner com consentimento só declarado; trava `organizations.is_seed` no `seed --reset`. **2.8.1 (plano), 2.8.2 (exercício no plano) e 2.8.3 (prescrição da série) ✔. Próxima: remover as colunas legadas e depois 2.8.4** (produtividade). Nada em andamento no código (working tree limpo, `tsc` sem erros).
+para o owner com consentimento só declarado; trava `organizations.is_seed` no `seed --reset`. **2.8.1 (plano), 2.8.2 (exercício no plano) e 2.8.3 (prescrição da série) ✔. Colunas legadas removidas. Próxima: 2.8.4** (produtividade). Nada em andamento no código (working tree limpo, `tsc` sem erros).
 
 ## Concluído (branch `feat/fase-2-treinos`)
 - 2.1 Banco: biblioteca global (52 exercícios), 11 condições, planos/divisões/itens/séries, RPCs e alertas.
@@ -49,7 +49,7 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 - Security Advisor: 29 avisos "authenticated can execute SECURITY DEFINER" (todos documentados no CLAUDE.md) + senha vazada (plano pago).
 
 ## Próximo comando
-**"Siga com a limpeza das colunas legadas e a 2.8.4"** — plano em `docs/planos/etapa-2.8.md`; parar ao final da 2.8 para teste. Antes, confira o estado com:
+**"Siga com a 2.8.4"** — plano em `docs/planos/etapa-2.8.md`; parar ao final da 2.8 para teste. Antes, confira o estado com:
 ```bash
 git status && npx tsc --noEmit && npm test
 ```

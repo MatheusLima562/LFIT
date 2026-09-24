@@ -218,7 +218,7 @@ effective_status =
   (só owner, exercício sem uso em treinos) apaga os arquivos com a secret key **depois** que o RLS autorizou a
   exclusão da linha. Arquivar não apaga. `npm run db:seed -- --reset` limpa a pasta da org de exemplo.
 
-### Montador — etapa 2.8 (banco pronto; telas em andamento)
+### Montador — etapa 2.8 (banco + 2.8.1–2.8.3 prontos; falta 2.8.4)
 - **Plano:** `no_end` (sem data de expiração → `students.workout_plan_ends_at = 'infinity'`: fora de A vencer/Vencidos
   e diferente de "Sem treino"), `planned_sessions`, `trainer_id` (professor do plano; padrão = do aluno). O professor
   do plano **vê e edita só aquele plano** (`can_access_plan`/`lock_editable_plan`); não vê o cadastro nem outros planos.
@@ -238,10 +238,10 @@ effective_status =
   `quantity_min/max` + `quantity_note` ("por lado"), `intensity_type/value` (%1RM 1–120, RPE 1–10, RIR 0–10),
   `speed` (preset) **ou** `tempo`, `rest_min/max`. Item: `method_id`, `objective_id` (listas por org; só o owner
   gerencia), `tip` (substitui a observação), até 3 substitutos (`plan_item_substitutes`; alertas incluem substitutos).
-- **Colunas legadas** `reps`, `rest_seconds`, `rpe_target`, `notes` (itens e séries): o `save_training_plan` aceita o
-  formato antigo e **grava as duas fontes de forma consistente** (legadas derivadas das novas por
-  `private.format_quantity`). **Remover as legadas na etapa seguinte à migração da interface (2.8.3)**, junto com a
-  leitura delas em `features/plans/queries.ts` e na impressão.
+- **Colunas legadas** `reps`, `rest_seconds`, `rpe_target`, `notes` **removidas** depois da 2.8.3
+  (`20261006120000_drop_legacy_prescription_columns.sql`). O `save_training_plan` ainda **aceita o formato antigo na
+  entrada** (`private.read_prescription` converte "8–12", "20–30 s", "até a falha", "8 por lado"…) — usado pelo seed e
+  útil para a Importação do MFIT —, mas grava só as colunas novas.
 - **Padrões por exercício** (`exercise_defaults`): camada global (migration) + camada da org (global: qualquer staff;
   próprio: owner ou autor). Métodos/objetivos iniciais semeados em toda org nova (gatilho em `organizations`).
 

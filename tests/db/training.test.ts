@@ -31,13 +31,13 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
     for (const w of ws ?? []) {
       const { data: items } = await fx.db
         .from("plan_workout_items")
-        .select("id, exercise_id, position, group_key, sets, reps, load_value, load_unit")
+        .select("id, exercise_id, position, group_key, sets, quantity_unit, quantity_min, quantity_max, quantity_note, load_value, load_unit")
         .eq("workout_id", w.id)
         .order("position");
       const withSets = [];
       for (const i of items ?? []) {
-        const { data: sets } = await fx.db.from("plan_item_sets").select("position, set_type, reps, load_value, load_unit").eq("item_id", i.id).order("position");
-        withSets.push({ exercise_id: i.exercise_id, group_key: i.group_key, sets: i.sets, reps: i.reps, load_value: i.load_value, load_unit: i.load_unit, sets_detail: sets });
+        const { data: sets } = await fx.db.from("plan_item_sets").select("position, set_type, quantity_unit, quantity_min, quantity_max, load_value, load_unit").eq("item_id", i.id).order("position");
+        withSets.push({ exercise_id: i.exercise_id, group_key: i.group_key, sets: i.sets, quantity_unit: i.quantity_unit, quantity_min: i.quantity_min, quantity_max: i.quantity_max, quantity_note: i.quantity_note, load_value: i.load_value, load_unit: i.load_unit, sets_detail: sets });
       }
       out.push({ label: w.label, items: withSets });
     }
@@ -226,7 +226,7 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
       const s = await structure(planId);
       expect(s.map((w) => w.label)).toEqual(["A", "B"]);
       expect(s[0].items.map((i) => i.group_key)).toEqual([null, "g1", "g1", null]);
-      expect(s[0].items[1]).toMatchObject({ load_value: 40, load_unit: "kg", reps: "8–12" });
+      expect(s[0].items[1]).toMatchObject({ load_value: 40, load_unit: "kg", quantity_unit: "reps", quantity_min: 8, quantity_max: 12 });
       expect(s[0].items[3].sets_detail!.map((x) => x.set_type)).toEqual(["warmup", "work", "drop"]);
 
       const { data } = await fx.db.from("audit_logs").select("action").eq("entity_id", planId);

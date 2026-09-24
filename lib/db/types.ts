@@ -717,10 +717,8 @@ export type Database = {
           quantity_min: number | null
           quantity_note: string | null
           quantity_unit: Database["public"]["Enums"]["quantity_unit"]
-          reps: string | null
           rest_max: number | null
           rest_min: number | null
-          rest_seconds: number | null
           set_type: Database["public"]["Enums"]["set_type"]
           speed: Database["public"]["Enums"]["speed_preset"] | null
           tempo: string | null
@@ -739,10 +737,8 @@ export type Database = {
           quantity_min?: number | null
           quantity_note?: string | null
           quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
-          reps?: string | null
           rest_max?: number | null
           rest_min?: number | null
-          rest_seconds?: number | null
           set_type?: Database["public"]["Enums"]["set_type"]
           speed?: Database["public"]["Enums"]["speed_preset"] | null
           tempo?: string | null
@@ -761,10 +757,8 @@ export type Database = {
           quantity_min?: number | null
           quantity_note?: string | null
           quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
-          reps?: string | null
           rest_max?: number | null
           rest_min?: number | null
-          rest_seconds?: number | null
           set_type?: Database["public"]["Enums"]["set_type"]
           speed?: Database["public"]["Enums"]["speed_preset"] | null
           tempo?: string | null
@@ -851,7 +845,6 @@ export type Database = {
           load_unit: Database["public"]["Enums"]["load_unit"] | null
           load_value: number | null
           method_id: string | null
-          notes: string | null
           objective_id: string | null
           organization_id: string
           position: number
@@ -859,11 +852,8 @@ export type Database = {
           quantity_min: number | null
           quantity_note: string | null
           quantity_unit: Database["public"]["Enums"]["quantity_unit"]
-          reps: string | null
           rest_max: number | null
           rest_min: number | null
-          rest_seconds: number | null
-          rpe_target: number | null
           sets: number | null
           speed: Database["public"]["Enums"]["speed_preset"] | null
           tempo: string | null
@@ -880,7 +870,6 @@ export type Database = {
           load_unit?: Database["public"]["Enums"]["load_unit"] | null
           load_value?: number | null
           method_id?: string | null
-          notes?: string | null
           objective_id?: string | null
           organization_id: string
           position: number
@@ -888,11 +877,8 @@ export type Database = {
           quantity_min?: number | null
           quantity_note?: string | null
           quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
-          reps?: string | null
           rest_max?: number | null
           rest_min?: number | null
-          rest_seconds?: number | null
-          rpe_target?: number | null
           sets?: number | null
           speed?: Database["public"]["Enums"]["speed_preset"] | null
           tempo?: string | null
@@ -909,7 +895,6 @@ export type Database = {
           load_unit?: Database["public"]["Enums"]["load_unit"] | null
           load_value?: number | null
           method_id?: string | null
-          notes?: string | null
           objective_id?: string | null
           organization_id?: string
           position?: number
@@ -917,11 +902,8 @@ export type Database = {
           quantity_min?: number | null
           quantity_note?: string | null
           quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
-          reps?: string | null
           rest_max?: number | null
           rest_min?: number | null
-          rest_seconds?: number | null
-          rpe_target?: number | null
           sets?: number | null
           speed?: Database["public"]["Enums"]["speed_preset"] | null
           tempo?: string | null
