@@ -115,7 +115,17 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
   const updateWorkout = (key: string, fn: (w: WorkoutDraft) => WorkoutDraft) =>
     change((d) => ({ ...d, workouts: d.workouts.map((w) => (w.key === key ? fn(w) : w)) }));
   const setItems = (fn: (items: ItemDraft[]) => ItemDraft[]) => workout && updateWorkout(workout.key, (w) => ({ ...w, items: fn(w.items) }));
-  const updateItem = (itemKey: string, patch: Partial<ItemDraft>) => setItems((items) => items.map((it) => (it.key === itemKey ? { ...it, ...patch } : it)));
+  const updateItem = (itemKey: string, patch: Partial<ItemDraft>) => {
+    setItems((items) => items.map((it) => (it.key === itemKey ? { ...it, ...patch } : it)));
+    // Erros dos campos alterados somem na hora (voltam a ser checados ao salvar).
+    setErrors((e) => {
+      const stale = Object.keys(patch).map((f) => `${itemKey}.${f}`).filter((k) => k in e);
+      if (!stale.length) return e;
+      const next = { ...e };
+      for (const k of stale) delete next[k];
+      return next;
+    });
+  };
 
   const rulesFor = (exerciseId: string) => rules.rules.filter((r) => r.exerciseId === exerciseId);
   const alertCounts = useMemo(() => {

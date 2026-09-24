@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import type { StudentRule, TrainingListOption } from "../queries";
+import { PrescriptionFields } from "./PrescriptionFields";
 import { TipEditor } from "./TipEditor";
 import type { DraftErrors, ItemDraft, SetDraft } from "../builder";
 import { LOAD_UNITS, type LoadUnit } from "../schemas";
@@ -132,9 +133,9 @@ export function ItemCard(props: ItemCardProps) {
         )}
       </div>
 
-      <div className={cn("grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-[4.5rem_6rem_minmax(9rem,1fr)_minmax(7rem,1fr)_6rem_5.5rem_5rem]", hasDetail && "opacity-60")}>
+      <div className={cn("flex flex-col gap-2", hasDetail && "opacity-60")}>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[4.5rem_minmax(9rem,14rem)_minmax(7rem,14rem)]">
         {field("sets", t.items.sets, { inputMode: "numeric" })}
-        {field("reps", t.items.reps, { placeholder: t.items.repsPlaceholder, maxLength: 20 })}
         <div className="flex min-w-0 flex-col gap-1 text-[11px] text-ink-3">
           <span id={id("load-label")}>{t.items.load}</span>
           <div className="flex gap-1" role="group" aria-labelledby={id("load-label")}>
@@ -163,9 +164,8 @@ export function ItemCard(props: ItemCardProps) {
           {err("loadValue") && <span className="text-xs text-destructive">{err("loadValue")}</span>}
         </div>
         {field("loadText", t.items.loadText, { maxLength: 40 })}
-        {field("rest", t.items.rest, { inputMode: "numeric" })}
-        {field("tempo", t.items.tempo, { placeholder: t.items.tempoPlaceholder, maxLength: 4 })}
-        {field("rpe", t.items.rpe, { inputMode: "decimal" })}
+      </div>
+      <PrescriptionFields idPrefix={item.key} value={item} readOnly={readOnly} error={err} onChange={(patch) => props.onChange(patch)} />
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         <ListSelect id={id("method")} label={t.method} value={item.methodId} options={props.lists.methods} disabled={readOnly} onChange={(v) => props.onChange({ methodId: v })} />

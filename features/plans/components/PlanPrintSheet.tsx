@@ -7,15 +7,13 @@ import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
 import { RichTip } from "@/components/ui/RichTip";
 import { groupLabel, toBlocks } from "../builder";
-import { formatDecimal, formatLoad, formatRest, planPeriod } from "../format";
+import { formatLoad, planPeriod } from "../format";
+import { formatIntensity, formatQuantity, formatRestRange, formatSpeed } from "../prescription";
 import type { PlanForPrint } from "../queries";
 import { PrintButton } from "./PrintButton";
 
 const t = messages.plans.print;
 
-/** "10" → "10 reps"; "até a falha", "30 s", "8 por lado" ficam como estão. */
-const withRepsUnit = (reps: string) =>
-  /^[\d\s–-]+$/.test(reps) ? `${reps} reps` : reps;
 type SavedItem = PlanForPrint["plan"]["workouts"][number]["items"][number];
 
 /*
@@ -137,7 +135,7 @@ function WorkoutTable({ items }: { items: SavedItem[] }) {
               {c.sets}
             </th>
             <th scope="col" className="py-1 pr-2">
-              {c.reps}
+              {c.quantity}
             </th>
             <th scope="col" className="py-1 pr-2">
               {c.load}
@@ -146,10 +144,10 @@ function WorkoutTable({ items }: { items: SavedItem[] }) {
               {c.rest}
             </th>
             <th scope="col" className="py-1 pr-2">
-              {c.tempo}
+              {c.intensity}
             </th>
             <th scope="col" className="py-1">
-              {c.rpe}
+              {c.speed}
             </th>
           </tr>
         </thead>
@@ -210,6 +208,7 @@ function ItemRows({
   indent: boolean;
 }) {
   const cell = "py-1.5 pr-2 align-top";
+  const pr = it.prescription;
   return (
     <>
       <tr className="border-b border-neutral-300">
@@ -237,47 +236,34 @@ function ItemRows({
         {detailed ? (
           <td className={cell} colSpan={6}>
             <ol className="flex flex-col gap-0.5">
-              {it.setsDetail.map((s, i) => (
-                <li key={i}>
-                  <span className="font-semibold">{t.setLine(i + 1)}</span> ·{" "}
-                  {messages.plans.sets.types[s.setType]}
-                  {s.reps ? ` · ${withRepsUnit(s.reps)}` : ""}
-                  {formatLoad(s.loadValue, s.loadUnit, s.loadText)
-                    ? ` · ${formatLoad(s.loadValue, s.loadUnit, s.loadText)}`
-                    : ""}
-                  {s.restSeconds !== null
-                    ? ` · ${formatRest(s.restSeconds)}`
-                    : ""}
-                </li>
-              ))}
+              {it.setsDetail.map((set, i) => {
+                const sp = set.prescription;
+                const parts = [
+                  messages.plans.sets.types[set.setType],
+                  formatQuantity(sp.quantityUnit, sp.quantityMin, sp.quantityMax, sp.quantityNote),
+                  formatLoad(set.loadValue, set.loadUnit, set.loadText),
+                  formatIntensity(sp.intensityType, sp.intensityValue),
+                  formatSpeed(sp.speed, sp.tempo),
+                  formatRestRange(sp.restMin, sp.restMax),
+                ].filter(Boolean);
+                return (
+                  <li key={i}>
+                    <span className="font-semibold">{t.setLine(i + 1)}</span> · {parts.join(" · ")}
+                  </li>
+                );
+              })}
             </ol>
-            {(it.tempo || it.rpeTarget !== null) && (
-              <p className="mt-0.5 text-neutral-700">
-                {[
-                  it.tempo ? `${t.columns.tempo} ${it.tempo}` : null,
-                  it.rpeTarget !== null
-                    ? `RPE ${formatDecimal(it.rpeTarget)}`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
           </td>
         ) : (
           <>
             <td className={cn(cell, "tabular-nums")}>{it.sets ?? "—"}</td>
-            <td className={cell}>{it.reps ?? "—"}</td>
+            <td className={cell}>{formatQuantity(pr.quantityUnit, pr.quantityMin, pr.quantityMax, pr.quantityNote) ?? "—"}</td>
             <td className={cell}>
               {formatLoad(it.loadValue, it.loadUnit, it.loadText) ?? "—"}
             </td>
-            <td className={cn(cell, "whitespace-nowrap")}>
-              {formatRest(it.restSeconds) ?? "—"}
-            </td>
-            <td className={cn(cell, "tabular-nums")}>{it.tempo ?? "—"}</td>
-            <td className="py-1.5 align-top tabular-nums">
-              {formatDecimal(it.rpeTarget) ?? "—"}
-            </td>
+            <td className={cn(cell, "whitespace-nowrap")}>{formatRestRange(pr.restMin, pr.restMax) ?? "—"}</td>
+            <td className={cn(cell, "whitespace-nowrap")}>{formatIntensity(pr.intensityType, pr.intensityValue) ?? "—"}</td>
+            <td className="py-1.5 align-top whitespace-nowrap">{formatSpeed(pr.speed, pr.tempo) ?? "—"}</td>
           </>
         )}
       </tr>

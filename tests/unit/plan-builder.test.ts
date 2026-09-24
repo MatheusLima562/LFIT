@@ -16,6 +16,7 @@ import {
   validateDraft,
   type ItemDraft,
   type PlanDraft,
+  type SavedPrescription,
 } from "@/features/plans/builder";
 import { planPayloadSchema } from "@/features/plans/schemas";
 
@@ -23,6 +24,20 @@ const EX = "11111111-1111-4111-8111-111111111111";
 const mk = (name: string, groupKey: string | null = null): ItemDraft => ({ ...emptyItem({ id: EX, name }), key: name, groupKey });
 const names = (items: ItemDraft[]) => items.map((i) => i.exerciseName);
 const groups = (items: ItemDraft[]) => items.map((i) => i.groupKey);
+
+const pr = (patch: Partial<SavedPrescription>): SavedPrescription => ({
+  quantityUnit: "reps",
+  quantityMin: null,
+  quantityMax: null,
+  quantityNote: null,
+  intensityType: null,
+  intensityValue: null,
+  speed: null,
+  tempo: null,
+  restMin: null,
+  restMax: null,
+  ...patch,
+});
 
 function draft(items: ItemDraft[], extra: Partial<PlanDraft> = {}): PlanDraft {
   return {
@@ -105,16 +120,33 @@ describe("agrupar / desagrupar", () => {
 });
 
 describe("validação e payload", () => {
-  it("aceita reps 8–12, cadência 3010/X, RPE 7,5, carga 12,5 kg e séries detalhadas", () => {
-    const it = { ...mk("a"), reps: "8–12", tempo: "30x0", rpe: "7,5", loadValue: "12,5", rest: "90" };
+  it("aceita 8–12 reps, cadência 30X0, RPE 7,5, pausa 60–90, carga 12,5 kg e séries detalhadas (copiam a prescrição)", () => {
+    const it: ItemDraft = { ...mk("a"), qtyMin: "8", qtyMax: "12", speedMode: "tempo", tempo: "30x0", intensityType: "rpe", intensityValue: "7,5", loadValue: "12,5", restMin: "60", restMax: "90" };
     it.setsDetail = setsFromSummary({ ...it, sets: "2" });
     const r = validateDraft(draft([it]));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const item = r.payload.workouts[0].items[0];
-    expect(item).toMatchObject({ reps: "8–12", tempo: "30X0", rpe_target: 7.5, load_value: 12.5, load_unit: "kg", rest_seconds: 90 });
+    expect(item).toMatchObject({
+      quantity_unit: "reps", quantity_min: 8, quantity_max: 12, tempo: "30X0", speed: null,
+      intensity_type: "rpe", intensity_value: 7.5, load_value: 12.5, load_unit: "kg", rest_min: 60, rest_max: 90,
+    });
     expect(item.sets_detail).toHaveLength(2);
-    expect(item.sets_detail[0]).toMatchObject({ set_type: "work", load_value: 12.5, load_unit: "kg" });
+    expect(item.sets_detail[0]).toMatchObject({ set_type: "work", quantity_min: 8, quantity_max: 12, tempo: "30X0", intensity_value: 7.5, load_value: 12.5, rest_max: 90 });
+  });
+
+  it("unidade muda a validação: até a falha não envia quantidade; reps inteiras; segundos aceitam decimal", () => {
+    const failure = validateDraft(draft([{ ...mk("a"), quantityUnit: "failure", qtyMin: "10" }]));
+    expect(failure.ok && failure.payload.workouts[0].items[0]).toMatchObject({ quantity_unit: "failure", quantity_min: null, quantity_max: null });
+    const frac = validateDraft(draft([{ ...mk("a"), qtyMin: "8,5", qtyMax: "" }]));
+    expect(!frac.ok && frac.errors["a.qtyMin"]).toBeTruthy();
+    const km = validateDraft(draft([{ ...mk("a"), quantityUnit: "km", qtyMin: "1,5", qtyMax: "" }]));
+    expect(km.ok).toBe(true);
+  });
+
+  it("velocidade por preset exclui a cadência (e vice-versa) pelo modo", () => {
+    const preset = validateDraft(draft([{ ...mk("a"), speedMode: "preset", speed: "slow", tempo: "3010" }]));
+    expect(preset.ok && preset.payload.workouts[0].items[0]).toMatchObject({ speed: "slow", tempo: null });
   });
 
   it("carga vazia não envia unidade; texto livre sozinho é aceito", () => {
@@ -123,12 +155,15 @@ describe("validação e payload", () => {
   });
 
   it.each([
-    ["tempo", { tempo: "301" }],
-    ["rpe", { rpe: "11" }],
-    ["rest", { rest: "1000" }],
+    ["tempo", { speedMode: "tempo" as const, tempo: "301" }],
+    ["intensityValue", { intensityType: "rpe" as const, intensityValue: "11" }],
+    ["intensityValue", { intensityType: "pct_1rm" as const, intensityValue: "" }],
+    ["restMin", { restMin: "1000" }],
+    ["restMax", { restMin: "90", restMax: "60" }],
+    ["qtyMax", { qtyMin: "12", qtyMax: "8" }],
     ["sets", { sets: "0" }],
     ["loadValue", { loadValue: "abc" }],
-    ["reps", { reps: "x".repeat(21) }],
+    ["qtyNote", { qtyNote: "x".repeat(41) }],
   ])("erro no campo %s aponta para o item", (field, patch) => {
     const r = validateDraft(draft([{ ...mk("a"), ...patch }]));
     expect(r.ok).toBe(false);
@@ -164,14 +199,23 @@ describe("validação e payload", () => {
             exercise_id: EX,
             group_key: g,
             sets: 3,
-            reps: "10",
+            quantity_unit: "reps",
+            quantity_min: 10,
+            quantity_max: null,
+            quantity_note: null,
+            intensity_type: null,
+            intensity_value: null,
+            speed: null,
+            tempo: null,
+            rest_min: null,
+            rest_max: null,
             load_value: null,
             load_unit: null,
             load_text: null,
-            rest_seconds: null,
-            tempo: null,
-            rpe_target: null,
-            notes: null,
+            tip: null,
+            substitutes: [],
+            method_id: null,
+            objective_id: null,
             sets_detail: [],
           })),
         },
@@ -203,10 +247,10 @@ describe("validação e payload", () => {
           name: null,
           notes: null,
           items: [
-            { exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, reps: "10", loadValue: 12.5, loadUnit: "kg", loadText: null, restSeconds: 60, tempo: null, rpeTarget: 8, tip: null, substitutes: [], methodId: null, objectiveId: null, setsDetail: [] },
+            { exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, loadValue: 12.5, loadUnit: "kg", loadText: null, prescription: pr({ quantityMin: 10, intensityType: "rpe", intensityValue: 8, restMin: 60 }), tip: null, substitutes: [], methodId: null, objectiveId: null, setsDetail: [] },
             {
-              exerciseId: EX, exerciseName: "y", groupKey: "bi1", sets: null, reps: null, loadValue: null, loadUnit: null, loadText: null, restSeconds: null, tempo: "3010", rpeTarget: null, tip: null, substitutes: [], methodId: null, objectiveId: null,
-              setsDetail: [{ setType: "warmup", reps: "12", loadValue: null, loadUnit: null, loadText: "leve", restSeconds: 45 }],
+              exerciseId: EX, exerciseName: "y", groupKey: "bi1", sets: null, loadValue: null, loadUnit: null, loadText: null, prescription: pr({ tempo: "3010" }), tip: null, substitutes: [], methodId: null, objectiveId: null,
+              setsDetail: [{ setType: "warmup", loadValue: null, loadUnit: null, loadText: "leve", prescription: pr({ quantityMin: 12, restMin: 45, restMax: 60 }) }],
             },
           ],
         },
@@ -218,7 +262,9 @@ describe("validação e payload", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.payload.workouts[0].items.map((i) => i.group_key)).toEqual(["bi1", "bi1"]);
-    expect(r.payload.workouts[0].items[1].sets_detail[0]).toMatchObject({ set_type: "warmup", load_text: "leve", rest_seconds: 45 });
+    expect(r.payload.workouts[0].items[0]).toMatchObject({ quantity_min: 10, intensity_type: "rpe", intensity_value: 8, rest_min: 60 });
+    expect(r.payload.workouts[0].items[1]).toMatchObject({ tempo: "3010", speed: null });
+    expect(r.payload.workouts[0].items[1].sets_detail[0]).toMatchObject({ set_type: "warmup", load_text: "leve", quantity_min: 12, rest_min: 45, rest_max: 60 });
   });
 
   it("rótulos das divisões", () => {
@@ -297,5 +343,18 @@ describe("item do plano (2.8.2)", () => {
     const four = ["1", "2", "3", "4"].map((n) => ({ id: `4444444${n}-4444-4444-8444-444444444444`, name: n }));
     const many = validateDraft(draft([{ ...mk("a"), substitutes: four }]));
     expect(!many.ok && many.errors["a.substitutes"]).toBeTruthy();
+  });
+});
+
+describe("menu da série (2.8.3)", async () => {
+  const { duplicateSet, moveSet, setsFromSummary: gen } = await import("@/features/plans/builder");
+  it("duplicar logo abaixo, mover e limite de 20", () => {
+    const base = gen({ ...mk("a"), sets: "3" }).map((s, i) => ({ ...s, key: `s${i}`, qtyMin: String(i + 1) }));
+    const dup = duplicateSet(base, "s1");
+    expect(dup.map((s) => s.qtyMin)).toEqual(["1", "2", "2", "3"]);
+    expect(moveSet(base, "s0", 1).map((s) => s.key)).toEqual(["s1", "s0", "s2"]);
+    expect(moveSet(base, "s0", -1)).toBe(base);
+    const twenty = gen({ ...mk("a"), sets: "20" });
+    expect(duplicateSet(twenty, twenty[0].key)).toHaveLength(20);
   });
 });

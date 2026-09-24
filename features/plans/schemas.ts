@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sanitizeTip } from "@/lib/rich-tip";
+import { INTEGER_UNITS, INTENSITY_RANGE, INTENSITY_TYPES, QUANTITY_UNITS, SPEED_PRESETS } from "./prescription";
 import { messages } from "@/messages/pt-BR";
 
 const v = messages.plans.validation;
@@ -19,16 +20,56 @@ const optionalText = (max: number, message?: string) => z.string().trim().max(ma
 const loadValue = z.number({ error: v.load }).min(0, v.load).max(9999.99, v.load).nullable();
 const isoDate = z.iso.date(v.date).nullable();
 
+const restSeconds = z.number({ error: v.rest }).int(v.rest).min(0, v.rest).max(900, v.rest).nullable();
+const quantity = z.number({ error: v.quantity }).min(0, v.quantity).max(99999, v.quantity).nullable();
+
+/** Campos de prescrição (resumo do item e séries): mesmas regras dos CHECKs do banco. */
+const prescriptionShape = {
+  quantity_unit: z.enum(QUANTITY_UNITS),
+  quantity_min: quantity,
+  quantity_max: quantity,
+  quantity_note: optionalText(40),
+  intensity_type: z.enum(INTENSITY_TYPES).nullable(),
+  intensity_value: z.number({ error: v.intensity }).nullable(),
+  speed: z.enum(SPEED_PRESETS).nullable(),
+  tempo: z
+    .string()
+    .regex(/^[0-9Xx]{4}$/, v.tempo)
+    .nullable(),
+  rest_min: restSeconds,
+  rest_max: restSeconds,
+};
+
+type Prescription = { [K in keyof typeof prescriptionShape]: z.infer<(typeof prescriptionShape)[K]> };
+
+function refinePrescription(p: Prescription, ctx: z.RefinementCtx) {
+  const issue = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
+  if (INTEGER_UNITS.includes(p.quantity_unit)) {
+    if (p.quantity_min !== null && !Number.isInteger(p.quantity_min)) issue("quantity_min", v.quantityInteger);
+    if (p.quantity_max !== null && !Number.isInteger(p.quantity_max)) issue("quantity_max", v.quantityInteger);
+  }
+  if (p.quantity_max !== null && (p.quantity_min === null || p.quantity_max < p.quantity_min)) issue("quantity_max", v.quantityRange);
+  if (p.intensity_type) {
+    const r = INTENSITY_RANGE[p.intensity_type];
+    if (p.intensity_value === null) issue("intensity_value", v.intensity);
+    else if (p.intensity_value < r.min || p.intensity_value > r.max) issue("intensity_value", v.intensityRange(r.min, r.max));
+  }
+  if (p.speed && p.tempo) issue("tempo", v.speedOrTempo);
+  if (p.rest_max !== null && (p.rest_min === null || p.rest_max < p.rest_min)) issue("rest_max", v.restRange);
+}
+
 const setSchema = z
   .object({
     set_type: z.enum(SET_TYPES),
-    reps: optionalText(20, v.reps),
+    ...prescriptionShape,
     load_value: loadValue,
     load_unit: z.enum(LOAD_UNITS).nullable(),
     load_text: optionalText(40),
-    rest_seconds: z.number({ error: v.rest }).int(v.rest).min(0, v.rest).max(900, v.rest).nullable(),
   })
-  .refine((s) => (s.load_value === null) === (s.load_unit === null), { message: v.load, path: ["load_value"] });
+  .superRefine((s, ctx) => {
+    refinePrescription(s, ctx);
+    if ((s.load_value === null) !== (s.load_unit === null)) ctx.addIssue({ code: "custom", path: ["load_value"], message: v.load });
+  });
 
 const itemSchema = z
   .object({
@@ -38,16 +79,10 @@ const itemSchema = z
       .regex(/^[A-Za-z0-9_-]{1,20}$/)
       .nullable(),
     sets: z.number({ error: v.sets }).int(v.sets).min(1, v.sets).max(20, v.sets).nullable(),
-    reps: optionalText(20, v.reps),
+    ...prescriptionShape,
     load_value: loadValue,
     load_unit: z.enum(LOAD_UNITS).nullable(),
     load_text: optionalText(40),
-    rest_seconds: z.number({ error: v.rest }).int(v.rest).min(0, v.rest).max(900, v.rest).nullable(),
-    tempo: z
-      .string()
-      .regex(/^[0-9Xx]{4}$/, v.tempo)
-      .nullable(),
-    rpe_target: z.number({ error: v.rpe }).min(1, v.rpe).max(10, v.rpe).nullable(),
     // Saneada aqui (vale no cliente e na server action): só **negrito** e "- " lista; sem HTML.
     tip: z
       .string()
@@ -58,10 +93,12 @@ const itemSchema = z
     objective_id: z.uuid().nullable(),
     sets_detail: z.array(setSchema).max(MAX_SETS),
   })
-  .refine((i) => (i.load_value === null) === (i.load_unit === null), { message: v.load, path: ["load_value"] })
-  .refine((i) => !i.substitutes.includes(i.exercise_id) && new Set(i.substitutes).size === i.substitutes.length, {
-    message: v.substitutes,
-    path: ["substitutes"],
+  .superRefine((i, ctx) => {
+    refinePrescription(i, ctx);
+    if ((i.load_value === null) !== (i.load_unit === null)) ctx.addIssue({ code: "custom", path: ["load_value"], message: v.load });
+    if (i.substitutes.includes(i.exercise_id) || new Set(i.substitutes).size !== i.substitutes.length) {
+      ctx.addIssue({ code: "custom", path: ["substitutes"], message: v.substitutes });
+    }
   });
 
 const workoutSchema = z.object({

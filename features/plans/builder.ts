@@ -5,31 +5,43 @@
  */
 import { isoToBR, parseBRDate } from "@/lib/dates";
 import { messages } from "@/messages/pt-BR";
+import type { IntensityType, QuantityUnit, SpeedPreset } from "./prescription";
 import { planPayloadSchema, type LoadUnit, type PlanLevel, type PlanPayload, type SetType } from "./schemas";
 
-export interface SetDraft {
+/** Prescrição comum ao resumo do item e às séries detalhadas (strings do formulário). */
+export interface PrescriptionDraft {
+  quantityUnit: QuantityUnit;
+  qtyMin: string;
+  qtyMax: string;
+  /** Complemento da quantidade (ex.: "por lado"). */
+  qtyNote: string;
+  intensityType: IntensityType | "";
+  intensityValue: string;
+  /** Velocidade por preset OU cadência numérica (nunca os dois). */
+  speedMode: "preset" | "tempo";
+  speed: SpeedPreset | "";
+  tempo: string;
+  restMin: string;
+  restMax: string;
+}
+
+export interface SetDraft extends PrescriptionDraft {
   key: string;
   setType: SetType;
-  reps: string;
   loadValue: string;
   loadUnit: LoadUnit;
   loadText: string;
-  rest: string;
 }
 
-export interface ItemDraft {
+export interface ItemDraft extends PrescriptionDraft {
   key: string;
   exerciseId: string;
   exerciseName: string;
   groupKey: string | null;
   sets: string;
-  reps: string;
   loadValue: string;
   loadUnit: LoadUnit;
   loadText: string;
-  rest: string;
-  tempo: string;
-  rpe: string;
   /** Dica (negrito e lista; substitui a antiga observação). */
   tip: string;
   /** Até 3 exercícios alternativos (falta de equipamento); também passam pelos alertas. */
@@ -75,6 +87,28 @@ export interface Block<T extends { key: string; groupKey: string | null } = Item
 export const newKey = () => crypto.randomUUID();
 export const newGroupKey = () => `g${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
 
+export function emptyPrescription(): PrescriptionDraft {
+  return {
+    quantityUnit: "reps",
+    qtyMin: "10",
+    qtyMax: "12",
+    qtyNote: "",
+    intensityType: "",
+    intensityValue: "",
+    speedMode: "preset",
+    speed: "",
+    tempo: "",
+    restMin: "60",
+    restMax: "",
+  };
+}
+
+/** Só os campos de prescrição (para copiar do resumo para as séries e vice-versa). */
+export function pickPrescription(d: PrescriptionDraft): PrescriptionDraft {
+  const { quantityUnit, qtyMin, qtyMax, qtyNote, intensityType, intensityValue, speedMode, speed, tempo, restMin, restMax } = d;
+  return { quantityUnit, qtyMin, qtyMax, qtyNote, intensityType, intensityValue, speedMode, speed, tempo, restMin, restMax };
+}
+
 export function emptyItem(exercise: { id: string; name: string }): ItemDraft {
   return {
     key: newKey(),
@@ -82,13 +116,10 @@ export function emptyItem(exercise: { id: string; name: string }): ItemDraft {
     exerciseName: exercise.name,
     groupKey: null,
     sets: "3",
-    reps: "10–12",
+    ...emptyPrescription(),
     loadValue: "",
     loadUnit: "kg",
     loadText: "",
-    rest: "60",
-    tempo: "",
-    rpe: "",
     tip: "",
     substitutes: [],
     methodId: "",
@@ -193,18 +224,33 @@ export function ungroup(items: ItemDraft[], groupKey: string) {
   return items.map((it) => (it.groupKey === groupKey ? { ...it, groupKey: null } : it));
 }
 
-/** Séries detalhadas a partir do resumo (N séries de trabalho com as mesmas reps/carga). */
+/** Séries detalhadas a partir do resumo: N séries de trabalho com a mesma prescrição e carga. */
 export function setsFromSummary(item: ItemDraft): SetDraft[] {
   const n = Math.min(Math.max(Number.parseInt(item.sets, 10) || 3, 1), 20);
   return Array.from({ length: n }, () => ({
     key: newKey(),
     setType: "work" as const,
-    reps: item.reps,
+    ...pickPrescription(item),
     loadValue: item.loadValue,
     loadUnit: item.loadUnit,
     loadText: item.loadText,
-    rest: item.rest,
   }));
+}
+
+/** Menu da série: duplicar (logo abaixo), mover e remover. */
+export function duplicateSet(sets: SetDraft[], key: string): SetDraft[] {
+  const i = sets.findIndex((s) => s.key === key);
+  if (i < 0 || sets.length >= 20) return sets;
+  return [...sets.slice(0, i + 1), { ...sets[i], key: newKey() }, ...sets.slice(i + 1)];
+}
+
+export function moveSet(sets: SetDraft[], key: string, delta: -1 | 1): SetDraft[] {
+  const i = sets.findIndex((s) => s.key === key);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= sets.length) return sets;
+  const next = [...sets];
+  [next[i], next[j]] = [next[j], next[i]];
+  return next;
 }
 
 // ---------------------------------------------------------------------------
@@ -219,6 +265,22 @@ export function parseNumber(s: string): number | null {
   return /^-?\d+(\.\d+)?$/.test(t) ? Number(t) : Number.NaN;
 }
 const date = (s: string) => (s.trim() === "" ? null : (parseBRDate(s) ?? "invalida"));
+
+function prescriptionPayload(d: PrescriptionDraft) {
+  const failure = d.quantityUnit === "failure";
+  return {
+    quantity_unit: d.quantityUnit,
+    quantity_min: failure ? null : parseNumber(d.qtyMin),
+    quantity_max: failure ? null : parseNumber(d.qtyMax),
+    quantity_note: text(d.qtyNote),
+    intensity_type: d.intensityType || null,
+    intensity_value: d.intensityType ? parseNumber(d.intensityValue) : null,
+    speed: d.speedMode === "preset" ? d.speed || null : null,
+    tempo: d.speedMode === "tempo" ? (text(d.tempo)?.toUpperCase() ?? null) : null,
+    rest_min: parseNumber(d.restMin),
+    rest_max: parseNumber(d.restMax),
+  };
+}
 
 export function toPayload(draft: PlanDraft): unknown {
   const load = (value: string, unit: LoadUnit) => {
@@ -245,22 +307,18 @@ export function toPayload(draft: PlanDraft): unknown {
         exercise_id: it.exerciseId,
         group_key: it.groupKey,
         sets: parseNumber(it.sets),
-        reps: text(it.reps),
+        ...prescriptionPayload(it),
         ...load(it.loadValue, it.loadUnit),
         load_text: text(it.loadText),
-        rest_seconds: parseNumber(it.rest),
-        tempo: text(it.tempo)?.toUpperCase() ?? null,
-        rpe_target: parseNumber(it.rpe),
         tip: text(it.tip),
         substitutes: it.substitutes.map((s) => s.id),
         method_id: it.methodId || null,
         objective_id: it.objectiveId || null,
         sets_detail: it.setsDetail.map((s) => ({
           set_type: s.setType,
-          reps: text(s.reps),
+          ...prescriptionPayload(s),
           ...load(s.loadValue, s.loadUnit),
           load_text: text(s.loadText),
-          rest_seconds: parseNumber(s.rest),
         })),
       })),
     })),
@@ -270,13 +328,19 @@ export function toPayload(draft: PlanDraft): unknown {
 /** Campo do payload → campo do rascunho (para destacar o erro no lugar certo). */
 const FIELD: Record<string, string> = {
   sets: "sets",
-  reps: "reps",
   load_value: "loadValue",
   load_unit: "loadValue",
   load_text: "loadText",
-  rest_seconds: "rest",
+  quantity_unit: "quantityUnit",
+  quantity_min: "qtyMin",
+  quantity_max: "qtyMax",
+  quantity_note: "qtyNote",
+  intensity_type: "intensityType",
+  intensity_value: "intensityValue",
+  speed: "speed",
   tempo: "tempo",
-  rpe_target: "rpe",
+  rest_min: "restMin",
+  rest_max: "restMax",
   notes: "notes",
   tip: "tip",
   substitutes: "substitutes",
@@ -349,13 +413,10 @@ export interface SavedPlan {
       exerciseName: string;
       groupKey: string | null;
       sets: number | null;
-      reps: string | null;
       loadValue: number | null;
       loadUnit: LoadUnit | null;
       loadText: string | null;
-      restSeconds: number | null;
-      tempo: string | null;
-      rpeTarget: number | null;
+      prescription: SavedPrescription;
       tip: string | null;
       substitutes: { id: string; name: string }[];
       methodId: string | null;
@@ -365,17 +426,45 @@ export interface SavedPlan {
       objectiveName?: string | null;
       setsDetail: {
         setType: SetType;
-        reps: string | null;
         loadValue: number | null;
         loadUnit: LoadUnit | null;
         loadText: string | null;
-        restSeconds: number | null;
+        prescription: SavedPrescription;
       }[];
     }[];
   }[];
 }
 
+export interface SavedPrescription {
+  quantityUnit: QuantityUnit;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  quantityNote: string | null;
+  intensityType: IntensityType | null;
+  intensityValue: number | null;
+  speed: SpeedPreset | null;
+  tempo: string | null;
+  restMin: number | null;
+  restMax: number | null;
+}
+
 const str = (v: string | number | null) => (v === null ? "" : String(v).replace(".", ","));
+
+function prescriptionDraft(p: SavedPrescription): PrescriptionDraft {
+  return {
+    quantityUnit: p.quantityUnit,
+    qtyMin: str(p.quantityMin),
+    qtyMax: str(p.quantityMax),
+    qtyNote: p.quantityNote ?? "",
+    intensityType: p.intensityType ?? "",
+    intensityValue: str(p.intensityValue),
+    speedMode: p.tempo && !p.speed ? "tempo" : "preset",
+    speed: p.speed ?? "",
+    tempo: p.tempo ?? "",
+    restMin: str(p.restMin),
+    restMax: str(p.restMax),
+  };
+}
 
 export function fromSaved(plan: SavedPlan): PlanDraft {
   return {
@@ -401,13 +490,10 @@ export function fromSaved(plan: SavedPlan): PlanDraft {
         exerciseName: it.exerciseName,
         groupKey: it.groupKey,
         sets: str(it.sets),
-        reps: it.reps ?? "",
+        ...prescriptionDraft(it.prescription),
         loadValue: str(it.loadValue),
         loadUnit: it.loadUnit ?? "kg",
         loadText: it.loadText ?? "",
-        rest: str(it.restSeconds),
-        tempo: it.tempo ?? "",
-        rpe: str(it.rpeTarget),
         tip: it.tip ?? "",
         substitutes: it.substitutes,
         methodId: it.methodId ?? "",
@@ -415,11 +501,10 @@ export function fromSaved(plan: SavedPlan): PlanDraft {
         setsDetail: it.setsDetail.map((s) => ({
           key: newKey(),
           setType: s.setType,
-          reps: s.reps ?? "",
+          ...prescriptionDraft(s.prescription),
           loadValue: str(s.loadValue),
           loadUnit: s.loadUnit ?? "kg",
           loadText: s.loadText ?? "",
-          rest: str(s.restSeconds),
         })),
       })),
     })),

@@ -1,7 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
 import type { ContraindicationLevel } from "@/features/exercises/constants";
-import type { SavedPlan } from "./builder";
+import type { SavedPlan, SavedPrescription } from "./builder";
+import type { IntensityType, QuantityUnit, SpeedPreset } from "./prescription";
 import type { LoadUnit, PlanLevel, SetType } from "./schemas";
 
 export type PlanStatus = "draft" | "active" | "scheduled" | "archived";
@@ -18,7 +19,35 @@ export interface PlanForBuilder {
   otherActive: { id: string; name: string } | null;
 }
 
-type ItemRow = {
+type PrescriptionRow = {
+  quantity_unit: QuantityUnit;
+  quantity_min: number | null;
+  quantity_max: number | null;
+  quantity_note: string | null;
+  intensity_type: IntensityType | null;
+  intensity_value: number | null;
+  speed: SpeedPreset | null;
+  tempo: string | null;
+  rest_min: number | null;
+  rest_max: number | null;
+};
+
+const PRESCRIPTION_COLS = "quantity_unit, quantity_min, quantity_max, quantity_note, intensity_type, intensity_value, speed, tempo, rest_min, rest_max";
+
+const toPrescription = (r: PrescriptionRow): SavedPrescription => ({
+  quantityUnit: r.quantity_unit,
+  quantityMin: r.quantity_min,
+  quantityMax: r.quantity_max,
+  quantityNote: r.quantity_note,
+  intensityType: r.intensity_type,
+  intensityValue: r.intensity_value,
+  speed: r.speed,
+  tempo: r.tempo,
+  restMin: r.rest_min,
+  restMax: r.rest_max,
+});
+
+type ItemRow = PrescriptionRow & {
   position: number;
   group_key: string | null;
   sets: number | null;
@@ -37,7 +66,7 @@ type ItemRow = {
   objective: { name: string } | null;
   plan_item_substitutes: { position: number; exercise: { id: string; name: string } | null }[];
   exercise: { id: string; name: string } | null;
-  plan_item_sets: { position: number; set_type: SetType; reps: string | null; load_value: number | null; load_unit: LoadUnit | null; load_text: string | null; rest_seconds: number | null }[];
+  plan_item_sets: (PrescriptionRow & { position: number; set_type: SetType; load_value: number | null; load_unit: LoadUnit | null; load_text: string | null })[];
 };
 
 type PlanRow = {
@@ -61,10 +90,10 @@ type PlanRow = {
 const PLAN_SELECT =
   "id, student_id, name, goal, level, starts_on, ends_on, no_end, planned_sessions, trainer_id, notes, status, created_by, " +
   "student:students!training_plans_student_id_organization_id_fkey(id, first_name, last_name), " +
-  "plan_workouts(label, name, notes, position, plan_workout_items(position, group_key, sets, reps, load_value, load_unit, load_text, rest_seconds, tempo, rpe_target, notes, tip, method_id, objective_id, " +
+  "plan_workouts(label, name, notes, position, plan_workout_items(position, group_key, sets, reps, load_value, load_unit, load_text, rest_seconds, rpe_target, notes, tip, method_id, objective_id, " + PRESCRIPTION_COLS + ", " +
   "method:training_methods!plan_workout_items_method_fkey(name), objective:training_objectives!plan_workout_items_objective_fkey(name), " +
   "plan_item_substitutes(position, exercise:exercises(id, name)), " +
-  "exercise:exercises!plan_workout_items_exercise_id_fkey(id, name), plan_item_sets(position, set_type, reps, load_value, load_unit, load_text, rest_seconds)))";
+  "exercise:exercises!plan_workout_items_exercise_id_fkey(id, name), plan_item_sets(position, set_type, load_value, load_unit, load_text, " + PRESCRIPTION_COLS + ")))";
 
 const byPosition = <T extends { position: number }>(a: T, b: T) => a.position - b.position;
 
@@ -90,13 +119,10 @@ export function toSavedPlan(row: PlanRow): SavedPlan {
         exerciseName: it.exercise?.name ?? "—",
         groupKey: it.group_key,
         sets: it.sets,
-        reps: it.reps,
         loadValue: it.load_value,
         loadUnit: it.load_unit,
         loadText: it.load_text,
-        restSeconds: it.rest_seconds,
-        tempo: it.tempo,
-        rpeTarget: it.rpe_target,
+        prescription: toPrescription(it),
         tip: it.tip ?? it.notes,
         substitutes: [...it.plan_item_substitutes]
           .sort(byPosition)
@@ -107,11 +133,10 @@ export function toSavedPlan(row: PlanRow): SavedPlan {
         objectiveName: it.objective?.name ?? null,
         setsDetail: [...it.plan_item_sets].sort(byPosition).map((s) => ({
           setType: s.set_type,
-          reps: s.reps,
           loadValue: s.load_value,
           loadUnit: s.load_unit,
           loadText: s.load_text,
-          restSeconds: s.rest_seconds,
+          prescription: toPrescription(s),
         })),
       })),
     })),
