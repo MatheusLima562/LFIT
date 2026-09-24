@@ -323,11 +323,13 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Vídeo próprio nos exercícios (MP4/WebM, cota por plano): ver seção "Vídeo próprio de exercício".
 - **Notas para a Fase 3:** "Iniciar treino" pelo professor (modo presencial, registrando pelo aluno), evolução de
   cargas por exercício e volume de treino (séries × reps × carga) por sessão/semana.
+- 2.7 Verificação: roteiros Playwright das Fases 1 e 2 rodados no build de produção (`next start`); o cadastro
+  público precisa das chaves de TESTE do Turnstile nas variáveis de ambiente do `next start` (fail-closed sem elas).
+  Os roteiros ainda vivem fora do repositório; viram suíte formal na 1.7.
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.5 ✔; faltam **2.6** impressão, **2.7**
-  verificação e **2.8** ajustes do montador) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; falta **2.8** ajustes do montador) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
   registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
   Fase 4 gestão e retenção. Planos: `docs/planos/fase-c.md` e `docs/planos/etapa-2.8.md`; retomada em `docs/PROXIMOS_PASSOS.md`.

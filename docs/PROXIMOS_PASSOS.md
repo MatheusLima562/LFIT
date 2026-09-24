@@ -3,7 +3,7 @@
 _Atualizado em 24/09/2026._
 
 ## Etapa atual
-**Fase 2 — Treinos e exercícios.** 2.1 a 2.5 concluídas e commitadas. Você está testando o montador (2.5) com um
+**Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas e commitadas; próxima: planejar a 2.8. Você está testando o montador (2.5) com um
 treino real. **Nada em andamento no código** (working tree limpo, `tsc` sem erros).
 
 ## Concluído (branch `feat/fase-2-treinos`)
@@ -19,7 +19,8 @@ treino real. **Nada em andamento no código** (working tree limpo, `tsc` sem err
 
 ## Falta (ordem aprovada)
 1. ~~2.6 Impressão~~ ✔
-2. **2.7** Verificação final da Fase 2 (roteiro de navegador completo, claro/escuro/mobile, advisors).
+2. ~~2.7 Verificação final da Fase 2~~ ✔ (228 testes; todos os roteiros de navegador das Fases 1 e 2 no build de
+   produção; advisors revisados; índices de FKs adicionados)
 3. **2.8** Ajustes do montador — **pendente**, plano em `docs/planos/etapa-2.8.md` (planejar e mostrar antes de implementar).
 4. **C1** Contas com múltiplos vínculos (sem cobrança).
 5. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
