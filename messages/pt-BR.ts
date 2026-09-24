@@ -797,6 +797,12 @@ export const messages = {
     method: "Método",
     objective: "Objetivo",
     none: "—",
+    more: {
+      label: "Mais opções",
+      item: (name: string) => `Mais opções de ${name}`,
+      set: (n: number) => `Mais opções da série ${n}`,
+      loadText: "Carga em texto livre",
+    },
     groups: {
       group: "Agrupar",
       ungroup: "Desagrupar",

@@ -11,10 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import type { StudentRule, TrainingListOption } from "../queries";
 import { formatIntensity, formatQuantity, formatRestRange } from "../prescription";
-import { PrescriptionFields } from "./PrescriptionFields";
+import { BasicErrors, LoadInputs, MoreToggle, PrescriptionMore, prescriptionExtras, QuantityRange, RestRange } from "./PrescriptionFields";
 import { TipEditor } from "./TipEditor";
 import type { DraftErrors, ItemDraft, SetDraft } from "../builder";
-import { LOAD_UNITS, type LoadUnit } from "../schemas";
 import { SetsEditor } from "./SetsEditor";
 
 const t = messages.plans;
@@ -52,6 +51,10 @@ export function ItemCard(props: ItemCardProps) {
   const small = "h-8 text-[13px]";
   const hasDetail = item.setsDetail.length > 0;
   const setErrors = item.setsDetail.some((s) => Object.keys(errors).some((k) => k.startsWith(`${s.key}.`)));
+  // "Mais opções" abre sozinho quando algo dali já está preenchido; erro num campo escondido força a abertura.
+  const extras = itemExtras(item);
+  const [more, setMore] = useState(extras > 0);
+  const moreOpen = more || ["qtyNote", "intensityValue", "tempo", "loadText", "substitutes"].some((f) => err(f));
 
   const field = (f: keyof ItemDraft, label: string, opts: { placeholder?: string; inputMode?: "numeric" | "decimal" | "text"; maxLength?: number; className?: string } = {}) => (
     <label className={cn("flex min-w-0 flex-col gap-1 text-[11px] text-ink-3", opts.className)} htmlFor={id(f)}>
@@ -151,90 +154,98 @@ export function ItemCard(props: ItemCardProps) {
         <p className="pl-9 text-[12px] text-ink-3">{itemSummary(item)}</p>
       ) : (
         <>
-      <div className={cn("flex flex-col gap-2", hasDetail && "opacity-60")}>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[4.5rem_minmax(9rem,14rem)_minmax(7rem,14rem)]">
-        {field("sets", t.items.sets, { inputMode: "numeric" })}
-        <div className="flex min-w-0 flex-col gap-1 text-[11px] text-ink-3">
-          <span id={id("load-label")}>{t.items.load}</span>
-          <div className="flex gap-1" role="group" aria-labelledby={id("load-label")}>
+      <div className={cn("flex flex-col gap-1", hasDetail && "opacity-60")}>
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+          <label className="flex w-16 flex-col gap-1 text-[11px] text-ink-3" htmlFor={id("sets")}>
+            {t.items.sets}
             <Input
-              aria-label={`${t.items.load}: ${t.items.loadValue}`}
-              inputMode="decimal"
-              className={cn(small, "min-w-0")}
-              value={item.loadValue}
+              id={id("sets")}
+              className={small}
+              value={item.sets}
+              inputMode="numeric"
               disabled={readOnly}
-              aria-invalid={!!err("loadValue")}
-              onChange={(e) => props.onChange({ loadValue: e.target.value })}
+              aria-invalid={!!err("sets")}
+              onChange={(e) => props.onChange({ sets: e.target.value })}
             />
-            <Select value={item.loadUnit} disabled={readOnly} onValueChange={(v) => props.onChange({ loadUnit: v as LoadUnit })}>
-              <SelectTrigger aria-label={t.items.loadUnit} className="w-16 shrink-0 text-[13px] data-[size=default]:h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LOAD_UNITS.map((u) => (
-                  <SelectItem key={u} value={u}>
-                    {u}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {err("loadValue") && <span className="text-xs text-destructive">{err("loadValue")}</span>}
+          </label>
+          <QuantityRange idPrefix={item.key} value={item} readOnly={readOnly} error={err} onChange={props.onChange} />
+          <LoadInputs
+            label={`${t.items.load}: ${t.items.loadValue}`}
+            value={item.loadValue}
+            unit={item.loadUnit}
+            readOnly={readOnly}
+            invalid={!!err("loadValue")}
+            onValue={(v) => props.onChange({ loadValue: v })}
+            onUnit={(u) => props.onChange({ loadUnit: u })}
+          />
+          <RestRange idPrefix={item.key} value={item} readOnly={readOnly} error={err} onChange={props.onChange} />
         </div>
-        {field("loadText", t.items.loadText, { maxLength: 40 })}
-      </div>
-      <PrescriptionFields idPrefix={item.key} value={item} readOnly={readOnly} error={err} onChange={(patch) => props.onChange(patch)} />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <ListSelect id={id("method")} label={t.method} value={item.methodId} options={props.lists.methods} disabled={readOnly} onChange={(v) => props.onChange({ methodId: v })} />
-        <ListSelect
-          id={id("objective")}
-          label={t.objective}
-          value={item.objectiveId}
-          options={props.lists.objectives}
-          disabled={readOnly}
-          onChange={(v) => props.onChange({ objectiveId: v })}
-        />
+        {err("sets") && <span className="text-xs text-destructive">{err("sets")}</span>}
+        {err("loadValue") && <span className="text-xs text-destructive">{err("loadValue")}</span>}
+        <BasicErrors error={err} />
       </div>
 
-      <TipEditor id={id("tip")} value={item.tip} disabled={readOnly} onChange={(v) => props.onChange({ tip: v })} />
+      <MoreToggle open={moreOpen} count={extras} controls={id("more")} label={t.more.item(item.exerciseName)} onToggle={() => setMore(!moreOpen)} />
+      {moreOpen && (
+        <div id={id("more")} className="flex flex-col gap-3 border-l-2 border-line pl-3">
+          <div className={cn("flex flex-col gap-2", hasDetail && "opacity-60")}>
+            <PrescriptionMore idPrefix={item.key} value={item} readOnly={readOnly} error={err} onChange={props.onChange} />
+            <div className="grid gap-2 sm:grid-cols-[minmax(8rem,14rem)]">
+              {field("loadText", t.more.loadText, { maxLength: 40, placeholder: t.items.loadTextPlaceholder })}
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <ListSelect id={id("method")} label={t.method} value={item.methodId} options={props.lists.methods} disabled={readOnly} onChange={(v) => props.onChange({ methodId: v })} />
+            <ListSelect
+              id={id("objective")}
+              label={t.objective}
+              value={item.objectiveId}
+              options={props.lists.objectives}
+              disabled={readOnly}
+              onChange={(v) => props.onChange({ objectiveId: v })}
+            />
+          </div>
 
-      <div className="flex flex-col gap-1.5">
-        <p className="text-[11px] text-ink-3" id={id("subs-label")}>
-          {t.substitutes.label} · <span>{t.substitutes.hint}</span>
-        </p>
-        <ul className="flex flex-wrap items-center gap-1.5" aria-labelledby={id("subs-label")}>
-          {item.substitutes.map((s) => {
-            const r = props.rulesFor(s.id);
-            const level = r.some((x) => x.level === "avoid") ? "avoid" : r.length ? "caution" : null;
-            return (
-              <li key={s.id} className="inline-flex items-center gap-1 rounded-full border border-line bg-canvas py-0.5 pr-1 pl-2.5 text-[12px] text-ink">
-                {s.name}
-                {level && <LevelBadge level={level} />}
-                {!readOnly && (
-                  <button
-                    type="button"
-                    aria-label={t.substitutes.remove(s.name)}
-                    className="grid size-5 place-items-center rounded-full text-ink-3 outline-none hover:bg-surface hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/50"
-                    onClick={() => props.onChange({ substitutes: item.substitutes.filter((x) => x.id !== s.id) })}
-                  >
-                    <X aria-hidden className="size-3" />
-                  </button>
-                )}
-              </li>
-            );
-          })}
-          {!readOnly && item.substitutes.length < 3 && (
-            <li>
-              <Button type="button" variant="outline" size="xs" onClick={props.onAddSubstitute}>
-                <Plus aria-hidden />
-                {t.substitutes.add}
-              </Button>
-            </li>
-          )}
-        </ul>
-        {err("substitutes") && <span className="text-xs text-destructive">{err("substitutes")}</span>}
-      </div>
+          <TipEditor id={id("tip")} value={item.tip} disabled={readOnly} onChange={(v) => props.onChange({ tip: v })} />
+
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[11px] text-ink-3" id={id("subs-label")}>
+              {t.substitutes.label} · <span>{t.substitutes.hint}</span>
+            </p>
+            <ul className="flex flex-wrap items-center gap-1.5" aria-labelledby={id("subs-label")}>
+              {item.substitutes.map((s) => {
+                const r = props.rulesFor(s.id);
+                const level = r.some((x) => x.level === "avoid") ? "avoid" : r.length ? "caution" : null;
+                return (
+                  <li key={s.id} className="inline-flex items-center gap-1 rounded-full border border-line bg-canvas py-0.5 pr-1 pl-2.5 text-[12px] text-ink">
+                    {s.name}
+                    {level && <LevelBadge level={level} />}
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        aria-label={t.substitutes.remove(s.name)}
+                        className="grid size-5 place-items-center rounded-full text-ink-3 outline-none hover:bg-surface hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/50"
+                        onClick={() => props.onChange({ substitutes: item.substitutes.filter((x) => x.id !== s.id) })}
+                      >
+                        <X aria-hidden className="size-3" />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+              {!readOnly && item.substitutes.length < 3 && (
+                <li>
+                  <Button type="button" variant="outline" size="xs" onClick={props.onAddSubstitute}>
+                    <Plus aria-hidden />
+                    {t.substitutes.add}
+                  </Button>
+                </li>
+              )}
+            </ul>
+            {err("substitutes") && <span className="text-xs text-destructive">{err("substitutes")}</span>}
+          </div>
+        </div>
+      )}
 
       {(!readOnly || hasDetail) && (
         <div className="flex flex-col gap-2">
@@ -285,6 +296,11 @@ export function DragHandle({ label, listeners, attributes }: { label: string; li
 }
 
 const NONE = "__none__";
+
+/** Campos de "Mais opções" preenchidos no item. */
+function itemExtras(it: ItemDraft) {
+  return prescriptionExtras(it) + [it.loadText.trim(), it.methodId, it.objectiveId, it.tip.trim(), it.substitutes.length].filter(Boolean).length;
+}
 
 /** Resumo em uma linha do item recolhido: 3 × 8–12 reps · 40 kg · RPE 8 · 60–90 s. */
 function itemSummary(it: ItemDraft) {
