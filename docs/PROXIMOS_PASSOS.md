@@ -43,6 +43,8 @@ para o owner com consentimento só declarado; trava `organizations.is_seed` no `
   aluno, com um ícone neutro de "cuidado" (sem cor ou rótulo de alerta).
 - **Escala de dor 0–10 por exercício na execução**, com orientação. **Dor ≥ 5 gera aviso ao professor
   responsável.** A dor é dado de saúde: nunca em URLs, logs ou e-mails, e o aviso não mostra o valor fora do app.
+- **Avisos fora do app (e-mail, push) nunca citam dor nem saúde**: texto genérico (ex.: "Você tem um feedback que
+  precisa da sua atenção") com link para o app; o detalhe só aparece dentro do app, para quem pode ver a saúde do aluno.
 
 ## Arquivos em andamento
 Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `app/(app)/treinos/**`,
