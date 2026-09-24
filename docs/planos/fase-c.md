@@ -120,6 +120,33 @@ do Pro** · **sem Free permanente** (só Pro e Gold pagos; `free` fica como tier
   dados de saúde (art. 11), retenção, direitos do titular e encarregado.
 - Versões no código (`lib/legal.ts`). O aceite é registrado com documento, versão e data, e um aceite novo é exigido quando a versão muda.
 
+### C8. Vendas (plano Gold) — pagamentos dos alunos
+**Só planejamento; nada implementado.** Distinto do C4 (assinatura do personal *ao LFit*): aqui é o personal
+cobrando *os próprios alunos* (mensalidade, pacote de sessões etc.) dentro do LFit.
+
+- **Gateway: Asaas**, para as duas pontas:
+  - **Assinatura do personal ao LFit** (C4): conta Asaas **do LFit**, cartão recorrente + Pix.
+  - **Pagamentos dos alunos** (C8, plano Gold): o personal **conecta a própria conta Asaas** — não uma subconta.
+    Subconta tem tarifa mensal (R$ 12,90/mês) cobrada da conta-mãe (a do LFit), o que não escala por personal
+    e criaria uma relação financeira indevida entre o LFit e o dinheiro dos alunos de terceiros.
+  - A cobrança é criada **na conta do personal**, via API key dele; **split opcional** para o `walletId` do LFit
+    (comissão do LFit sobre a venda, sem tarifa extra de split no Asaas). **Nunca** criar a cobrança na conta do
+    LFit repassando depois — a nota fiscal seria emitida pelo LFit sobre o valor total, o que é errado (o
+    personal, não o LFit, presta o serviço vendido).
+- **Conexão da conta:** o personal informa a própria API key do Asaas (ou, se o Asaas oferecer OAuth/Connect,
+  preferir isso). A key fica **criptografada no banco** (nunca em texto puro), **usada só no servidor**
+  (Server Action/Route Handler; nunca chega ao navegador) e **revogável** a qualquer momento pelo personal
+  (desconectar apaga a key do banco). Webhook das cobranças é **configurado automaticamente via API** na conta
+  do personal ao conectar, com um **token por organização** (assinatura/verificação do webhook) e
+  **idempotência** (mesmo padrão do C4: `billing_events` com chave única, evento repetido é ignorado).
+- **UX:** avisar, ao conectar, que uma conta Asaas nova pode ficar com **saldo bloqueado durante a análise**
+  (2 a 7 dias úteis) — o personal só recebe de fato depois disso, mesmo com a integração funcionando.
+- **Pendências a confirmar no contrato com o Asaas antes de implementar:**
+  - subconta aceita CPF (pessoa física) ou só CNPJ? (só relevante se algum dia migrarmos de "conta própria" para
+    subcontas — hoje a decisão é não usar subconta, ver acima);
+  - a tarifa de subconta é cobrada por subconta **ativa** (com movimentação) ou por subconta **criada** (mesma
+    pergunta, mantida para referência futura).
+
 ## Etapas e checkpoints
 - **C.1 Banco** (migrations aditivas, com dry-run): `memberships` + `session_contexts` + novas `current_org_id()`/`current_user_role()`;
   unicidade de `students.user_id` por organização; FKs de trainer; `subscriptions`, `billing_settings`, limites do plano,
