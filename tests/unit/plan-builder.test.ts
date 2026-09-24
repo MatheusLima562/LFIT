@@ -11,6 +11,7 @@ import {
   normalizeGroups,
   parseNumber,
   setsFromSummary,
+  shortPrescription,
   toBlocks,
   ungroup,
   validateDraft,
@@ -375,5 +376,18 @@ describe("importar exercícios (2.8.4)", async () => {
     expect(out[2].setsDetail).toHaveLength(2);
     expect(out[2].setsDetail[0].key).not.toBe(a.setsDetail[0].key);
     expect(out[0].groupKey).toBe("g1");
+  });
+});
+
+describe("shortPrescription (toast do + Rápido)", () => {
+  const base = { sets: "3", quantityUnit: "reps" as const, qtyMin: "10", qtyMax: "12" };
+  it.each([
+    [base, "3×10–12"],
+    [{ ...base, qtyMax: "10" }, "3×10"],
+    [{ ...base, quantityUnit: "seconds" as const, qtyMin: "20", qtyMax: "40" }, "3×20–40 s"],
+    [{ ...base, quantityUnit: "failure" as const }, "3× até a falha"],
+    [{ ...base, qtyMin: "", qtyMax: "" }, null],
+  ])("%o → %s", (input, expected) => {
+    expect(shortPrescription(input)).toBe(expected);
   });
 });

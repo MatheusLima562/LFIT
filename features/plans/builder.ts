@@ -149,6 +149,18 @@ export function emptyItem(exercise: { id: string; name: string; defaults?: ItemD
   };
 }
 
+/** "3×10–12", "3×20–40 s", "3× até a falha" — resumo curto do toast do "+ Rápido" (null sem quantidade). */
+export function shortPrescription(it: Pick<ItemDraft, "sets" | "quantityUnit" | "qtyMin" | "qtyMax">): string | null {
+  const sets = it.sets.trim() ? `${it.sets.trim()}×` : "";
+  if (it.quantityUnit === "failure") return `${sets} ${messages.plans.prescription.units.failure.toLowerCase()}`.trim();
+  const min = it.qtyMin.trim();
+  const max = it.qtyMax.trim();
+  if (!min) return null;
+  const range = max && max !== min ? `${min}–${max}` : min;
+  const suffix = it.quantityUnit === "reps" ? "" : ` ${messages.plans.prescription.suffix[it.quantityUnit]}`;
+  return `${sets}${range}${suffix}`;
+}
+
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 export function nextLabel(workouts: WorkoutDraft[]) {
   const used = new Set(workouts.map((w) => w.label.trim().toUpperCase()));

@@ -830,7 +830,8 @@ export const messages = {
       alertHint: "Com alerta para este aluno",
       quick: "Rápido",
       quickLabel: (name: string) => `Adicionar ${name} rápido (valores padrão, painel continua aberto)`,
-      quickHint: "Adiciona com os valores padrão do exercício e mantém o painel aberto.",
+      quickHint: "Adiciona com os valores padrão e continua escolhendo",
+      quickAdded: (name: string, summary: string | null) => (summary ? `${name} adicionado · ${summary}` : `${name} adicionado`),
       loading: "Carregando…",
     },
     alerts: {

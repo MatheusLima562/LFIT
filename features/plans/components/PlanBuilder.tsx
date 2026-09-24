@@ -16,7 +16,7 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, ChevronLeft, ChevronsDownUp, ChevronsUpDown, CircleCheck, Import, EyeOff, Link2, Link2Off, Lock, Plus, Printer, ShieldAlert, Trash2 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
@@ -31,6 +31,7 @@ import { DateField } from "@/features/students/components/form/DateField";
 import { activatePlan, savePlan, type PickerExercise } from "../actions";
 import {
   emptyItem,
+  shortPrescription,
   emptyWorkout,
   groupItems,
   groupLabel,
@@ -83,6 +84,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Itens recolhidos (só cabeçalho + resumo). Guardado por chave do item.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const focusAfterPick = useRef<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [picker, setPicker] = useState<{ mode: "add" | "swap" | "substitute"; itemKey?: string } | null>(null);
   const [confirm, setConfirm] = useState<"activate" | "leave" | { removeWorkout: string } | null>(null);
@@ -266,10 +268,30 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
       return;
     }
     if (workout.items.length >= MAX_ITEMS) return void toast.error(t.items.max);
-    // Entra com os valores padrão do exercício (equipe → LFit). "+ Rápido" mantém o painel aberto.
-    setItems((items) => [...items, emptyItem(e)]);
-    toast.success(t.picker.added(e.name), { duration: 1500 });
-    if (!quick) setPicker(null);
+    // Entra com os valores padrão do exercício (equipe → LFit).
+    const item = emptyItem(e);
+    setItems((items) => [...items, item]);
+    if (quick) {
+      // "+ Rápido": painel continua aberto, item entra recolhido.
+      setCollapsed((c) => new Set(c).add(item.key));
+      toast.success(t.picker.quickAdded(e.name, shortPrescription(item)), { duration: 2000 });
+      return;
+    }
+    // Clique no nome: fecha o painel e leva o foco ao primeiro campo do item (aberto) para ajustar.
+    focusAfterPick.current = item.key;
+    setPicker(null);
+  };
+
+  /** Chamado quando o painel termina de fechar: foca o item recém-adicionado em vez de voltar ao botão. */
+  const onPickerCloseAutoFocus = (ev: Event) => {
+    const key = focusAfterPick.current;
+    if (!key) return;
+    focusAfterPick.current = null;
+    const el = document.getElementById(`${key}-sets`);
+    if (!el) return;
+    ev.preventDefault();
+    el.focus();
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
   const toggleCollapse = (key: string) =>
@@ -629,6 +651,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
           rules={rules.rules}
           onOpenChange={(open) => !open && setPicker(null)}
           onPick={onPick}
+          onCloseAutoFocus={onPickerCloseAutoFocus}
         />
       )}
 

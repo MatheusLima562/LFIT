@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import { MUSCLE_GROUPS } from "@/features/exercises/constants";
 import { searchExercises, type PickerExercise } from "../actions";
@@ -23,10 +24,12 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** quick = "+ Rápido": adiciona com os padrões e mantém o painel aberto. */
   onPick: (exercise: PickerExercise, quick: boolean) => void;
+  /** Ao terminar de fechar; preventDefault() evita devolver o foco ao botão que abriu. */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 /** Painel lateral com busca na biblioteca; mostra o alerta do aluno antes de escolher. */
-export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, onPick }: Props) {
+export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, onPick, onCloseAutoFocus }: Props) {
   const [q, setQ] = useState("");
   const [grupo, setGrupo] = useState<string>(ALL);
   const [rows, setRows] = useState<PickerExercise[]>([]);
@@ -48,7 +51,7 @@ export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
+      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md" onCloseAutoFocus={onCloseAutoFocus}>
         <SheetHeader className="border-b border-line">
           <SheetTitle>{mode === "swap" ? t.swapTitle : mode === "substitute" ? messages.plans.substitutes.pickerTitle : t.title}</SheetTitle>
           <SheetDescription>{`${messages.plans.workouts.label}: ${workoutLabel}`}</SheetDescription>
@@ -97,18 +100,15 @@ export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, 
                       {level && <LevelBadge level={level} className="shrink-0" />}
                     </button>
                     {mode === "add" && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="xs"
-                        className="shrink-0"
-                        aria-label={messages.plans.picker.quickLabel(e.name)}
-                        title={messages.plans.picker.quickHint}
-                        onClick={() => onPick(e, true)}
-                      >
-                        <Zap aria-hidden />
-                        {messages.plans.picker.quick}
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button type="button" variant="outline" size="xs" className="shrink-0" aria-label={t.quickLabel(e.name)} onClick={() => onPick(e, true)}>
+                            <Zap aria-hidden />
+                            {t.quick}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">{t.quickHint}</TooltipContent>
+                      </Tooltip>
                     )}
                   </li>
                 );

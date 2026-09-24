@@ -241,7 +241,7 @@ export function ItemCard(props: ItemCardProps) {
           <button
             type="button"
             aria-expanded={expanded}
-            aria-controls={id("sets")}
+            aria-controls={id("sets-detail")}
             onClick={() => setExpanded(!expanded)}
             className={cn(
               "inline-flex w-fit items-center gap-1 rounded text-[13px] font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/50",
@@ -252,7 +252,7 @@ export function ItemCard(props: ItemCardProps) {
             {t.sets.show(item.setsDetail.length)}
           </button>
           {expanded && (
-            <div id={id("sets")}>
+            <div id={id("sets-detail")}>
               <SetsEditor
                 item={item}
                 errors={errors}
