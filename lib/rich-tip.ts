@@ -13,7 +13,7 @@ export function sanitizeTip(input: string): string {
     .replace(/<[^>]*>/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .split("\n")
-    .map((l) => l.replace(/\s+$/g, "").replace(/^\s*[*•]\s+/, "- "))
+    .map((l) => normalizeLine(l.replace(/\s+$/g, "").replace(/^\s*[*•]\s+/, "- ")))
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim()
@@ -21,6 +21,57 @@ export function sanitizeTip(input: string): string {
 }
 
 export type TipInline = { text: string; bold: boolean };
+
+/**
+ * Reescreve uma linha em forma canônica: "- " fora do negrito, negrito aninhado/duplicado
+ * ("**- **texto****" → "- **texto**"), trechos em negrito vizinhos unidos, espaços fora dos marcadores.
+ * "**" abre quando vem depois de espaço/início, fecha quando vem antes de espaço/fim; colado dos dois
+ * lados, alterna. Linha com negrito sem fechamento fica como está (asteriscos viram texto).
+ */
+export function normalizeLine(line: string): string {
+  if (!line.includes("**")) return line;
+  const chars: { c: string; bold: boolean }[] = [];
+  let depth = 0;
+  for (let i = 0; i < line.length; ) {
+    if (line.startsWith("**", i)) {
+      const prev = chars.at(-1)?.c;
+      let j = i;
+      while (line.startsWith("**", j)) j += 2;
+      const next = line[j];
+      for (let k = i; k < j; k += 2) {
+        const opens = prev === undefined || /\s/.test(prev) ? true : next === undefined || /\s/.test(next) ? false : depth === 0;
+        // Numa sequência "****" colada ao texto, cada par segue a mesma direção.
+        depth = opens ? depth + 1 : Math.max(0, depth - 1);
+      }
+      i = j;
+      continue;
+    }
+    chars.push({ c: line[i], bold: depth > 0 });
+    i++;
+  }
+  if (depth !== 0) return line;
+  const plain = chars.map((x) => x.c).join("");
+  const list = /^\s*-\s/.exec(plain);
+  return (list ? "- " : "") + joinRuns(chars.slice(list ? list[0].length : 0).map((x) => ({ text: x.c, bold: x.bold })));
+}
+
+/** Runs → texto com **negrito**; une vizinhos iguais e deixa espaços das pontas fora dos marcadores. */
+export function joinRuns(runs: TipInline[]): string {
+  const merged: TipInline[] = [];
+  for (const r of runs) {
+    if (!r.text) continue;
+    const last = merged.at(-1);
+    if (last && last.bold === r.bold) last.text += r.text;
+    else merged.push({ ...r });
+  }
+  return merged
+    .map((r) => {
+      if (!r.bold || !r.text.trim()) return r.text;
+      const [, lead, core, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(r.text)!;
+      return `${lead}**${core}**${trail}`;
+    })
+    .join("");
+}
 export type TipBlock = { kind: "paragraph"; lines: TipInline[][] } | { kind: "list"; items: TipInline[][] };
 
 /** "**a** b" → [{a, bold}, {" b"}]. Asteriscos sem par ficam como texto. */

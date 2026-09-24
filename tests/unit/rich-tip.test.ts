@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseInline, parseTip, sanitizeTip } from "@/lib/rich-tip";
+import { normalizeLine, parseInline, parseTip, sanitizeTip } from "@/lib/rich-tip";
 
 describe("sanitizeTip", () => {
   it("remove HTML e caracteres de controle; mantém negrito e lista", () => {
@@ -26,5 +26,24 @@ describe("parseTip", () => {
   });
   it("marcação não suportada fica como texto", () => {
     expect(parseTip("# título [link](x) _it_")).toEqual([{ kind: "paragraph", lines: [[{ text: "# título [link](x) _it_", bold: false }]] }]);
+  });
+});
+
+describe("normalizeLine (marcação duplicada dos botões antigos)", () => {
+  it.each([
+    ["**- **texto****", "- **texto**"],
+    ["**- texto**", "- **texto**"],
+    ["- **a****b**", "- **ab**"],
+    ["** a **b", "** a **b"], // ambíguo: fica como está
+    ["- ****", "- ****"], // sem fechamento claro: fica como está
+    ["a**b**c", "a**b**c"],
+    ["**Coluna** neutra", "**Coluna** neutra"],
+    ["2 ** 3", "2 ** 3"],
+    ["sem marcação", "sem marcação"],
+  ])("%s → %s", (input, expected) => {
+    expect(normalizeLine(input)).toBe(expected);
+  });
+  it("sanitizeTip aplica a normalização em cada linha", () => {
+    expect(sanitizeTip("**- **um****\n**- dois**")).toBe("- **um**\n- **dois**");
   });
 });

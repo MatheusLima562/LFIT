@@ -776,12 +776,12 @@ export const messages = {
     },
     tip: {
       label: "Dica",
-      placeholder: "Ex.: **Coluna neutra**. Use - no início da linha para lista.",
+      placeholder: "Ex.: Coluna neutra, desça até 90°.",
+      toolbar: "Formatação da dica",
       bold: "Negrito",
-      boldPlaceholder: "texto",
+      boldShortcut: "Negrito (Ctrl/⌘ + B)",
       list: "Lista",
-      preview: "Prévia",
-      edit: "Editar",
+      count: (n: number, max: number) => `${n}/${max} caracteres`,
     },
     substitutes: {
       label: "Substitutos",
