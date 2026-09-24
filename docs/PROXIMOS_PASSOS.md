@@ -18,8 +18,7 @@ treino real. **Nada em andamento no código** (working tree limpo, `tsc` sem err
 - Planejamento aprovado da Fase C (dividida em C1 e C2) — `docs/planos/fase-c.md`.
 
 ## Falta (ordem aprovada)
-1. **2.6** Impressão — `/treinos/[planId]/imprimir` (A4, sem dados de saúde/alertas); religar "Imprimir" no menu do plano
-   (`features/plans/components/PlanActions.tsx`, item removido para não haver link morto).
+1. ~~2.6 Impressão~~ ✔
 2. **2.7** Verificação final da Fase 2 (roteiro de navegador completo, claro/escuro/mobile, advisors).
 3. **2.8** Ajustes do montador — **pendente**, plano em `docs/planos/etapa-2.8.md` (planejar e mostrar antes de implementar).
 4. **C1** Contas com múltiplos vínculos (sem cobrança).

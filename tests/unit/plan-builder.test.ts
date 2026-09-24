@@ -236,3 +236,17 @@ describe("situação do plano", async () => {
     expect(planPeriod(null, null)).toBe("Sem período definido");
   });
 });
+
+describe("formatação para impressão", async () => {
+  const { formatRest, formatLoad, formatDecimal } = await import("@/features/plans/format");
+  it("descanso", () => {
+    expect([formatRest(null), formatRest(45), formatRest(60), formatRest(90), formatRest(125)]).toEqual([null, "45 s", "1 min", "1 min 30 s", "2 min 5 s"]);
+  });
+  it("carga", () => {
+    expect(formatLoad(12.5, "kg", null)).toBe("12,5 kg");
+    expect(formatLoad(null, null, "moderada")).toBe("moderada");
+    expect(formatLoad(40, "lb", "barra W")).toBe("40 lb · barra W");
+    expect(formatLoad(null, null, "  ")).toBeNull();
+    expect(formatDecimal(7.5)).toBe("7,5");
+  });
+});

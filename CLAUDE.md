@@ -317,8 +317,9 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - 2.5 `/alunos/[id]/treinos` (ativo, rascunhos, histórico; aplicar modelo, duplicar, salvar como modelo,
   arquivar), `/treinos/modelos` (aplicar a aluno; arquivados em `?arquivados=1`), `/treinos` (treinos ativos
   por vencimento) e entrada "Treinos" no menu da linha de Meus alunos.
-- Próximos passos da Fase 2: 2.6 impressão (`/treinos/[planId]/imprimir`, sem dados de saúde) e 2.7
-  verificação final. Regras globais de contraindicação: aguardando o CSV revisado.
+- 2.6 Impressão: `/treinos/[planId]/imprimir` no grupo de rotas `(print)` (sem AppShell). Folha A4 com
+  `@page` e cores fixas `neutral-*` (não remapeadas no tema escuro); agrupamentos numerados (2a, 2b), séries
+  detalhadas, sem grupos especiais, condições ou alertas. PDF pelo "Salvar como PDF" do navegador. Regras globais de contraindicação: aguardando o CSV revisado.
 - Vídeo próprio nos exercícios (MP4/WebM, cota por plano): ver seção "Vídeo próprio de exercício".
 - **Notas para a Fase 3:** "Iniciar treino" pelo professor (modo presencial, registrando pelo aluno), evolução de
   cargas por exercício e volume de treino (séries × reps × carga) por sessão/semana.

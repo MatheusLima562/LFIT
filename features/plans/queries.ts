@@ -292,3 +292,37 @@ export async function listActivePlans(): Promise<ActivePlanRow[]> {
     student: { id: r.student.id, name: `${r.student.first_name} ${r.student.last_name}` },
   }));
 }
+
+export interface PlanForPrint {
+  plan: SavedPlan;
+  status: PlanStatus;
+  organizationName: string;
+  studentName: string | null;
+  trainerName: string | null;
+}
+
+/**
+ * Dados da impressão (RLS: mesmo acesso da edição). Sem dados de saúde nem alertas:
+ * a folha pode sair do consultório (é entregue ao aluno).
+ */
+export async function getPlanForPrint(planId: string, organizationName: string): Promise<PlanForPrint | null> {
+  const row = await getPlan(planId);
+  if (!row) return null;
+  let trainerName: string | null = null;
+  if (row.student_id) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("students")
+      .select("trainer:profiles!students_trainer_id_organization_id_fkey(full_name)")
+      .eq("id", row.student_id)
+      .maybeSingle();
+    trainerName = (data?.trainer as { full_name: string } | null)?.full_name ?? null;
+  }
+  return {
+    plan: toSavedPlan(row),
+    status: row.status,
+    organizationName,
+    studentName: row.student ? `${row.student.first_name} ${row.student.last_name}` : null,
+    trainerName,
+  };
+}

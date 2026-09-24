@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Archive, Copy, Eye, LayoutTemplate, MoreHorizontal, Pencil, UserPlus } from "lucide-react";
+import { Archive, Copy, Eye, LayoutTemplate, MoreHorizontal, Pencil, Printer, UserPlus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { messages } from "@/messages/pt-BR";
@@ -68,6 +68,12 @@ export function PlanActions({ plan, isTemplate, students }: Props) {
               {messages.plans.templates.applyToStudent}
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem asChild>
+            <Link href={`/treinos/${plan.id}/imprimir`}>
+              <Printer aria-hidden />
+              {t.print}
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => run(() => duplicatePlan(plan.id), (id) => router.push(`/treinos/${id}/editar`))}>
             <Copy aria-hidden />
             {t.duplicate}

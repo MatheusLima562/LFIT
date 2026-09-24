@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   closestCenter,
@@ -14,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronLeft, CircleCheck, EyeOff, Link2, Link2Off, Lock, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronLeft, CircleCheck, EyeOff, Link2, Link2Off, Lock, Plus, Printer, ShieldAlert, Trash2 } from "lucide-react";
 import { useEffect, useId, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -246,6 +247,15 @@ export function PlanBuilder({ initial, status, student, rules, canEdit, otherAct
           </h1>
           {isTemplate && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700">{t.templateBadge}</span>}
           {status && <StatusBadge status={status} />}
+          {draft.id && (
+            <Button asChild variant="outline" size="sm" className="ml-auto">
+              {/* A impressão mostra o que está salvo: com alterações pendentes, salve antes. */}
+              <Link href={`/treinos/${draft.id}/imprimir`} aria-disabled={dirty} onClick={(e) => dirty && (e.preventDefault(), toast.info(t.print.saveFirst))}>
+                <Printer aria-hidden />
+                {messages.plans.manage.print}
+              </Link>
+            </Button>
+          )}
         </div>
         {student && <p className="text-[13px] text-ink-2">{student.name}</p>}
         {readOnly && (

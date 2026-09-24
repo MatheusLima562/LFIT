@@ -55,11 +55,11 @@ export interface PlanDraft {
   workouts: WorkoutDraft[];
 }
 
-export interface Block {
+export interface Block<T extends { key: string; groupKey: string | null } = ItemDraft> {
   /** groupKey do agrupamento ou key do item isolado. */
   id: string;
   groupKey: string | null;
-  items: ItemDraft[];
+  items: T[];
 }
 
 export const newKey = () => crypto.randomUUID();
@@ -99,8 +99,8 @@ export function groupLabel(size: number) {
 }
 
 /** Itens consecutivos com o mesmo groupKey formam um bloco. */
-export function toBlocks(items: ItemDraft[]): Block[] {
-  const blocks: Block[] = [];
+export function toBlocks<T extends { key: string; groupKey: string | null }>(items: T[]): Block<T>[] {
+  const blocks: Block<T>[] = [];
   for (const item of items) {
     const last = blocks.at(-1);
     if (item.groupKey && last?.groupKey === item.groupKey) last.items.push(item);

@@ -22,3 +22,22 @@ export function planSituation(endsOn: string | null, today = todayISO()): PlanSi
   if (d < 0) return { kind: "expired", label: t.expired };
   return { kind: d < 7 ? "soon" : "ok", label: t.daysLeft(d) };
 }
+
+const num = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
+
+/** 45 → "45 s" · 90 → "1 min 30 s" · 120 → "2 min". */
+export function formatRest(seconds: number | null) {
+  if (seconds === null) return null;
+  if (seconds < 60) return `${seconds} s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s ? `${m} min ${s} s` : `${m} min`;
+}
+
+/** Carga numérica + unidade e/ou texto livre: "40 kg", "moderada", "40 kg · moderada". */
+export function formatLoad(value: number | null, unit: string | null, text: string | null) {
+  const parts = [value !== null && unit ? `${num.format(value)} ${unit}` : null, text?.trim() || null].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+}
+
+export const formatDecimal = (value: number | null) => (value === null ? null : num.format(value));
