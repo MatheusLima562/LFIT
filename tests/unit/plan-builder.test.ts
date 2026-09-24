@@ -358,3 +358,21 @@ describe("menu da série (2.8.3)", async () => {
     expect(duplicateSet(twenty, twenty[0].key)).toHaveLength(20);
   });
 });
+
+describe("importar exercícios (2.8.4)", async () => {
+  const { importItems, setsFromSummary: gen } = await import("@/features/plans/builder");
+  it("re-chaveia itens, séries e grupos; grupo incompleto é desfeito; não colide com a divisão", () => {
+    const target = [mk("t1", "g1"), mk("t2", "g1")];
+    const a = { ...mk("a", "g1"), setsDetail: gen({ ...mk("a"), sets: "2" }) };
+    const picked = [a, mk("b", "g1"), mk("c", "g2")];
+    const out = importItems(target, picked);
+    expect(out).toHaveLength(5);
+    expect(out.slice(2).every((i) => !["a", "b", "c"].includes(i.key))).toBe(true);
+    expect(out[2].groupKey).toBe(out[3].groupKey);
+    expect(out[2].groupKey).not.toBe("g1");
+    expect(out[4].groupKey).toBeNull(); // "c" veio sozinho do grupo g2
+    expect(out[2].setsDetail).toHaveLength(2);
+    expect(out[2].setsDetail[0].key).not.toBe(a.setsDetail[0].key);
+    expect(out[0].groupKey).toBe("g1");
+  });
+});

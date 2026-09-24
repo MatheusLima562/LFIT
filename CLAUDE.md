@@ -218,7 +218,7 @@ effective_status =
   (só owner, exercício sem uso em treinos) apaga os arquivos com a secret key **depois** que o RLS autorizou a
   exclusão da linha. Arquivar não apaga. `npm run db:seed -- --reset` limpa a pasta da org de exemplo.
 
-### Montador — etapa 2.8 (banco + 2.8.1–2.8.3 prontos; falta 2.8.4)
+### Montador — etapa 2.8 (pronta; aguardando teste do dono)
 - **Plano:** `no_end` (sem data de expiração → `students.workout_plan_ends_at = 'infinity'`: fora de A vencer/Vencidos
   e diferente de "Sem treino"), `planned_sessions`, `trainer_id` (professor do plano; padrão = do aluno). O professor
   do plano **vê e edita só aquele plano** (`can_access_plan`/`lock_editable_plan`); não vê o cadastro nem outros planos.
@@ -243,7 +243,13 @@ effective_status =
   entrada** (`private.read_prescription` converte "8–12", "20–30 s", "até a falha", "8 por lado"…) — usado pelo seed e
   útil para a Importação do MFIT —, mas grava só as colunas novas.
 - **Padrões por exercício** (`exercise_defaults`): camada global (migration) + camada da org (global: qualquer staff;
-  próprio: owner ou autor). Métodos/objetivos iniciais semeados em toda org nova (gatilho em `organizations`).
+  próprio: owner ou autor). Editáveis no formulário do exercício ("Valores padrão"; vazio = padrão LFit);
+  `resolveDefaults` (`features/exercises/defaults.ts`) aplica org → global → 3 × 10–12, 60 s. Métodos/objetivos
+  iniciais semeados em toda org nova (gatilho em `organizations`).
+- **Produtividade (2.8.4):** "+ Rápido" no seletor (adiciona com os padrões e mantém o painel aberto), "Importar
+  exercícios" (outra divisão, outro plano do aluno ou modelo; `importItems` gera chaves novas e preserva grupos e
+  séries), "Expandir/Recolher todos" e "Copiar para alunos" (`BulkApplyDialog`: prévia de alertas por aluno →
+  `apply_plan_to_students`, resultado por aluno; até 50).
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
@@ -362,7 +368,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador em andamento — banco ✔; **2.9** página do aluno
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.9** página do aluno
   `/alunos/[id]`, planejar antes) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
   registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Dumbbell, Plus, SearchX } from "lucide-react";
 import { z } from "zod";
 import { requireStaff } from "@/lib/auth/session";
-import { getExerciseDetail, getExerciseFilterOptions, getVideoUsage, listExercises } from "@/features/exercises/queries";
+import { getExerciseDefaults, getExerciseDetail, getExerciseFilterOptions, getVideoUsage, listExercises } from "@/features/exercises/queries";
 import { VideoUsageBar } from "@/features/exercises/components/VideoUsageBar";
 import { exerciseListHref, parseExerciseListParams } from "@/features/exercises/search-params";
 import { ExerciseDetailDialog } from "@/features/exercises/components/ExerciseDetailDialog";
@@ -42,6 +42,7 @@ export default async function ExercisesPage({ searchParams }: PageProps<"/treino
     dialog?.id ? getExerciseDetail(dialog.id, session) : Promise.resolve(null),
     getVideoUsage(),
   ]);
+  const defaults = dialog?.mode === "edit" && dialog.id ? await getExerciseDefaults(dialog.id) : undefined;
   const filtered = Boolean(params.q || params.grupo || params.equip || params.condicao);
   // Sem permissão para editar → mostra a ficha em vez do formulário.
   const editable = detail && (detail.isGlobal || detail.canEdit) && !detail.archived;
@@ -94,6 +95,7 @@ export default async function ExercisesPage({ searchParams }: PageProps<"/treino
           organizationId={session.organizationId}
           videoQuotaBytes={videoUsage.quotaBytes}
           videoUsedBytes={videoUsage.usedBytes}
+          exerciseDefaults={defaults}
         />
       )}
     </div>

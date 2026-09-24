@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
 import { exerciseMediaUrl } from "@/lib/media";
+import { toDefaults, type DefaultsRow } from "./defaults";
 import { searchKey } from "@/lib/text";
 import type { ContraindicationLevel, MuscleGroup } from "./constants";
 import { EXERCISE_PAGE_SIZE, type ExerciseListParams } from "./search-params";
@@ -191,4 +192,17 @@ export async function getVideoUsage(): Promise<VideoUsage> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("organization_video_usage").single();
   return { usedBytes: Number(data?.used_bytes ?? 0), quotaBytes: Number(data?.quota_bytes ?? 0) };
+}
+
+/** Padrões do exercício: camada LFit (só leitura) e da equipe (editável). */
+export async function getExerciseDefaults(exerciseId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exercise_defaults")
+    .select("organization_id, exercise_id, sets, quantity_unit, quantity_min, quantity_max, rest_min, rest_max")
+    .eq("exercise_id", exerciseId);
+  const rows = (data ?? []) as DefaultsRow[];
+  const global = rows.find((r) => r.organization_id === null);
+  const team = rows.find((r) => r.organization_id !== null);
+  return { global: global ? toDefaults(global) : null, team: team ? toDefaults(team) : null };
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Zap } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { messages } from "@/messages/pt-BR";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -20,7 +21,8 @@ interface Props {
   workoutLabel: string;
   rules: StudentRule[];
   onOpenChange: (open: boolean) => void;
-  onPick: (exercise: PickerExercise) => void;
+  /** quick = "+ Rápido": adiciona com os padrões e mantém o painel aberto. */
+  onPick: (exercise: PickerExercise, quick: boolean) => void;
 }
 
 /** Painel lateral com busca na biblioteca; mostra o alerta do aluno antes de escolher. */
@@ -78,10 +80,10 @@ export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, 
               {rows.map((e) => {
                 const level = worst(e.id);
                 return (
-                  <li key={e.id}>
+                  <li key={e.id} className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => onPick(e)}
+                      onClick={() => onPick(e, false)}
                       className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left outline-none hover:bg-canvas focus-visible:ring-2 focus-visible:ring-ring/50"
                     >
                       <Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-3" />
@@ -94,6 +96,20 @@ export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, 
                       </span>
                       {level && <LevelBadge level={level} className="shrink-0" />}
                     </button>
+                    {mode === "add" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="xs"
+                        className="shrink-0"
+                        aria-label={messages.plans.picker.quickLabel(e.name)}
+                        title={messages.plans.picker.quickHint}
+                        onClick={() => onPick(e, true)}
+                      >
+                        <Zap aria-hidden />
+                        {messages.plans.picker.quick}
+                      </Button>
+                    )}
                   </li>
                 );
               })}

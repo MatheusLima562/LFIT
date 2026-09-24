@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/db/admin";
 import { createClient } from "@/lib/db/server";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
+import { exerciseDefaultsSchema } from "./defaults";
 import { exerciseFormSchema } from "./schemas";
 
 const t = messages.exercises;
@@ -159,4 +160,31 @@ export async function deleteExercise(exerciseId: string): Promise<ExerciseAction
   if (stale.length) await createAdminClient().storage.from(MEDIA_BUCKET).remove(stale);
   revalidate();
   return { ok: true, id: exerciseId, message: t.deleted };
+}
+
+/**
+ * Padrões da equipe para o exercício (camada da org). Tudo vazio = remove a camada da equipe
+ * (volta ao padrão LFit). RLS: exercício global → qualquer staff; próprio → owner ou autor.
+ */
+export async function saveExerciseDefaults(exerciseId: string, input: unknown): Promise<ExerciseActionResult> {
+  const session = await staffOrError();
+  if (!session || !z.uuid().safeParse(exerciseId).success) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  if (input === null) {
+    const { error } = await supabase.from("exercise_defaults").delete().eq("exercise_id", exerciseId).eq("organization_id", session.organizationId);
+    if (error) return { ok: false, error: dbErrorMessage(error) };
+    revalidate();
+    return { ok: true, id: exerciseId, message: t.defaults.saved };
+  }
+  const parsed = exerciseDefaultsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? messages.dbErrors.INVALID_INPUT };
+  const d = parsed.data;
+  const row = { sets: d.sets, quantity_unit: d.quantityUnit, quantity_min: d.quantityMin, quantity_max: d.quantityMax, rest_min: d.restMin, rest_max: d.restMax };
+  const { data: existing } = await supabase.from("exercise_defaults").select("id").eq("exercise_id", exerciseId).eq("organization_id", session.organizationId).maybeSingle();
+  const { error } = existing
+    ? await supabase.from("exercise_defaults").update(row).eq("id", existing.id)
+    : await supabase.from("exercise_defaults").insert({ ...row, organization_id: session.organizationId, exercise_id: exerciseId });
+  if (error) return { ok: false, error: dbErrorMessage(error) };
+  revalidate();
+  return { ok: true, id: exerciseId, message: t.defaults.saved };
 }

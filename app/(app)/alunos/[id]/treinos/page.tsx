@@ -6,7 +6,7 @@ import { z } from "zod";
 import { requireStaff } from "@/lib/auth/session";
 import { ApplyTemplateButton } from "@/features/plans/components/ApplyTemplateButton";
 import { PlanCard } from "@/features/plans/components/PlanCard";
-import { getStudentName, listStudentPlans, listTemplateOptions, type PlanSummary } from "@/features/plans/queries";
+import { getStudentName, listStudentOptions, listStudentPlans, listTemplateOptions, type PlanSummary } from "@/features/plans/queries";
 import { todayISO } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
@@ -26,7 +26,7 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
   if (!z.uuid().safeParse(id).success) notFound();
   const student = await getStudentName(id);
   if (!student) notFound();
-  const [plans, templates] = await Promise.all([listStudentPlans(id, session), listTemplateOptions()]);
+  const [plans, templates, students] = await Promise.all([listStudentPlans(id, session), listTemplateOptions(), listStudentOptions()]);
 
   // Abas pela URL (?aba=). Agendado cuja data já chegou conta como atual até o job diário rodar.
   const today = todayISO();
@@ -91,7 +91,7 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
       ) : (
         <ul className="flex flex-col gap-3">
           {items.map((p) => (
-            <PlanCard key={p.id} plan={p} />
+            <PlanCard key={p.id} plan={p} students={students} />
           ))}
         </ul>
       )}

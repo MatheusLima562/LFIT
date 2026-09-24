@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Archive, Copy, Eye, LayoutTemplate, MoreHorizontal, Pencil, Printer, UserPlus } from "lucide-react";
+import { Archive, Copy, Eye, LayoutTemplate, MoreHorizontal, Pencil, Printer, UserPlus, Users } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { messages } from "@/messages/pt-BR";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { archivePlan, duplicatePlan, savePlanAsTemplate, type PlanActionResult } from "../actions";
 import type { PlanStatus } from "../queries";
 import { ApplyTemplateDialog, type Option } from "./ApplyTemplateDialog";
+import { BulkApplyDialog } from "./BulkApplyDialog";
 
 const t = messages.plans.manage;
 
@@ -29,7 +30,7 @@ interface Props {
 export function PlanActions({ plan, isTemplate, students }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [dialog, setDialog] = useState<null | "archive" | "template" | "apply">(null);
+  const [dialog, setDialog] = useState<null | "archive" | "template" | "apply" | "bulk">(null);
   const [name, setName] = useState(plan.name);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,6 +75,12 @@ export function PlanActions({ plan, isTemplate, students }: Props) {
               {t.print}
             </Link>
           </DropdownMenuItem>
+          {students && (
+            <DropdownMenuItem onSelect={() => setDialog("bulk")}>
+              <Users aria-hidden />
+              {messages.plans.bulk.menu}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onSelect={() => run(() => duplicatePlan(plan.id), (id) => router.push(`/treinos/${id}/editar`))}>
             <Copy aria-hidden />
             {t.duplicate}
@@ -144,7 +151,8 @@ export function PlanActions({ plan, isTemplate, students }: Props) {
         </DialogContent>
       </Dialog>
 
-      {dialog === "apply" && students && (
+      {dialog === "bulk" && students && <BulkApplyDialog source={{ id: plan.id, name: plan.name }} students={students} onClose={() => setDialog(null)} />}
+      {dialog === "apply" && students && isTemplate && (
         <ApplyTemplateDialog fixed={{ kind: "template", id: plan.id, name: plan.name }} options={students} onClose={() => setDialog(null)} />
       )}
     </div>

@@ -1,11 +1,12 @@
 # Próximos passos (retomada)
 
-_Atualizado em 24/09/2026 (após o checkpoint da 2.8)._
+_Atualizado em 24/09/2026 (fim da 2.8 — aguardando seu teste)._
 
 ## Etapa atual
 **Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. **2.8.0 (banco) aprovada** + ajustes pedidos:
 alerta **restrito** (nível + texto genérico, sem condição/grupo/nota) para o professor do plano sem acesso ao aluno e
-para o owner com consentimento só declarado; trava `organizations.is_seed` no `seed --reset`. **2.8.1 (plano), 2.8.2 (exercício no plano) e 2.8.3 (prescrição da série) ✔. Colunas legadas removidas. Próxima: 2.8.4** (produtividade). Nada em andamento no código (working tree limpo, `tsc` sem erros).
+para o owner com consentimento só declarado; trava `organizations.is_seed` no `seed --reset`. 2.8.1 (plano), 2.8.2 (exercício no plano), 2.8.3 (prescrição da série) e **2.8.4 (produtividade) ✔**. Colunas legadas removidas.
+**Parado para o seu teste da 2.8.** Nada em andamento no código.
 
 ## Concluído (branch `feat/fase-2-treinos`)
 - 2.1 Banco: biblioteca global (52 exercícios), 11 condições, planos/divisões/itens/séries, RPCs e alertas.
@@ -25,7 +26,9 @@ para o owner com consentimento só declarado; trava `organizations.is_seed` no `
 2. ~~2.7 Verificação final da Fase 2~~ ✔ (228 testes; todos os roteiros de navegador das Fases 1 e 2 no build de
    produção; advisors revisados; índices de FKs adicionados)
 3. **2.8** Ajustes do montador — plano aprovado (`~/.claude/plans/…` e `docs/planos/etapa-2.8.md`). 2.8.0 banco ✔
-   (migrations `20261004120000`–`20261005120100`, 253 testes no total). 2.8.1 plano ✔, 2.8.2 exercício no plano ✔, 2.8.3 série ✔. Faltam: série (depois dela, remover as colunas legadas), 2.8.4 produtividade.
+   (migrations `20261004120000`–`20261005120100`, 253 testes no total). 2.8.1 plano ✔, 2.8.2 exercício no plano ✔, 2.8.3 série ✔ (colunas legadas removidas), 2.8.4 produtividade ✔
+   (padrões editáveis, "+ Rápido", importar exercícios, expandir/recolher, copiar para alunos). 274 testes.
+   **Aguardando o seu teste**; ajustes que surgirem entram aqui.
 4. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
 5. **C1** Contas com múltiplos vínculos (sem cobrança).
@@ -46,10 +49,19 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 
 ## Avisos úteis
 - Seed/testes só no lfit-dev. Se o login travar nos roteiros de navegador, limpar `public.rate_limits` no lfit-dev.
-- Security Advisor: 29 avisos "authenticated can execute SECURITY DEFINER" (todos documentados no CLAUDE.md) + senha vazada (plano pago).
+- Security Advisor: 32 avisos "authenticated can execute SECURITY DEFINER" (todos documentados no CLAUDE.md) + senha vazada (plano pago).
+
+## O que testar na 2.8
+- Plano: "Sem data de expiração", sessões previstas, professor do plano, "Agendar" com início futuro; abas Atuais/
+  Futuros/Anteriores/Todos em `/alunos/[id]/treinos`.
+- Exercício no plano: substitutos (até 3), método/objetivo (listas em Treinos → Métodos e objetivos), dica com
+  **negrito** e listas.
+- Prescrição: unidade, intensidade, velocidade ou cadência, pausa mín–máx (no resumo e em cada série).
+- Produtividade: "Valores padrão" no formulário do exercício; "+ Rápido"; "Importar exercícios"; "Recolher todos";
+  menu do plano → "Copiar para alunos".
 
 ## Próximo comando
-**"Siga com a 2.8.4"** — plano em `docs/planos/etapa-2.8.md`; parar ao final da 2.8 para teste. Antes, confira o estado com:
+Depois do teste: **ajustes da 2.8** (se houver) ou **"Planeje a 2.9"** (mostrar o plano antes). Antes, confira o estado com:
 ```bash
 git status && npx tsc --noEmit && npm test
 ```

@@ -109,14 +109,35 @@ export function pickPrescription(d: PrescriptionDraft): PrescriptionDraft {
   return { quantityUnit, qtyMin, qtyMax, qtyNote, intensityType, intensityValue, speedMode, speed, tempo, restMin, restMax };
 }
 
-export function emptyItem(exercise: { id: string; name: string }): ItemDraft {
+/** Valores padrão de um exercício (camada da equipe → LFit). */
+export interface ItemDefaults {
+  sets: number | null;
+  quantityUnit: QuantityUnit;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  restMin: number | null;
+  restMax: number | null;
+}
+
+export function emptyItem(exercise: { id: string; name: string; defaults?: ItemDefaults }): ItemDraft {
+  const d = exercise.defaults;
+  const fromDefaults: Partial<PrescriptionDraft> = d
+    ? {
+        quantityUnit: d.quantityUnit,
+        qtyMin: d.quantityMin === null ? "" : String(d.quantityMin).replace(".", ","),
+        qtyMax: d.quantityMax === null ? "" : String(d.quantityMax).replace(".", ","),
+        restMin: d.restMin === null ? "" : String(d.restMin),
+        restMax: d.restMax === null ? "" : String(d.restMax),
+      }
+    : {};
   return {
     key: newKey(),
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     groupKey: null,
-    sets: "3",
+    sets: d?.sets ? String(d.sets) : "3",
     ...emptyPrescription(),
+    ...fromDefaults,
     loadValue: "",
     loadUnit: "kg",
     loadText: "",
@@ -509,4 +530,28 @@ export function fromSaved(plan: SavedPlan): PlanDraft {
       })),
     })),
   };
+}
+
+/**
+ * Importa itens (de outra divisão, plano ou modelo) para o fim da divisão: chaves novas para
+ * itens e séries, agrupamentos re-chaveados (nunca colidem com os existentes) e grupos que
+ * vieram incompletos (1 item) desfeitos. Séries detalhadas e substitutos são mantidos.
+ */
+export function importItems(target: ItemDraft[], picked: ItemDraft[]): ItemDraft[] {
+  const remap = new Map<string, string>();
+  const copies = picked.map((it) => {
+    let groupKey: string | null = null;
+    if (it.groupKey) {
+      if (!remap.has(it.groupKey)) remap.set(it.groupKey, newGroupKey());
+      groupKey = remap.get(it.groupKey)!;
+    }
+    return {
+      ...it,
+      key: newKey(),
+      groupKey,
+      substitutes: it.substitutes.map((s) => ({ ...s })),
+      setsDetail: it.setsDetail.map((s) => ({ ...s, key: newKey() })),
+    };
+  });
+  return normalizeGroups([...target, ...copies]);
 }

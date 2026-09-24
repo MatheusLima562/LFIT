@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import type { StudentRule, TrainingListOption } from "../queries";
+import { formatIntensity, formatQuantity, formatRestRange } from "../prescription";
 import { PrescriptionFields } from "./PrescriptionFields";
 import { TipEditor } from "./TipEditor";
 import type { DraftErrors, ItemDraft, SetDraft } from "../builder";
@@ -38,6 +39,9 @@ export interface ItemCardProps {
   rulesFor: (exerciseId: string) => StudentRule[];
   onAddSubstitute: () => void;
   lists: { methods: TrainingListOption[]; objectives: TrainingListOption[] };
+  /** Recolhido: só o cabeçalho e um resumo em uma linha. */
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export function ItemCard(props: ItemCardProps) {
@@ -115,6 +119,16 @@ export function ItemCard(props: ItemCardProps) {
             </ul>
           )}
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-expanded={!props.collapsed}
+          aria-label={props.collapsed ? t.collapse.expandItem(item.exerciseName) : t.collapse.item(item.exerciseName)}
+          onClick={props.onToggleCollapse}
+        >
+          <ChevronDown aria-hidden className={cn("transition-transform", !props.collapsed && "rotate-180")} />
+        </Button>
         {!readOnly && (
           <div className="flex shrink-0 items-center">
             <Button type="button" variant="ghost" size="icon-sm" aria-label={`${t.items.moveUp}: ${item.exerciseName}`} disabled={!canMoveUp} onClick={() => props.onMove(-1)}>
@@ -133,6 +147,10 @@ export function ItemCard(props: ItemCardProps) {
         )}
       </div>
 
+      {props.collapsed ? (
+        <p className="pl-9 text-[12px] text-ink-3">{itemSummary(item)}</p>
+      ) : (
+        <>
       <div className={cn("flex flex-col gap-2", hasDetail && "opacity-60")}>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-[4.5rem_minmax(9rem,14rem)_minmax(7rem,14rem)]">
         {field("sets", t.items.sets, { inputMode: "numeric" })}
@@ -246,6 +264,8 @@ export function ItemCard(props: ItemCardProps) {
           )}
         </div>
       )}
+        </>
+      )}
     </div>
   );
 }
@@ -265,6 +285,21 @@ export function DragHandle({ label, listeners, attributes }: { label: string; li
 }
 
 const NONE = "__none__";
+
+/** Resumo em uma linha do item recolhido: 3 × 8–12 reps · 40 kg · RPE 8 · 60–90 s. */
+function itemSummary(it: ItemDraft) {
+  const num = (v: string) => (v.trim() === "" ? null : Number(v.replace(",", ".")));
+  const qty = formatQuantity(it.quantityUnit, num(it.qtyMin), num(it.qtyMax), it.qtyNote || null);
+  return [
+    it.setsDetail.length ? t.sets.show(it.setsDetail.length) : [it.sets && `${it.sets} ×`, qty].filter(Boolean).join(" "),
+    it.loadValue ? `${it.loadValue} ${it.loadUnit}` : it.loadText || null,
+    formatIntensity(it.intensityType || null, num(it.intensityValue)),
+    formatRestRange(num(it.restMin), num(it.restMax)),
+    it.substitutes.length ? `${t.substitutes.label}: ${it.substitutes.length}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 function ListSelect({
   id,

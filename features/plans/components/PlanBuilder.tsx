@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, ChevronLeft, CircleCheck, EyeOff, Link2, Link2Off, Lock, Plus, Printer, ShieldAlert, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, ChevronLeft, ChevronsDownUp, ChevronsUpDown, CircleCheck, Import, EyeOff, Link2, Link2Off, Lock, Plus, Printer, ShieldAlert, Trash2 } from "lucide-react";
 import { useEffect, useId, useMemo, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ import {
   emptyWorkout,
   groupItems,
   groupLabel,
+  importItems,
   moveBlock,
   moveBlockTo,
   moveWithinGroup,
@@ -51,6 +52,7 @@ import {
 import type { PlanStatus, StudentRule, TrainingListOption } from "../queries";
 import { MAX_ITEMS, MAX_WORKOUTS, PLAN_LEVELS, type PlanLevel } from "../schemas";
 import { ExercisePicker } from "./ExercisePicker";
+import { ImportItemsDialog } from "./ImportItemsDialog";
 import { DragHandle, ItemCard } from "./ItemCard";
 
 const t = messages.plans;
@@ -79,6 +81,9 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
   const [errors, setErrors] = useState<DraftErrors>({});
   const [activeKey, setActiveKey] = useState(initial.workouts[0]?.key ?? "");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Itens recolhidos (só cabeçalho + resumo). Guardado por chave do item.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [importing, setImporting] = useState(false);
   const [picker, setPicker] = useState<{ mode: "add" | "swap" | "substitute"; itemKey?: string } | null>(null);
   const [confirm, setConfirm] = useState<"activate" | "leave" | { removeWorkout: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -242,7 +247,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
   // Exercícios
   // ---------------------------------------------------------------------------
 
-  const onPick = (e: PickerExercise) => {
+  const onPick = (e: PickerExercise, quick = false) => {
     if (!workout) return;
     if (picker?.mode === "substitute" && picker.itemKey) {
       const it = workout.items.find((x) => x.key === picker.itemKey);
@@ -261,8 +266,36 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
       return;
     }
     if (workout.items.length >= MAX_ITEMS) return void toast.error(t.items.max);
+    // Entra com os valores padrão do exercício (equipe → LFit). "+ Rápido" mantém o painel aberto.
     setItems((items) => [...items, emptyItem(e)]);
     toast.success(t.picker.added(e.name), { duration: 1500 });
+    if (!quick) setPicker(null);
+  };
+
+  const toggleCollapse = (key: string) =>
+    setCollapsed((c) => {
+      const next = new Set(c);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const allCollapsed = !!workout && workout.items.length > 0 && workout.items.every((i) => collapsed.has(i.key));
+  const setAllCollapsed = (value: boolean) =>
+    setCollapsed((c) => {
+      const next = new Set(c);
+      for (const i of workout?.items ?? []) {
+        if (value) next.add(i.key);
+        else next.delete(i.key);
+      }
+      return next;
+    });
+
+  const onImport = (picked: ItemDraft[]) => {
+    if (!workout) return;
+    if (workout.items.length + picked.length > MAX_ITEMS) return void toast.error(t.importItems.overLimit);
+    setItems((items) => importItems(items, picked));
+    setImporting(false);
+    toast.success(t.importItems.done(picked.length));
   };
 
   const onGroup = () => {
@@ -497,6 +530,15 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
               />
             </LabeledField>
 
+            {workout.items.length > 0 && (
+              <div className="flex justify-end">
+                <Button type="button" variant="ghost" size="sm" onClick={() => setAllCollapsed(!allCollapsed)}>
+                  {allCollapsed ? <ChevronsUpDown aria-hidden /> : <ChevronsDownUp aria-hidden />}
+                  {allCollapsed ? t.collapse.expandAll : t.collapse.all}
+                </Button>
+              </div>
+            )}
+
             {!readOnly && workout.items.length > 1 && (
               <div className="flex flex-wrap items-center gap-2 rounded-xl bg-canvas px-3 py-2">
                 <span className="text-[13px] text-ink-2">{t.groups.selectHint(selected.size)}</span>
@@ -529,14 +571,20 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
                 onSwap={(key) => setPicker({ mode: "swap", itemKey: key })}
                 onAddSubstitute={(key) => setPicker({ mode: "substitute", itemKey: key })}
                 lists={lists}
+                collapsed={collapsed}
+                onToggleCollapse={toggleCollapse}
               />
             )}
 
             {!readOnly && (
-              <div>
+              <div className="flex flex-wrap gap-2">
                 <Button type="button" onClick={() => setPicker({ mode: "add" })} disabled={workout.items.length >= MAX_ITEMS}>
                   <Plus aria-hidden />
                   {t.items.add}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setImporting(true)} disabled={workout.items.length >= MAX_ITEMS}>
+                  <Import aria-hidden />
+                  {t.importItems.button}
                 </Button>
               </div>
             )}
@@ -560,6 +608,17 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
             )}
           </div>
         </div>
+      )}
+
+      {importing && workout && (
+        <ImportItemsDialog
+          planId={draft.id}
+          studentId={draft.studentId}
+          workouts={draft.workouts}
+          targetKey={workout.key}
+          onClose={() => setImporting(false)}
+          onImport={onImport}
+        />
       )}
 
       {workout && (
@@ -683,6 +742,8 @@ interface ItemsListProps {
   onSwap: (key: string) => void;
   onAddSubstitute: (key: string) => void;
   lists: { methods: TrainingListOption[]; objectives: TrainingListOption[] };
+  collapsed: Set<string>;
+  onToggleCollapse: (key: string) => void;
 }
 
 function blockName(block: Block) {
@@ -691,7 +752,7 @@ function blockName(block: Block) {
     : (block.items[0]?.exerciseName ?? "");
 }
 
-function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpdateItem, onSelect, onSwap, onAddSubstitute, lists }: ItemsListProps) {
+function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpdateItem, onSelect, onSwap, onAddSubstitute, lists, collapsed, onToggleCollapse }: ItemsListProps) {
   const blocks = toBlocks(items);
   // id estável: sem ele o aria-describedby gerado pelo dnd-kit difere entre servidor e cliente (hidratação).
   const dndId = useId();
@@ -777,6 +838,8 @@ function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpd
                           rulesFor={rulesFor}
                           onAddSubstitute={() => onAddSubstitute(item.key)}
                           lists={lists}
+                          collapsed={collapsed.has(item.key)}
+                          onToggleCollapse={() => onToggleCollapse(item.key)}
                         />
                       ))}
                     </div>
@@ -800,6 +863,8 @@ function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpd
                       rulesFor={rulesFor}
                       onAddSubstitute={() => onAddSubstitute(block.items[0].key)}
                       lists={lists}
+                      collapsed={collapsed.has(block.items[0].key)}
+                      onToggleCollapse={() => onToggleCollapse(block.items[0].key)}
                     />
                   )
                 }

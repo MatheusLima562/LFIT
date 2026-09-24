@@ -14,7 +14,9 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { checkVideoQuota, removeExerciseVideo, saveExercise, setExerciseVideo } from "../actions";
+import { checkVideoQuota, removeExerciseVideo, saveExercise, saveExerciseDefaults, setExerciseVideo } from "../actions";
+import type { ExerciseDefaults } from "../defaults";
+import { DefaultsField, defaultsDraft, defaultsPayload, type DefaultsDraft } from "./DefaultsField";
 import { VIDEO_TYPES } from "../video";
 import { VideoField, type VideoFieldState } from "./VideoField";
 import { createClient } from "@/lib/db/client";
@@ -33,6 +35,8 @@ interface Props {
   organizationId: string;
   videoQuotaBytes: number;
   videoUsedBytes: number;
+  /** Padrões atuais (LFit e da equipe) do exercício em edição. */
+  exerciseDefaults?: { global: ExerciseDefaults | null; team: ExerciseDefaults | null };
 }
 
 function initialValues(exercise: ExerciseDetail | null): ExerciseFormInput {
@@ -48,7 +52,9 @@ function initialValues(exercise: ExerciseDetail | null): ExerciseFormInput {
   };
 }
 
-export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref, organizationId, videoQuotaBytes, videoUsedBytes }: Props) {
+export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref, organizationId, videoQuotaBytes, videoUsedBytes, exerciseDefaults }: Props) {
+  const initialDefaults = useMemo(() => defaultsDraft(exerciseDefaults?.team ?? null, exerciseDefaults?.global ?? null), [exerciseDefaults]);
+  const [defaultsValue, setDefaultsValue] = useState<DefaultsDraft>(initialDefaults);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -109,6 +115,11 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref,
         return;
       }
       const warnings = rulesOnly ? [] : await commitVideo(r.id);
+      // Padrões da equipe: só grava se mudaram.
+      if (JSON.stringify(defaultsValue) !== JSON.stringify(initialDefaults)) {
+        const d = await saveExerciseDefaults(r.id, defaultsPayload(defaultsValue));
+        if (!d.ok) warnings.push(d.error);
+      }
       setUploading(false);
       toast.success(rulesOnly ? t.rulesSaved : r.message);
       warnings.forEach((w) => toast.warning(w, { duration: 10_000 }));
@@ -196,6 +207,8 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref,
               />
             </>
           )}
+
+          <DefaultsField value={defaultsValue} lfit={exerciseDefaults?.global ?? null} onChange={setDefaultsValue} />
 
           <section className="flex flex-col gap-3">
             <div>

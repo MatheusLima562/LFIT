@@ -7,6 +7,9 @@ import { createClient } from "@/lib/db/server";
 import { searchKey } from "@/lib/text";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
 import { MUSCLE_GROUPS, type MuscleGroup } from "@/features/exercises/constants";
+import { resolveDefaults, type DefaultsRow, type ExerciseDefaults } from "@/features/exercises/defaults";
+import type { SavedPlan } from "./builder";
+import { getPlan, toSavedPlan } from "./queries";
 import { planPayloadSchema } from "./schemas";
 
 export type PlanActionResult = { ok: true; id: string; message: string } | { ok: false; error: string };
@@ -53,6 +56,8 @@ export interface PickerExercise {
   muscleGroups: MuscleGroup[];
   equipment: string | null;
   isGlobal: boolean;
+  /** Padrões resolvidos (equipe → LFit → 3 × 10–12, 60 s) para o "+ Rápido". */
+  defaults: ExerciseDefaults;
 }
 
 /** Busca do seletor de exercícios do montador (mesma visão da biblioteca). */
@@ -68,7 +73,15 @@ export async function searchExercises(q: string, grupo: string | null): Promise<
   if (term) query = query.ilike("search_text", `%${term}%`);
   if (grupo && (MUSCLE_GROUPS as readonly string[]).includes(grupo)) query = query.contains("muscle_groups", [grupo]);
   const { data } = await query.order("name").limit(60);
+  const ids = (data ?? []).map((e) => e.id!);
+  const { data: defs } = ids.length
+    ? await supabase
+        .from("exercise_defaults")
+        .select("organization_id, exercise_id, sets, quantity_unit, quantity_min, quantity_max, rest_min, rest_max")
+        .in("exercise_id", ids)
+    : { data: [] };
   return (data ?? []).map((e) => ({
+    defaults: resolveDefaults((defs ?? []) as DefaultsRow[], e.id!),
     id: e.id!,
     name: e.name!,
     muscleGroups: (e.muscle_groups ?? []) as MuscleGroup[],
@@ -148,4 +161,109 @@ export async function applyTemplate(input: unknown): Promise<PlanActionResult> {
   if (error || !data) return { ok: false, error: dbErrorMessage(error) };
   revalidatePlan(studentId);
   return { ok: true, id: data, message: messages.plans.manage.applied };
+}
+
+// ---------------------------------------------------------------------------
+// Importar exercícios (montador) e cópia para vários alunos
+// ---------------------------------------------------------------------------
+
+export interface ImportSource {
+  id: string;
+  name: string;
+  kind: "student" | "template";
+  status: string;
+}
+
+/** Outros planos do mesmo aluno + modelos da organização (RLS decide o que o usuário vê). */
+export async function listImportSources(studentId: string | null, currentPlanId: string | null): Promise<ImportSource[]> {
+  if (!(await isStaff())) return [];
+  if ((studentId && !uuid.safeParse(studentId).success) || (currentPlanId && !uuid.safeParse(currentPlanId).success)) return [];
+  const supabase = await createClient();
+  const [own, templates] = await Promise.all([
+    studentId
+      ? supabase.from("training_plans").select("id, name, status").eq("student_id", studentId).order("updated_at", { ascending: false }).limit(50)
+      : Promise.resolve({ data: [] as { id: string; name: string; status: string }[] }),
+    supabase.from("training_plans").select("id, name, status").is("student_id", null).neq("status", "archived").order("name").limit(200),
+  ]);
+  return [
+    ...(own.data ?? []).filter((p) => p.id !== currentPlanId).map((p) => ({ ...p, kind: "student" as const })),
+    ...(templates.data ?? []).filter((p) => p.id !== currentPlanId).map((p) => ({ ...p, kind: "template" as const })),
+  ];
+}
+
+/** Estrutura do plano de origem (mesmo RLS da edição). */
+export async function loadImportSource(planId: string): Promise<SavedPlan | null> {
+  if (!(await isStaff()) || !uuid.safeParse(planId).success) return null;
+  const row = await getPlan(planId);
+  return row ? toSavedPlan(row) : null;
+}
+
+export interface BulkPreviewRow {
+  studentId: string;
+  avoid: number;
+  caution: number;
+  hidden: boolean;
+  error: string | null;
+}
+
+const bulkSchema = z.object({
+  sourceId: uuid,
+  studentIds: z.array(uuid).min(1).max(50),
+  startsOn: z.iso.date().nullable(),
+  endsOn: z.iso.date().nullable(),
+  noEnd: z.boolean(),
+  activate: z.boolean(),
+});
+
+/** Prévia de alertas por aluno antes da cópia em massa (nada é gravado). */
+export async function previewBulkApply(sourceId: string, studentIds: string[]): Promise<{ ok: true; rows: BulkPreviewRow[] } | { ok: false; error: string }> {
+  const parsed = bulkSchema.pick({ sourceId: true, studentIds: true }).safeParse({ sourceId, studentIds });
+  if (!parsed.success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
+  if (!(await isStaff())) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("preview_plan_alerts_for_students", { p_source: sourceId, p_students: studentIds });
+  if (error) return { ok: false, error: dbErrorMessage(error) };
+  return {
+    ok: true,
+    rows: (data ?? []).map((r) => ({ studentId: r.student_id, avoid: r.avoid, caution: r.caution, hidden: r.hidden, error: r.error ? dbErrorMessage({ message: r.error }) : null })),
+  };
+}
+
+export interface BulkResultRow {
+  studentId: string;
+  planId: string | null;
+  status: string | null;
+  error: string | null;
+}
+
+/** Copia um plano ou modelo para vários alunos; um erro não interrompe os outros. */
+export async function bulkApplyPlan(input: unknown): Promise<{ ok: true; rows: BulkResultRow[] } | { ok: false; error: string }> {
+  const parsed = bulkSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
+  if (!(await isStaff())) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  const d = parsed.data;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("apply_plan_to_students", {
+    p_source: d.sourceId,
+    p_students: d.studentIds,
+    // null = sem período (os tipos gerados não marcam argumentos SQL como anuláveis)
+    p_starts_on: d.startsOn ?? (null as unknown as string),
+    p_ends_on: d.noEnd ? (null as unknown as string) : (d.endsOn ?? (null as unknown as string)),
+    p_no_end: d.noEnd,
+    p_activate: d.activate,
+  });
+  if (error) return { ok: false, error: dbErrorMessage(error) };
+  revalidatePath("/alunos");
+  revalidatePath("/treinos");
+  for (const r of data ?? []) if (r.plan_id) revalidatePath(`/alunos/${r.student_id}/treinos`);
+  return {
+    ok: true,
+    rows: (data ?? []).map((r) => ({ studentId: r.student_id, planId: r.plan_id, status: r.status, error: r.error ? dbErrorMessage({ message: extractCode(r.error) }) : null })),
+  };
+}
+
+/** sqlerrm vem como "STUDENT_NOT_FOUND" ou mensagem do Postgres; só códigos conhecidos são traduzidos. */
+function extractCode(message: string) {
+  const code = /^[A-Z_]+$/.exec(message.trim())?.[0];
+  return code ?? message;
 }
