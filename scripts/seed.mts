@@ -57,8 +57,15 @@ async function removeOrgPhotos(orgId: string, bucketName = "student-photos") {
 }
 
 async function reset() {
-  const { data: org } = await admin.from("organizations").select("id").eq("slug", SLUG).maybeSingle();
+  // Trava de segurança: só apaga organizações marcadas organizations.is_seed = true.
+  // Nunca apaga uma organização "de verdade" (ex.: a sua, criada por bootstrap:owner),
+  // mesmo que por acidente reuse o mesmo slug.
+  const { data: org } = await admin.from("organizations").select("id, is_seed").eq("slug", SLUG).maybeSingle();
   if (org) {
+    if (!org.is_seed) {
+      console.error(`Recusado: organização "${SLUG}" existe mas não está marcada como seed (is_seed=false). O --reset não apaga organizações que não foram criadas por este script.`);
+      process.exit(1);
+    }
     // Contas de acesso criadas para alunos (link de acesso/convite) também saem.
     const { data: studentUsers } = await admin.from("students").select("user_id").eq("organization_id", org.id).not("user_id", "is", null);
     for (const s of studentUsers ?? []) await admin.auth.admin.deleteUser(s.user_id as string);
@@ -69,6 +76,7 @@ async function reset() {
     if (error) throw new Error(`apagar organização: ${error.message}`);
   }
 
+  // Escopo fechado: só os e-mails fixos @example.com deste script (nunca um domínio real).
   const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const seedEmails = new Set<string>(Object.values(USERS).map((u) => u.email));
   for (const user of data?.users ?? []) {
@@ -284,7 +292,7 @@ async function seed() {
   }
 
   const org = must(
-    await admin.from("organizations").insert({ name: "Studio Exemplo (fictício)", slug: SLUG, plan: "pro", student_limit: 50 }).select("id").single(),
+    await admin.from("organizations").insert({ name: "Studio Exemplo (fictício)", slug: SLUG, plan: "pro", student_limit: 50, is_seed: true }).select("id").single(),
     "criar organização",
   );
 

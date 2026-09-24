@@ -545,6 +545,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_seed: boolean
           name: string
           overdue_grace_days: number
           plan: Database["public"]["Enums"]["plan_tier"]
@@ -556,6 +557,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_seed?: boolean
           name: string
           overdue_grace_days?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
@@ -567,6 +569,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_seed?: boolean
           name?: string
           overdue_grace_days?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
@@ -2029,6 +2032,7 @@ export type Database = {
           item_id: string
           level: Database["public"]["Enums"]["contraindication_level"]
           note: string
+          restricted: boolean
           substitute: boolean
         }[]
       }
@@ -2138,6 +2142,7 @@ export type Database = {
           hidden: boolean
           level: Database["public"]["Enums"]["contraindication_level"]
           note: string
+          restricted: boolean
         }[]
       }
       student_effective_status: {

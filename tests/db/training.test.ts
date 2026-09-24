@@ -1,7 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { anon, dbTestsEnabled, Fixture, rpc, spDateDaysAgo, studentData, type TestOrg, type TestUser } from "./helpers";
 
-type Alert = { item_id: string | null; level: string | null; note: string | null; condition_name: string | null; group_name: string | null; hidden: boolean };
+type Alert = {
+  item_id: string | null;
+  level: string | null;
+  note: string | null;
+  condition_name: string | null;
+  group_name: string | null;
+  hidden: boolean;
+  restricted?: boolean;
+};
 
 describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alertas", () => {
   const fx = new Fixture();
@@ -286,7 +294,9 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
 
     it("sem consentimento do titular, owner não responsável só vê 'oculto'", async () => {
       const alerts = await rpc<Alert[]>(owner.client, "plan_contraindication_alerts", { p_plan_id: planId });
-      expect(alerts).toEqual([{ item_id: null, exercise_id: null, substitute: null, level: null, note: null, condition_name: null, group_name: null, hidden: true }]);
+      expect(alerts).toEqual([
+        { item_id: null, exercise_id: null, substitute: null, level: null, note: null, condition_name: null, group_name: null, hidden: true, restricted: false },
+      ]);
       const rules = await rpc<Alert[]>(owner.client, "student_contraindication_rules", { p_student_id: s1 });
       expect(rules).toHaveLength(1);
       expect(rules[0].hidden).toBe(true);

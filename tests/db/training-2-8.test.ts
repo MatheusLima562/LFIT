@@ -87,15 +87,62 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
       expect(h.trainer_id).toBe(trainer2.id);
       // Edita o plano (mantendo-se como professor).
       await rpc(trainer2.client, "save_training_plan", { p_plan: plan(s1, [item(ex.supra), item(ex.prancha)], { id, trainer_id: trainer2.id }) });
-      // Saúde oculta para ele; visível para o responsável.
-      const hidden = await rpc<Row[]>(trainer2.client, "plan_contraindication_alerts", { p_plan_id: id });
-      expect(hidden).toEqual([expect.objectContaining({ hidden: true, condition_name: null })]);
-      expect(await rpc<Row[]>(trainer2.client, "student_contraindication_rules", { p_student_id: s1 })).toEqual([expect.objectContaining({ hidden: true })]);
+      // Saúde restrita para ele: só o nível, sem condição/grupo/nota. Detalhe completo para o responsável.
+      const restricted = await rpc<Row[]>(trainer2.client, "plan_contraindication_alerts", { p_plan_id: id });
+      expect(restricted).toEqual([
+        expect.objectContaining({ level: "avoid", condition_name: null, note: null, group_name: null, hidden: false, restricted: true }),
+      ]);
+      expect(await rpc<Row[]>(trainer2.client, "student_contraindication_rules", { p_student_id: s1 })).toEqual([
+        expect.objectContaining({ level: "avoid", condition_name: null, note: null, group_name: null, hidden: false, restricted: true }),
+      ]);
       const visible = await rpc<Row[]>(trainer.client, "plan_contraindication_alerts", { p_plan_id: id });
-      expect(visible).toEqual([expect.objectContaining({ level: "avoid", note: "Flexão", substitute: false, hidden: false })]);
+      expect(visible).toEqual([expect.objectContaining({ level: "avoid", note: "Flexão", substitute: false, hidden: false, restricted: false })]);
       // Professor de outra org ou perfil de aluno não podem ser professor do plano.
       await expect(rpc(trainer.client, "save_training_plan", { p_plan: plan(s1, [], { trainer_id: student.id }) })).rejects.toThrow("INVALID_TRAINER");
       await expect(rpc(trainer.client, "save_training_plan", { p_plan: plan(s1, [], { trainer_id: ownerB.id }) })).rejects.toThrow("INVALID_TRAINER");
+    });
+
+    it("owner sem ser responsável: consentimento apenas declarado gera alerta restrito, não oculto; detalhe só após confirmação do titular", async () => {
+      // s1: trainer_id = trainer.id (owner não é responsável); grupo "Coluna 2.8" ↔ lombar e a
+      // contraindicação em ex.supra já foram configurados no teste anterior.
+      await fx.db.from("students").update({ health_consent_declared_at: null, health_data_consent_at: null }).eq("id", s1);
+      const planId = await rpc<string>(trainer.client, "save_training_plan", { p_plan: plan(s1, [item(ex.supra)]) });
+
+      // Nada declarado ainda → oculto (owner não vê nem o nível).
+      const beforeDecl = await rpc<Row[]>(owner.client, "plan_contraindication_alerts", { p_plan_id: planId });
+      expect(beforeDecl).toEqual([expect.objectContaining({ hidden: true, restricted: false, level: null, condition_name: null })]);
+
+      // Professor declara (sem confirmação do titular) → owner passa a ver "restrito": nível, sem detalhes.
+      await fx.db.from("students").update({ health_consent_declared_at: new Date().toISOString() }).eq("id", s1);
+      try {
+        const restricted = await rpc<Row[]>(owner.client, "plan_contraindication_alerts", { p_plan_id: planId });
+        expect(restricted).toEqual([
+          expect.objectContaining({ level: "avoid", condition_name: null, note: null, group_name: null, hidden: false, restricted: true }),
+        ]);
+        // Nenhum dado de saúde identificável vaza para o owner nesse estágio.
+        for (const row of restricted) {
+          expect(row.note).toBeNull();
+          expect(row.condition_name).toBeNull();
+          expect(row.group_name).toBeNull();
+        }
+        const rules = await rpc<Row[]>(owner.client, "student_contraindication_rules", { p_student_id: s1 });
+        expect(rules).toEqual([expect.objectContaining({ level: "avoid", condition_name: null, note: null, group_name: null, hidden: false, restricted: true })]);
+
+        // O responsável sempre viu o detalhe completo, com ou sem confirmação do titular.
+        const forResponsible = await rpc<Row[]>(trainer.client, "plan_contraindication_alerts", { p_plan_id: planId });
+        expect(forResponsible).toEqual([
+          expect.objectContaining({ level: "avoid", note: "Flexão", condition_name: "Coluna lombar", group_name: "Coluna 2.8", hidden: false, restricted: false }),
+        ]);
+
+        // Confirmação do titular → owner passa a ver o detalhe completo também.
+        await fx.db.from("students").update({ health_data_consent_at: new Date().toISOString() }).eq("id", s1);
+        const full = await rpc<Row[]>(owner.client, "plan_contraindication_alerts", { p_plan_id: planId });
+        expect(full).toEqual([
+          expect.objectContaining({ level: "avoid", note: "Flexão", condition_name: "Coluna lombar", group_name: "Coluna 2.8", hidden: false, restricted: false }),
+        ]);
+      } finally {
+        await fx.db.from("students").update({ health_consent_declared_at: null, health_data_consent_at: null }).eq("id", s1);
+      }
     });
 
     it("agendado: início futuro agenda; sem sobreposição; o job ativa na data e arquiva o anterior", async () => {

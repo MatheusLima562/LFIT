@@ -58,6 +58,11 @@ npm run bootstrap:owner   # cria organização + owner e imprime link de convite
 > rodar se `ALLOW_DB_TESTS` não for `true`, se `NEXT_PUBLIC_SUPABASE_URL` não for
 > `https://<ref do lfit-dev>.supabase.co` ou se o CLI estiver linkado a outro projeto. O ref do lfit-dev
 > fica fixo no código (não é segredo); trocar o projeto de dev exige mudar esse arquivo em um commit.
+> **Trava adicional no `--reset`:** só apaga a organização se `organizations.is_seed = true` (coluna sem grant
+> de escrita para `authenticated`; só `service_role`/o script muda). Isso protege qualquer organização "de
+> verdade" no mesmo projeto — incluindo a sua, criada por `npm run bootstrap:owner` — mesmo que reuse por
+> engano o slug `studio-exemplo`: o script recusa com uma mensagem em vez de apagar. Testado manualmente
+> (flip do `is_seed` para `false` → `--reset` recusa e não apaga; `true` → apaga normalmente).
 
 [planejado]: `npm run test:e2e` (Playwright).
 
@@ -216,8 +221,16 @@ effective_status =
 ### Montador — etapa 2.8 (banco pronto; telas em andamento)
 - **Plano:** `no_end` (sem data de expiração → `students.workout_plan_ends_at = 'infinity'`: fora de A vencer/Vencidos
   e diferente de "Sem treino"), `planned_sessions`, `trainer_id` (professor do plano; padrão = do aluno). O professor
-  do plano **vê e edita só aquele plano** (`can_access_plan`/`lock_editable_plan`); não vê o cadastro, outros planos nem
-  saúde (alertas `hidden`). Nome do aluno para ele via `get_plan_header`.
+  do plano **vê e edita só aquele plano** (`can_access_plan`/`lock_editable_plan`); não vê o cadastro nem outros planos.
+- **Alertas de contraindicação têm 3 níveis de visibilidade**, nunca "tudo ou nada": (1) **completo** — quem pode ver
+  a saúde do aluno (`can_view_student_health`: responsável, ou qualquer staff após a confirmação do titular) recebe
+  nível, nota, condição e grupo; (2) **restrito** (`restricted: true`) — nível por exercício (o pior entre `avoid`/
+  `caution`), **sem** condição, nota ou grupo; vale para o professor do plano sem acesso ao aluno
+  (`private.is_restricted_plan_viewer`) e para staff com acesso ao aluno mas que não é o responsável quando o
+  professor já **declarou** o consentimento, mesmo sem a confirmação do titular (`private.is_restricted_health_viewer`
+  — ex.: owner quando há um professor designado); (3) **oculto** (`hidden: true`) — nada declarado ainda, ou sem
+  acesso nenhum ao aluno. `student_contraindication_rules` e `plan_contraindication_alerts` implementam essa escada
+  nessa ordem. Testado em `tests/db/training-2-8.test.ts` (nenhum campo de saúde vaza no nível restrito).
 - **Agendado:** `activate_plan` devolve o status; início futuro → `scheduled` (sem sobrepor outro agendado:
   `PLAN_OVERLAP`). Job **pg_cron `lfit-activate-due-plans` às 03:05 UTC (= 00:05 SP)** roda
   `private.activate_due_plans()` (ativa e arquiva o anterior). Disparo manual: `admin_activate_due_plans()` (service_role).
@@ -268,7 +281,7 @@ sem efeitos colaterais).
 | Staff com acesso ao aluno | `update_student`, `deactivate_student`, `reactivate_student`, `expire_student`, `clear_student_expiration`, `soft_delete_student`, `create_access_link`, `record_student_access_email`, `request_anamnesis` | `private.lock_accessible_student()`: staff + mesma org + (owner ou professor responsável) |
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
 | Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
-| Alertas de contraindicação (Fase 2) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem só `hidden = true` (não revelam condição/grupo) |
+| Alertas de contraindicação (Fase 2/2.8) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem `restricted = true` (só nível, via `is_restricted_plan_viewer`/`is_restricted_health_viewer`) ou `hidden = true` (nada) — nunca condição/grupo/nota fora do nível completo |
 | Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
