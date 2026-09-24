@@ -45,6 +45,9 @@ para o owner com consentimento só declarado; trava `organizations.is_seed` no `
   responsável.** A dor é dado de saúde: nunca em URLs, logs ou e-mails, e o aviso não mostra o valor fora do app.
 - **Avisos fora do app (e-mail, push) nunca citam dor nem saúde**: texto genérico (ex.: "Você tem um feedback que
   precisa da sua atenção") com link para o app; o detalhe só aparece dentro do app, para quem pode ver a saúde do aluno.
+- **Professor do plano sem acesso à saúde recebe a versão restrita do aviso** (mesmo padrão dos alertas restritos da
+  2.8): só qual exercício + "Feedback de atenção neste exercício — alinhe com o professor responsável", **sem** valor
+  de dor nem comentário do aluno.
 
 ## Arquivos em andamento
 Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `app/(app)/treinos/**`,
