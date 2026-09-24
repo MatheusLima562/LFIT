@@ -203,9 +203,9 @@ describe("validação e payload", () => {
           name: null,
           notes: null,
           items: [
-            { exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, reps: "10", loadValue: 12.5, loadUnit: "kg", loadText: null, restSeconds: 60, tempo: null, rpeTarget: 8, notes: null, setsDetail: [] },
+            { exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, reps: "10", loadValue: 12.5, loadUnit: "kg", loadText: null, restSeconds: 60, tempo: null, rpeTarget: 8, tip: null, substitutes: [], methodId: null, objectiveId: null, setsDetail: [] },
             {
-              exerciseId: EX, exerciseName: "y", groupKey: "bi1", sets: null, reps: null, loadValue: null, loadUnit: null, loadText: null, restSeconds: null, tempo: "3010", rpeTarget: null, notes: null,
+              exerciseId: EX, exerciseName: "y", groupKey: "bi1", sets: null, reps: null, loadValue: null, loadUnit: null, loadText: null, restSeconds: null, tempo: "3010", rpeTarget: null, tip: null, substitutes: [], methodId: null, objectiveId: null,
               setsDetail: [{ setType: "warmup", reps: "12", loadValue: null, loadUnit: null, loadText: "leve", restSeconds: 45 }],
             },
           ],
@@ -279,5 +279,23 @@ describe("cabeçalho do plano (2.8.1)", () => {
     const { fromSaved } = await import("@/features/plans/builder");
     const d = fromSaved({ id: EX, studentId: EX, name: "P", goal: null, level: null, startsOn: "2026-10-01", endsOn: null, noEnd: true, plannedSessions: 12, trainerId: EX, notes: null, workouts: [] });
     expect([d.noEnd, d.plannedSessions, d.trainerId, d.endsOn]).toEqual([true, "12", EX, ""]);
+  });
+});
+
+describe("item do plano (2.8.2)", () => {
+  const SUB = "33333333-3333-4333-8333-333333333333";
+  it("dica saneada, substitutos, método e objetivo no payload", () => {
+    const it = { ...mk("a"), tip: "<b>**Coluna**</b> neutra", substitutes: [{ id: SUB, name: "Alt" }], methodId: SUB, objectiveId: "" };
+    const r = validateDraft(draft([it]));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload.workouts[0].items[0]).toMatchObject({ tip: "**Coluna** neutra", substitutes: [SUB], method_id: SUB, objective_id: null });
+  });
+  it("substituto igual ao principal, repetido ou 4+ é recusado", () => {
+    const same = validateDraft(draft([{ ...mk("a"), substitutes: [{ id: EX, name: "x" }] }]));
+    expect(!same.ok && same.errors["a.substitutes"]).toBeTruthy();
+    const four = ["1", "2", "3", "4"].map((n) => ({ id: `4444444${n}-4444-4444-8444-444444444444`, name: n }));
+    const many = validateDraft(draft([{ ...mk("a"), substitutes: four }]));
+    expect(!many.ok && many.errors["a.substitutes"]).toBeTruthy();
   });
 });

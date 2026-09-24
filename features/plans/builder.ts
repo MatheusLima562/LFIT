@@ -30,7 +30,12 @@ export interface ItemDraft {
   rest: string;
   tempo: string;
   rpe: string;
-  notes: string;
+  /** Dica (negrito e lista; substitui a antiga observação). */
+  tip: string;
+  /** Até 3 exercícios alternativos (falta de equipamento); também passam pelos alertas. */
+  substitutes: { id: string; name: string }[];
+  methodId: string;
+  objectiveId: string;
   setsDetail: SetDraft[];
 }
 
@@ -84,7 +89,10 @@ export function emptyItem(exercise: { id: string; name: string }): ItemDraft {
     rest: "60",
     tempo: "",
     rpe: "",
-    notes: "",
+    tip: "",
+    substitutes: [],
+    methodId: "",
+    objectiveId: "",
     setsDetail: [],
   };
 }
@@ -243,7 +251,10 @@ export function toPayload(draft: PlanDraft): unknown {
         rest_seconds: parseNumber(it.rest),
         tempo: text(it.tempo)?.toUpperCase() ?? null,
         rpe_target: parseNumber(it.rpe),
-        notes: text(it.notes),
+        tip: text(it.tip),
+        substitutes: it.substitutes.map((s) => s.id),
+        method_id: it.methodId || null,
+        objective_id: it.objectiveId || null,
         sets_detail: it.setsDetail.map((s) => ({
           set_type: s.setType,
           reps: text(s.reps),
@@ -267,6 +278,10 @@ const FIELD: Record<string, string> = {
   tempo: "tempo",
   rpe_target: "rpe",
   notes: "notes",
+  tip: "tip",
+  substitutes: "substitutes",
+  method_id: "methodId",
+  objective_id: "objectiveId",
   group_key: "groupKey",
   set_type: "setType",
   label: "label",
@@ -341,7 +356,13 @@ export interface SavedPlan {
       restSeconds: number | null;
       tempo: string | null;
       rpeTarget: number | null;
-      notes: string | null;
+      tip: string | null;
+      substitutes: { id: string; name: string }[];
+      methodId: string | null;
+      objectiveId: string | null;
+      /** Só exibição (impressão). */
+      methodName?: string | null;
+      objectiveName?: string | null;
       setsDetail: {
         setType: SetType;
         reps: string | null;
@@ -387,7 +408,10 @@ export function fromSaved(plan: SavedPlan): PlanDraft {
         rest: str(it.restSeconds),
         tempo: it.tempo ?? "",
         rpe: str(it.rpeTarget),
-        notes: it.notes ?? "",
+        tip: it.tip ?? "",
+        substitutes: it.substitutes,
+        methodId: it.methodId ?? "",
+        objectiveId: it.objectiveId ?? "",
         setsDetail: it.setsDetail.map((s) => ({
           key: newKey(),
           setType: s.setType,

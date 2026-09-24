@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireStaff } from "@/lib/auth/session";
 import { fromSaved } from "@/features/plans/builder";
 import { PlanBuilder } from "@/features/plans/components/PlanBuilder";
-import { getPlanForBuilder, getStudentRules } from "@/features/plans/queries";
+import { getPlanForBuilder, getStudentRules, listTrainingLists } from "@/features/plans/queries";
 import { messages } from "@/messages/pt-BR";
 
 export const metadata: Metadata = { title: messages.plans.editTitle };
@@ -15,7 +15,7 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
   if (!z.uuid().safeParse(planId).success) notFound();
   const data = await getPlanForBuilder(planId, session);
   if (!data) notFound();
-  const rules = data.student ? await getStudentRules(data.student.id) : { hidden: false, rules: [] };
+  const [rules, lists] = await Promise.all([data.student ? getStudentRules(data.student.id) : Promise.resolve({ hidden: false, rules: [] }), listTrainingLists()]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pt-5 sm:px-6 lg:px-8 lg:pt-6">
@@ -25,6 +25,7 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
         status={data.status}
         student={data.student}
         trainers={data.trainers}
+        lists={lists}
         rules={rules}
         canEdit={data.canEdit}
         otherActive={data.otherActive}

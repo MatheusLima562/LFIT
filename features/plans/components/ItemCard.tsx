@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ChevronDown, GripVertical, Replace, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, GripVertical, Plus, Replace, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { messages } from "@/messages/pt-BR";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LevelBadge } from "@/features/exercises/components/LevelBadge";
-import type { StudentRule } from "../queries";
+import type { StudentRule, TrainingListOption } from "../queries";
+import { TipEditor } from "./TipEditor";
 import type { DraftErrors, ItemDraft, SetDraft } from "../builder";
 import { LOAD_UNITS, type LoadUnit } from "../schemas";
 import { SetsEditor } from "./SetsEditor";
@@ -32,6 +33,10 @@ export interface ItemCardProps {
   onRemove: () => void;
   onSwap: () => void;
   onGenerateSets: () => void;
+  /** Regras de contraindicação de outro exercício (para os substitutos). */
+  rulesFor: (exerciseId: string) => StudentRule[];
+  onAddSubstitute: () => void;
+  lists: { methods: TrainingListOption[]; objectives: TrainingListOption[] };
 }
 
 export function ItemCard(props: ItemCardProps) {
@@ -162,7 +167,56 @@ export function ItemCard(props: ItemCardProps) {
         {field("tempo", t.items.tempo, { placeholder: t.items.tempoPlaceholder, maxLength: 4 })}
         {field("rpe", t.items.rpe, { inputMode: "decimal" })}
       </div>
-      {field("notes", t.items.notes, { maxLength: 300 })}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <ListSelect id={id("method")} label={t.method} value={item.methodId} options={props.lists.methods} disabled={readOnly} onChange={(v) => props.onChange({ methodId: v })} />
+        <ListSelect
+          id={id("objective")}
+          label={t.objective}
+          value={item.objectiveId}
+          options={props.lists.objectives}
+          disabled={readOnly}
+          onChange={(v) => props.onChange({ objectiveId: v })}
+        />
+      </div>
+
+      <TipEditor id={id("tip")} value={item.tip} disabled={readOnly} onChange={(v) => props.onChange({ tip: v })} />
+
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[11px] text-ink-3" id={id("subs-label")}>
+          {t.substitutes.label} · <span>{t.substitutes.hint}</span>
+        </p>
+        <ul className="flex flex-wrap items-center gap-1.5" aria-labelledby={id("subs-label")}>
+          {item.substitutes.map((s) => {
+            const r = props.rulesFor(s.id);
+            const level = r.some((x) => x.level === "avoid") ? "avoid" : r.length ? "caution" : null;
+            return (
+              <li key={s.id} className="inline-flex items-center gap-1 rounded-full border border-line bg-canvas py-0.5 pr-1 pl-2.5 text-[12px] text-ink">
+                {s.name}
+                {level && <LevelBadge level={level} />}
+                {!readOnly && (
+                  <button
+                    type="button"
+                    aria-label={t.substitutes.remove(s.name)}
+                    className="grid size-5 place-items-center rounded-full text-ink-3 outline-none hover:bg-surface hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/50"
+                    onClick={() => props.onChange({ substitutes: item.substitutes.filter((x) => x.id !== s.id) })}
+                  >
+                    <X aria-hidden className="size-3" />
+                  </button>
+                )}
+              </li>
+            );
+          })}
+          {!readOnly && item.substitutes.length < 3 && (
+            <li>
+              <Button type="button" variant="outline" size="xs" onClick={props.onAddSubstitute}>
+                <Plus aria-hidden />
+                {t.substitutes.add}
+              </Button>
+            </li>
+          )}
+        </ul>
+        {err("substitutes") && <span className="text-xs text-destructive">{err("substitutes")}</span>}
+      </div>
 
       {(!readOnly || hasDetail) && (
         <div className="flex flex-col gap-2">
@@ -207,5 +261,44 @@ export function DragHandle({ label, listeners, attributes }: { label: string; li
     >
       <GripVertical aria-hidden className="size-4" />
     </button>
+  );
+}
+
+const NONE = "__none__";
+
+function ListSelect({
+  id,
+  label,
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: TrainingListOption[];
+  disabled: boolean;
+  onChange: (v: string) => void;
+}) {
+  // Arquivados só aparecem quando já estão em uso neste item.
+  const visible = options.filter((o) => !o.archived || o.id === value);
+  return (
+    <label htmlFor={id} className="flex min-w-0 flex-col gap-1 text-[11px] text-ink-3">
+      {label}
+      <Select value={value || NONE} disabled={disabled} onValueChange={(v) => onChange(v === NONE ? "" : v)}>
+        <SelectTrigger id={id} className="w-full text-[13px] data-[size=default]:h-8">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NONE}>{messages.plans.none}</SelectItem>
+          {visible.map((o) => (
+            <SelectItem key={o.id} value={o.id}>
+              {o.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </label>
   );
 }

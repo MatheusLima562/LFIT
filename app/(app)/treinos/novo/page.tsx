@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireStaff } from "@/lib/auth/session";
 import { newKey, type PlanDraft } from "@/features/plans/builder";
 import { PlanBuilder } from "@/features/plans/components/PlanBuilder";
-import { getActivePlan, getStudentName, getStudentRules, getStudentTrainerId, listOrgTrainers } from "@/features/plans/queries";
+import { getActivePlan, getStudentName, getStudentRules, getStudentTrainerId, listOrgTrainers, listTrainingLists } from "@/features/plans/queries";
 import { messages } from "@/messages/pt-BR";
 
 export const metadata: Metadata = { title: messages.plans.newTitle };
@@ -22,6 +22,7 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
     ? await Promise.all([getStudentRules(student.id), getActivePlan(student.id), listOrgTrainers(), getStudentTrainerId(student.id)])
     : [{ hidden: false, rules: [] }, null, [], null];
 
+  const lists = await listTrainingLists();
   const initial: PlanDraft = {
     id: null,
     studentId: student?.id ?? null,
@@ -45,6 +46,7 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
         status={null}
         student={student}
         trainers={trainers}
+        lists={lists}
         rules={rules}
         canEdit
         otherActive={otherActive}

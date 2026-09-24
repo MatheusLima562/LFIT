@@ -16,7 +16,7 @@ const ALL = "all";
 
 interface Props {
   open: boolean;
-  mode: "add" | "swap";
+  mode: "add" | "swap" | "substitute";
   workoutLabel: string;
   rules: StudentRule[];
   onOpenChange: (open: boolean) => void;
@@ -48,7 +48,7 @@ export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, 
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b border-line">
-          <SheetTitle>{mode === "swap" ? t.swapTitle : t.title}</SheetTitle>
+          <SheetTitle>{mode === "swap" ? t.swapTitle : mode === "substitute" ? messages.plans.substitutes.pickerTitle : t.title}</SheetTitle>
           <SheetDescription>{`${messages.plans.workouts.label}: ${workoutLabel}`}</SheetDescription>
           <div className="mt-3 flex flex-col gap-2">
             <div className="relative">

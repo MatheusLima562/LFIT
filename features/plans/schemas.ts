@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeTip } from "@/lib/rich-tip";
 import { messages } from "@/messages/pt-BR";
 
 const v = messages.plans.validation;
@@ -47,10 +48,21 @@ const itemSchema = z
       .regex(/^[0-9Xx]{4}$/, v.tempo)
       .nullable(),
     rpe_target: z.number({ error: v.rpe }).min(1, v.rpe).max(10, v.rpe).nullable(),
-    notes: optionalText(300),
+    // Saneada aqui (vale no cliente e na server action): só **negrito** e "- " lista; sem HTML.
+    tip: z
+      .string()
+      .nullable()
+      .transform((t) => (t === null ? null : sanitizeTip(t) || null)),
+    substitutes: z.array(z.uuid()).max(3, v.substitutes),
+    method_id: z.uuid().nullable(),
+    objective_id: z.uuid().nullable(),
     sets_detail: z.array(setSchema).max(MAX_SETS),
   })
-  .refine((i) => (i.load_value === null) === (i.load_unit === null), { message: v.load, path: ["load_value"] });
+  .refine((i) => (i.load_value === null) === (i.load_unit === null), { message: v.load, path: ["load_value"] })
+  .refine((i) => !i.substitutes.includes(i.exercise_id) && new Set(i.substitutes).size === i.substitutes.length, {
+    message: v.substitutes,
+    path: ["substitutes"],
+  });
 
 const workoutSchema = z.object({
   label: z.string().trim().min(1, v.label).max(10, v.label),

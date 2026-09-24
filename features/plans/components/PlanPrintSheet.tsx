@@ -5,6 +5,7 @@ import { todayISO } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
+import { RichTip } from "@/components/ui/RichTip";
 import { groupLabel, toBlocks } from "../builder";
 import { formatDecimal, formatLoad, formatRest, planPeriod } from "../format";
 import type { PlanForPrint } from "../queries";
@@ -219,11 +220,19 @@ function ItemRows({
         </td>
         <td className={cn(cell, "font-semibold")}>
           {it.exerciseName}
-          {it.notes && (
-            <span className="block font-normal text-neutral-700">
-              {it.notes}
+          {(it.methodName || it.objectiveName) && (
+            <span className="block text-[11px] font-normal text-neutral-600">
+              {[it.methodName ? `${messages.plans.method}: ${it.methodName}` : null, it.objectiveName ? `${messages.plans.objective}: ${it.objectiveName}` : null]
+                .filter(Boolean)
+                .join(" · ")}
             </span>
           )}
+          {it.substitutes.length > 0 && (
+            <span className="block text-[11px] font-normal text-neutral-600">
+              {messages.plans.substitutes.label}: {it.substitutes.map((s) => s.name).join(", ")}
+            </span>
+          )}
+          {it.tip && <RichTip text={it.tip} className="mt-0.5 font-normal text-neutral-700" />}
         </td>
         {detailed ? (
           <td className={cell} colSpan={6}>

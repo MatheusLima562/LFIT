@@ -30,6 +30,12 @@ type ItemRow = {
   tempo: string | null;
   rpe_target: number | null;
   notes: string | null;
+  tip: string | null;
+  method_id: string | null;
+  objective_id: string | null;
+  method: { name: string } | null;
+  objective: { name: string } | null;
+  plan_item_substitutes: { position: number; exercise: { id: string; name: string } | null }[];
   exercise: { id: string; name: string } | null;
   plan_item_sets: { position: number; set_type: SetType; reps: string | null; load_value: number | null; load_unit: LoadUnit | null; load_text: string | null; rest_seconds: number | null }[];
 };
@@ -55,8 +61,10 @@ type PlanRow = {
 const PLAN_SELECT =
   "id, student_id, name, goal, level, starts_on, ends_on, no_end, planned_sessions, trainer_id, notes, status, created_by, " +
   "student:students!training_plans_student_id_organization_id_fkey(id, first_name, last_name), " +
-  "plan_workouts(label, name, notes, position, plan_workout_items(position, group_key, sets, reps, load_value, load_unit, load_text, rest_seconds, tempo, rpe_target, notes, " +
-  "exercise:exercises(id, name), plan_item_sets(position, set_type, reps, load_value, load_unit, load_text, rest_seconds)))";
+  "plan_workouts(label, name, notes, position, plan_workout_items(position, group_key, sets, reps, load_value, load_unit, load_text, rest_seconds, tempo, rpe_target, notes, tip, method_id, objective_id, " +
+  "method:training_methods!plan_workout_items_method_fkey(name), objective:training_objectives!plan_workout_items_objective_fkey(name), " +
+  "plan_item_substitutes(position, exercise:exercises(id, name)), " +
+  "exercise:exercises!plan_workout_items_exercise_id_fkey(id, name), plan_item_sets(position, set_type, reps, load_value, load_unit, load_text, rest_seconds)))";
 
 const byPosition = <T extends { position: number }>(a: T, b: T) => a.position - b.position;
 
@@ -89,7 +97,14 @@ export function toSavedPlan(row: PlanRow): SavedPlan {
         restSeconds: it.rest_seconds,
         tempo: it.tempo,
         rpeTarget: it.rpe_target,
-        notes: it.notes,
+        tip: it.tip ?? it.notes,
+        substitutes: [...it.plan_item_substitutes]
+          .sort(byPosition)
+          .flatMap((x) => (x.exercise ? [{ id: x.exercise.id, name: x.exercise.name }] : [])),
+        methodId: it.method_id,
+        objectiveId: it.objective_id,
+        methodName: it.method?.name ?? null,
+        objectiveName: it.objective?.name ?? null,
         setsDetail: [...it.plan_item_sets].sort(byPosition).map((s) => ({
           setType: s.set_type,
           reps: s.reps,
@@ -371,4 +386,22 @@ export async function getPlanForPrint(planId: string, organizationName: string):
     trainerName = data?.trainer_name ?? null;
   }
   return { plan: toSavedPlan(row), status: row.status, organizationName, studentName, trainerName };
+}
+
+export interface TrainingListOption {
+  id: string;
+  name: string;
+  archived: boolean;
+}
+
+/** Métodos e objetivos da organização (selects do item; arquivados só aparecem se já usados). */
+export async function listTrainingLists(): Promise<{ methods: TrainingListOption[]; objectives: TrainingListOption[] }> {
+  const supabase = await createClient();
+  const [m, o] = await Promise.all([
+    supabase.from("training_methods").select("id, name, archived_at").order("position").order("name"),
+    supabase.from("training_objectives").select("id, name, archived_at").order("position").order("name"),
+  ]);
+  const map = (rows: { id: string; name: string; archived_at: string | null }[] | null) =>
+    (rows ?? []).map((r) => ({ id: r.id, name: r.name, archived: r.archived_at !== null }));
+  return { methods: map(m.data), objectives: map(o.data) };
 }

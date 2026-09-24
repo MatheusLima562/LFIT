@@ -48,7 +48,7 @@ import {
   type PlanDraft,
   type WorkoutDraft,
 } from "../builder";
-import type { PlanStatus, StudentRule } from "../queries";
+import type { PlanStatus, StudentRule, TrainingListOption } from "../queries";
 import { MAX_ITEMS, MAX_WORKOUTS, PLAN_LEVELS, type PlanLevel } from "../schemas";
 import { ExercisePicker } from "./ExercisePicker";
 import { DragHandle, ItemCard } from "./ItemCard";
@@ -62,20 +62,24 @@ export interface PlanBuilderProps {
   student: { id: string; name: string } | null;
   /** Professores da organização (select "Professor do plano"); vazio em modelos. */
   trainers?: { id: string; name: string }[];
+  /** Listas de métodos e objetivos da organização. */
+  lists?: { methods: TrainingListOption[]; objectives: TrainingListOption[] };
   rules: { hidden: boolean; rules: StudentRule[] };
   canEdit: boolean;
   otherActive: { id: string; name: string } | null;
   backHref: string;
 }
 
-export function PlanBuilder({ initial, status, student, trainers = [], rules, canEdit, otherActive, backHref }: PlanBuilderProps) {
+const NO_LISTS = { methods: [], objectives: [] };
+
+export function PlanBuilder({ initial, status, student, trainers = [], lists = NO_LISTS, rules, canEdit, otherActive, backHref }: PlanBuilderProps) {
   const router = useRouter();
   const [draft, setDraft] = useState<PlanDraft>(initial);
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<DraftErrors>({});
   const [activeKey, setActiveKey] = useState(initial.workouts[0]?.key ?? "");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [picker, setPicker] = useState<{ mode: "add" | "swap"; itemKey?: string } | null>(null);
+  const [picker, setPicker] = useState<{ mode: "add" | "swap" | "substitute"; itemKey?: string } | null>(null);
   const [confirm, setConfirm] = useState<"activate" | "leave" | { removeWorkout: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -230,6 +234,17 @@ export function PlanBuilder({ initial, status, student, trainers = [], rules, ca
 
   const onPick = (e: PickerExercise) => {
     if (!workout) return;
+    if (picker?.mode === "substitute" && picker.itemKey) {
+      const it = workout.items.find((x) => x.key === picker.itemKey);
+      if (!it) return;
+      if (it.exerciseId === e.id) return void toast.error(t.substitutes.same);
+      if (it.substitutes.some((s) => s.id === e.id)) return void toast.error(t.substitutes.duplicate);
+      if (it.substitutes.length >= 3) return void toast.error(t.substitutes.max);
+      updateItem(it.key, { substitutes: [...it.substitutes, { id: e.id, name: e.name }] });
+      toast.success(t.substitutes.added(e.name), { duration: 1500 });
+      setPicker(null);
+      return;
+    }
     if (picker?.mode === "swap" && picker.itemKey) {
       updateItem(picker.itemKey, { exerciseId: e.id, exerciseName: e.name });
       setPicker(null);
@@ -502,6 +517,8 @@ export function PlanBuilder({ initial, status, student, trainers = [], rules, ca
                   })
                 }
                 onSwap={(key) => setPicker({ mode: "swap", itemKey: key })}
+                onAddSubstitute={(key) => setPicker({ mode: "substitute", itemKey: key })}
+                lists={lists}
               />
             )}
 
@@ -654,6 +671,8 @@ interface ItemsListProps {
   onUpdateItem: (key: string, patch: Partial<ItemDraft>) => void;
   onSelect: (key: string, value: boolean) => void;
   onSwap: (key: string) => void;
+  onAddSubstitute: (key: string) => void;
+  lists: { methods: TrainingListOption[]; objectives: TrainingListOption[] };
 }
 
 function blockName(block: Block) {
@@ -662,7 +681,7 @@ function blockName(block: Block) {
     : (block.items[0]?.exerciseName ?? "");
 }
 
-function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpdateItem, onSelect, onSwap }: ItemsListProps) {
+function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpdateItem, onSelect, onSwap, onAddSubstitute, lists }: ItemsListProps) {
   const blocks = toBlocks(items);
   // id estável: sem ele o aria-describedby gerado pelo dnd-kit difere entre servidor e cliente (hidratação).
   const dndId = useId();
@@ -745,6 +764,9 @@ function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpd
                           onRemove={() => onItems((its) => normalizeGroups(its.filter((x) => x.key !== item.key)))}
                           onSwap={() => onSwap(item.key)}
                           onGenerateSets={() => onUpdateItem(item.key, { setsDetail: setsFromSummary(item) })}
+                          rulesFor={rulesFor}
+                          onAddSubstitute={() => onAddSubstitute(item.key)}
+                          lists={lists}
                         />
                       ))}
                     </div>
@@ -765,6 +787,9 @@ function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpd
                       onRemove={() => onItems((its) => its.filter((x) => x.key !== block.items[0].key))}
                       onSwap={() => onSwap(block.items[0].key)}
                       onGenerateSets={() => onUpdateItem(block.items[0].key, { setsDetail: setsFromSummary(block.items[0]) })}
+                      rulesFor={rulesFor}
+                      onAddSubstitute={() => onAddSubstitute(block.items[0].key)}
+                      lists={lists}
                     />
                   )
                 }
