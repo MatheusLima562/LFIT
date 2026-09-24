@@ -34,6 +34,16 @@ para o owner com consentimento só declarado; trava `organizations.is_seed` no `
 5. **C1** Contas com múltiplos vínculos (sem cobrança).
 6. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
 
+## Requisitos registrados para a Fase 3 (não implementar antes)
+- **Alertas de contraindicação NUNCA aparecem ao aluno**: nem o nível ("Evitar"/"Cautela"), nem a condição, nem a
+  nota. Vale para o app do aluno, a execução do treino e qualquer resposta de API acessível ao papel `student`.
+- **Novo campo por item: "Orientação de cuidado ao aluno"** (texto curto, opcional). Quando o item tiver alerta,
+  o montador **sugere** um texto a partir da nota, em linguagem positiva (ex.: "coluna neutra, amplitude
+  confortável; se dor > 3/10, pare e avise"). O professor edita e aprova. **Só o texto aprovado** aparece no app do
+  aluno, com um ícone neutro de "cuidado" (sem cor ou rótulo de alerta).
+- **Escala de dor 0–10 por exercício na execução**, com orientação. **Dor ≥ 5 gera aviso ao professor
+  responsável.** A dor é dado de saúde: nunca em URLs, logs ou e-mails, e o aviso não mostra o valor fora do app.
+
 ## Arquivos em andamento
 Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `app/(app)/treinos/**`,
 `app/(app)/alunos/[id]/treinos`, migrations `20260929*` a `20261002*`.
