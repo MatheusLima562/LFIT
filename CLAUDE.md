@@ -323,7 +323,18 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** treinos e exercícios (biblioteca + montador +
-  alertas de contraindicação) → **Fase 3 mínima** (app do aluno: treino do dia, registro série a série,
-  dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **1.6** dashboard com dados reais + job
-  diário de expiração → **1.7** suíte e2e formal (Playwright) → Fase 4 gestão e retenção.
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.5 ✔; faltam **2.6** impressão e **2.7**
+  verificação) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
+  registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
+  → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
+  Fase 4 gestão e retenção. Plano detalhado da Fase C: `~/.claude/plans/magical-fluttering-nygaard.md`.
+  - **C1 (antes da Fase 3):** só o modelo de contas com múltiplos vínculos (`memberships` + vínculo ativo por
+    sessão via claim `session_id`; `current_org_id()`/`current_user_role()` passam a ler o vínculo ativo;
+    `students.user_id` único por organização), seletor de vínculo no login e revisão de RLS e testes de
+    isolamento. Resolve a decisão pendente "1 e-mail = 1 conta". **Nada de cobrança.**
+  - **C2 (depois da Fase 3 e da Importação do MFIT):** autocadastro do personal (`/cadastro-personal`, confirmação
+    de e-mail; substitui `ALLOW_PUBLIC_SIGNUP`), trial de 14 dias com limites do Pro, assinatura
+    (trialing/active/past_due/canceled) e limites em tabela de configuração, `PaymentProvider` (gateway
+    recomendado: Asaas, a confirmar), "Minha assinatura", `platform_admin` sem acesso a dados de alunos, termos
+    em rascunho em `docs/legal/`. Decisões já tomadas: sem plano Free permanente; após a carência de
+    inadimplência (7 dias, configurável) o personal fica em somente leitura **e os alunos perdem o acesso**.
