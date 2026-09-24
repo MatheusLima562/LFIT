@@ -6,7 +6,8 @@
 import { messages } from "@/messages/pt-BR";
 
 export const QUANTITY_UNITS = ["reps", "failure", "seconds", "minutes", "meters", "km", "arrivals"] as const;
-export const INTENSITY_TYPES = ["pct_1rm", "rpe", "rir"] as const;
+/** Ordem do seletor compacto: RPE | RIR | %1RM. */
+export const INTENSITY_TYPES = ["rpe", "rir", "pct_1rm"] as const;
 export const SPEED_PRESETS = ["slow", "moderate", "fast", "explosive"] as const;
 
 export type QuantityUnit = (typeof QUANTITY_UNITS)[number];
@@ -16,10 +17,11 @@ export type SpeedPreset = (typeof SPEED_PRESETS)[number];
 /** Unidades contadas em inteiros. */
 export const INTEGER_UNITS: readonly QuantityUnit[] = ["reps", "arrivals"];
 
+/** Faixas do formulário. RIR: 0–5 na interface (o CHECK do banco aceita até 10, p/ importações). */
 export const INTENSITY_RANGE: Record<IntensityType, { min: number; max: number; step: number }> = {
   pct_1rm: { min: 1, max: 120, step: 1 },
   rpe: { min: 1, max: 10, step: 0.5 },
-  rir: { min: 0, max: 10, step: 1 },
+  rir: { min: 0, max: 5, step: 1 },
 };
 
 const p = messages.plans.prescription;
