@@ -70,8 +70,11 @@ describe.runIf(dbTestsEnabled)("Fase 2.2: biblioteca de exercícios (view + RPCs
     });
     const { data: ex } = await fx.db.from("exercises").select("name").eq("id", supra).single();
     expect(ex!.name).toBe("Abdominal supra");
-    expect((await ownerB.client.from("exercise_contraindications").select("id").eq("exercise_id", supra)).data).toHaveLength(0);
-    expect((await owner.client.from("exercise_contraindications").select("level").eq("exercise_id", supra)).data).toEqual([{ level: "avoid" }]);
+    // Fora as regras globais aprovadas (2.10), a outra org não vê nada; esta org vê a própria camada.
+    expect((await ownerB.client.from("exercise_contraindications").select("id").eq("exercise_id", supra).not("organization_id", "is", null)).data).toHaveLength(0);
+    expect(
+      (await owner.client.from("exercise_contraindications").select("level").eq("exercise_id", supra).eq("organization_id", org.id)).data,
+    ).toEqual([{ level: "avoid" }]);
   });
 
   it("personalizar copia o global com as regras e o esconde na listagem da org", async () => {
@@ -79,7 +82,10 @@ describe.runIf(dbTestsEnabled)("Fase 2.2: biblioteca de exercícios (view + RPCs
     const { data: c } = await fx.db.from("exercises").select("organization_id, source_exercise_id, name, created_by").eq("id", copy).single();
     expect(c).toEqual({ organization_id: org.id, source_exercise_id: supra, name: "Abdominal supra", created_by: trainer.id });
     const { data: rules } = await fx.db.from("exercise_contraindications").select("condition_id, level, note, organization_id").eq("exercise_id", copy);
-    expect(rules).toEqual([{ condition_id: lombar, level: "avoid", note: "Flexão repetida", organization_id: org.id }]);
+    // A cópia leva a camada da org e também as regras globais aprovadas (2 de flexão lombar), já na camada da org.
+    expect(rules).toHaveLength(3);
+    expect(rules).toContainEqual({ condition_id: lombar, level: "avoid", note: "Flexão repetida", organization_id: org.id });
+    expect((rules ?? []).filter((r) => r.level === "caution" && r.organization_id === org.id)).toHaveLength(2);
 
     const { data: lib } = await trainer.client.from("exercise_library").select("customized").eq("id", supra).single();
     expect(lib!.customized).toBe(true);

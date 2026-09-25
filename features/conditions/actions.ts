@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/db/server";
 import { searchKey } from "@/lib/text";
+import { parseSearchTerms } from "./regions";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
 
 const t = messages.conditions;
@@ -13,6 +14,8 @@ export type ConditionActionResult = { ok: true; message: string } | { ok: false;
 const conditionSchema = z.object({
   name: z.string().trim().min(2, messages.validation.required).max(80),
   description: z.string().trim().max(300),
+  parentId: z.union([z.uuid(), z.literal("")]),
+  searchTerms: z.string().max(700),
 });
 
 function revalidate() {
@@ -28,7 +31,14 @@ export async function saveCondition(input: unknown, id?: string): Promise<Condit
   const session = await getSession();
   if (!session || session.role === "student") return { ok: false, error: messages.dbErrors.FORBIDDEN };
 
-  const values = { name: parsed.data.name, description: parsed.data.description || null };
+  const searchTerms = parseSearchTerms(parsed.data.searchTerms);
+  if (searchTerms.length > 10 || searchTerms.some((s) => s.length < 2 || s.length > 60)) return { ok: false, error: t.searchTermsInvalid };
+  const values = {
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    parent_id: parsed.data.parentId || null,
+    search_terms: searchTerms,
+  };
   const supabase = await createClient();
   // Nome igual ao de uma condição do catálogo LFit confundiria as listas e os alertas.
   const { data: catalog } = await supabase.from("health_conditions").select("name").is("organization_id", null);
@@ -39,6 +49,7 @@ export async function saveCondition(input: unknown, id?: string): Promise<Condit
     ? await supabase.from("health_conditions").update(values).eq("id", id).select("id")
     : await supabase.from("health_conditions").insert({ ...values, organization_id: session.organizationId }).select("id");
   if (error?.code === "23505") return { ok: false, error: t.exists };
+  if (error?.message === "INVALID_CONDITION") return { ok: false, error: t.parentInvalid };
   if (error || !data?.length) return { ok: false, error: dbErrorMessage(error) };
   revalidate();
   return { ok: true, message: id ? t.saved : t.created };

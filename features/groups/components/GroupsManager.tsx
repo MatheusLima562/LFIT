@@ -15,11 +15,14 @@ import { Input } from "@/components/ui/input";
 import { deleteGroup, saveGroup } from "../actions";
 import { GROUP_COLORS, type GroupColor } from "../colors";
 import type { GroupRow } from "../queries";
+import { matchesCondition } from "@/features/conditions/regions";
 
 export interface ConditionChoice {
   id: string;
   name: string;
   isGlobal: boolean;
+  parentId: string | null;
+  searchTerms: string[];
 }
 
 const t = messages.groups;
@@ -102,6 +105,9 @@ export function GroupsManager({ groups, canDelete, conditions }: { groups: Group
 
 function GroupDialog({ group, conditions, onClose }: { group: GroupRow | null; conditions: ConditionChoice[]; onClose: () => void }) {
   const [conditionIds, setConditionIds] = useState<string[]>(group?.conditions.map((c) => c.id) ?? []);
+  const [conditionQuery, setConditionQuery] = useState("");
+  // Marcadas continuam visíveis mesmo fora do filtro.
+  const shownConditions = conditions.filter((c) => conditionIds.includes(c.id) || matchesCondition(c, conditionQuery, conditions));
   const [name, setName] = useState(group?.name ?? "");
   const [color, setColor] = useState<GroupColor>((GROUP_COLORS as readonly string[]).includes(group?.color ?? "") ? (group!.color as GroupColor) : GROUP_COLORS[0]);
   const [error, setError] = useState<string | null>(null);
@@ -157,8 +163,16 @@ function GroupDialog({ group, conditions, onClose }: { group: GroupRow | null; c
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 text-sm font-medium text-ink">{t.conditions}</legend>
             <p className="text-xs text-ink-3">{t.conditionsHint}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {conditions.map((c) => {
+            <Input
+              type="search"
+              aria-label={messages.conditions.filter}
+              value={conditionQuery}
+              placeholder={messages.conditions.filterPlaceholder}
+              onChange={(e) => setConditionQuery(e.target.value)}
+            />
+            <div className="flex max-h-56 flex-wrap gap-1.5 overflow-y-auto">
+              {shownConditions.length === 0 && <p className="text-xs text-ink-3">{messages.conditions.filterEmpty}</p>}
+              {shownConditions.map((c) => {
                 const on = conditionIds.includes(c.id);
                 return (
                   <button

@@ -131,16 +131,23 @@ function fakeStudent(i: number) {
 async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelho, ombro]: string[], ids: string[]) {
   const conds = must(await owner.from("health_conditions").select("id, key").not("key", "is", null), "condições") as { id: string; key: string }[];
   const cond = (key: string) => conds.find((c) => c.key === key)!.id;
-  const hernia = must(
-    await owner.from("health_conditions").insert({ organization_id: orgId, name: "Hérnia – intolerância à flexão" }).select("id").single(),
+  // Condição global da base de conhecimento (2.10): gera os alertas globais aprovados e mostra o Guia.
+  const hernia = cond("hernia_lombar_flexao");
+  const estenose = must(
+    await owner
+      .from("health_conditions")
+      .insert({ organization_id: orgId, name: "Estenose foraminal (exemplo)", parent_id: cond("lombar"), search_terms: ["forame"] })
+      .select("id")
+      .single(),
     "condição própria",
   ).id;
   ok(
     await owner.from("special_group_conditions").insert([
       { organization_id: orgId, group_id: coluna, condition_id: cond("lombar") },
       { organization_id: orgId, group_id: coluna, condition_id: hernia },
-      { organization_id: orgId, group_id: joelho, condition_id: cond("joelho") },
-      { organization_id: orgId, group_id: ombro, condition_id: cond("ombro") },
+      { organization_id: orgId, group_id: coluna, condition_id: estenose },
+      { organization_id: orgId, group_id: joelho, condition_id: cond("joelho_patelofemoral") },
+      { organization_id: orgId, group_id: ombro, condition_id: cond("ombro_manguito") },
     ]),
     "grupos ↔ condições",
   );
@@ -152,14 +159,14 @@ async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelh
     return found.id;
   };
 
-  // Exemplos para exercitar os alertas no dev — NÃO são as regras globais (essas só após revisão).
+  // Camada da org (fictícia), somada às regras globais aprovadas. "Abdominal supra" mostra a org endurecendo
+  // uma regra global (cautela → evitar).
   ok(
     await owner.from("exercise_contraindications").insert([
       { organization_id: orgId, exercise_id: ex("Abdominal supra"), condition_id: hernia, level: "avoid", note: "Flexão repetida da coluna (exemplo do seed)" },
       { organization_id: orgId, exercise_id: ex("Agachamento livre com barra"), condition_id: cond("lombar"), level: "caution", note: "Carga axial; preferir goblet (exemplo do seed)" },
-      { organization_id: orgId, exercise_id: ex("Levantamento terra romeno"), condition_id: hernia, level: "avoid", note: "Flexão de quadril sob carga (exemplo do seed)" },
-      { organization_id: orgId, exercise_id: ex("Cadeira extensora"), condition_id: cond("joelho"), level: "caution", note: "Limitar amplitude final (exemplo do seed)" },
-      { organization_id: orgId, exercise_id: ex("Tríceps no banco"), condition_id: cond("ombro"), level: "avoid", note: "Extensão de ombro sob carga (exemplo do seed)" },
+      { organization_id: orgId, exercise_id: ex("Cadeira extensora"), condition_id: cond("joelho_patelofemoral"), level: "caution", note: "Amplitude de 90° a 45° na fase sensível (exemplo do seed)" },
+      { organization_id: orgId, exercise_id: ex("Extensão lombar no banco romano"), condition_id: estenose, level: "caution", note: "Amplitude até o neutro (exemplo do seed)" },
     ]),
     "contraindicações da organização",
   );

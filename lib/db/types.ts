@@ -484,6 +484,8 @@ export type Database = {
           key: string | null
           name: string
           organization_id: string | null
+          parent_id: string | null
+          search_terms: string[]
           updated_at: string
         }
         Insert: {
@@ -495,6 +497,8 @@ export type Database = {
           key?: string | null
           name: string
           organization_id?: string | null
+          parent_id?: string | null
+          search_terms?: string[]
           updated_at?: string
         }
         Update: {
@@ -506,6 +510,8 @@ export type Database = {
           key?: string | null
           name?: string
           organization_id?: string | null
+          parent_id?: string | null
+          search_terms?: string[]
           updated_at?: string
         }
         Relationships: [
@@ -514,6 +520,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_conditions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "health_conditions"
             referencedColumns: ["id"]
           },
         ]

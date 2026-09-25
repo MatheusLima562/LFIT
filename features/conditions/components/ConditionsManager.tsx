@@ -11,9 +11,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { saveCondition, setConditionArchived } from "../actions";
 import type { ConditionRow } from "../queries";
+import { matchesCondition } from "../regions";
 
 const t = messages.conditions;
 
@@ -21,10 +23,13 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
   const [editing, setEditing] = useState<ConditionRow | "new" | null>(null);
   const [archiving, setArchiving] = useState<ConditionRow | null>(null);
   const [pending, startTransition] = useTransition();
+  const [query, setQuery] = useState("");
 
-  const global = conditions.filter((c) => c.isGlobal);
-  const own = conditions.filter((c) => !c.isGlobal && !c.archived);
-  const archived = conditions.filter((c) => !c.isGlobal && c.archived);
+  const regions = conditions.filter((c) => c.isGlobal && !c.parentId);
+  const visible = conditions.filter((c) => matchesCondition(c, query, conditions));
+  const global = visible.filter((c) => c.isGlobal);
+  const own = visible.filter((c) => !c.isGlobal && !c.archived);
+  const archived = visible.filter((c) => !c.isGlobal && c.archived);
 
   const toggle = (c: ConditionRow, value: boolean) =>
     startTransition(async () => {
@@ -40,8 +45,10 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
         {c.isGlobal ? <Lock className="size-4" /> : <HeartPulse className="size-4" />}
       </span>
       <div className="min-w-0 flex-1">
+        {c.parentName && <p className="text-xs text-ink-3">{t.regionOf(c.parentName)}</p>}
         <p className="text-[14px] font-semibold text-ink">{c.name}</p>
         {c.description && <p className="mt-0.5 text-[13px] text-ink-2">{c.description}</p>}
+        {c.searchTerms.length > 0 && <p className="mt-0.5 text-xs text-ink-3">{t.synonyms(c.searchTerms.join(", "))}</p>}
         <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
           <Link
             href={`/treinos/exercicios?condicao=${c.id}`}
@@ -75,6 +82,11 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
 
   return (
     <div className="flex flex-col gap-8">
+      <div className="flex max-w-sm flex-col gap-1.5">
+        <label htmlFor="conditions-filter" className="text-sm font-medium text-ink">{t.filter}</label>
+        <Input id="conditions-filter" type="search" value={query} placeholder={t.filterPlaceholder} onChange={(e) => setQuery(e.target.value)} />
+      </div>
+
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -98,7 +110,11 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
           <h2 className="text-base font-semibold text-ink">{t.globalTitle}</h2>
           <p className="text-[13px] text-ink-2">{t.globalHint}</p>
         </div>
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{global.map(card)}</ul>
+        {global.length === 0 ? (
+          <p className="text-[13px] text-ink-3">{t.filterEmpty}</p>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{global.map(card)}</ul>
+        )}
       </section>
 
       {archived.length > 0 && (
@@ -108,7 +124,7 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
         </section>
       )}
 
-      {editing && <ConditionDialog condition={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
+      {editing && <ConditionDialog condition={editing === "new" ? null : editing} regions={regions} onClose={() => setEditing(null)} />}
 
       <ConfirmDialog
         open={archiving !== null}
@@ -124,9 +140,11 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
   );
 }
 
-function ConditionDialog({ condition, onClose }: { condition: ConditionRow | null; onClose: () => void }) {
+function ConditionDialog({ condition, regions, onClose }: { condition: ConditionRow | null; regions: ConditionRow[]; onClose: () => void }) {
   const [name, setName] = useState(condition?.name ?? "");
   const [description, setDescription] = useState(condition?.description ?? "");
+  const [parentId, setParentId] = useState(condition?.parentId ?? "");
+  const [searchTerms, setSearchTerms] = useState(condition?.searchTerms.join(", ") ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -143,7 +161,7 @@ function ConditionDialog({ condition, onClose }: { condition: ConditionRow | nul
           onSubmit={(e) => {
             e.preventDefault();
             startTransition(async () => {
-              const r = await saveCondition({ name, description }, condition?.id);
+              const r = await saveCondition({ name, description, parentId, searchTerms }, condition?.id);
               if (!r.ok) return setError(r.error);
               toast.success(r.message);
               onClose();
@@ -158,6 +176,28 @@ function ConditionDialog({ condition, onClose }: { condition: ConditionRow | nul
           <Field>
             <FieldLabel htmlFor="condition-description">{t.description}</FieldLabel>
             <Textarea id="condition-description" rows={3} maxLength={300} value={description} placeholder={t.descriptionPlaceholder} onChange={(e) => setDescription(e.target.value)} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="condition-region">{t.region}</FieldLabel>
+            <Select value={parentId || "none"} onValueChange={(v) => setParentId(v === "none" ? "" : v)}>
+              <SelectTrigger id="condition-region" className="w-full" aria-describedby="condition-region-hint">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t.regionNone}</SelectItem>
+                {regions.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p id="condition-region-hint" className="text-xs text-ink-3">{t.regionHint}</p>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="condition-terms">{t.searchTerms}</FieldLabel>
+            <Input id="condition-terms" value={searchTerms} maxLength={700} placeholder={t.searchTermsPlaceholder} aria-describedby="condition-terms-hint" onChange={(e) => setSearchTerms(e.target.value)} />
+            <p id="condition-terms-hint" className="text-xs text-ink-3">{t.searchTermsHint}</p>
           </Field>
         </form>
         <DialogFooter>

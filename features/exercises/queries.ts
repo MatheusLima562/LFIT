@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
+import { orderByRegion } from "@/features/conditions/regions";
 import { exerciseMediaUrl } from "@/lib/media";
 import { toDefaults, type DefaultsRow } from "./defaults";
 import { searchKey } from "@/lib/text";
@@ -84,12 +85,28 @@ export interface ConditionOption {
   id: string;
   name: string;
   isGlobal: boolean;
+  /** Região (condição pai), se houver. */
+  parentId: string | null;
+  searchTerms: string[];
 }
 
+/** Condições ativas, cada região seguida das suas condições. */
 export async function listConditionOptions(): Promise<ConditionOption[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("health_conditions").select("id, name, organization_id").is("archived_at", null).order("name");
-  return (data ?? []).map((c) => ({ id: c.id, name: c.name, isGlobal: c.organization_id === null }));
+  const { data } = await supabase
+    .from("health_conditions")
+    .select("id, name, organization_id, parent_id, search_terms")
+    .is("archived_at", null)
+    .order("name");
+  return orderByRegion(
+    (data ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      isGlobal: c.organization_id === null,
+      parentId: c.parent_id,
+      searchTerms: c.search_terms,
+    })),
+  );
 }
 
 export async function getExerciseFilterOptions() {

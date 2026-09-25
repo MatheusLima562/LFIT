@@ -112,12 +112,14 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
       const { count } = await trainer.client.from("exercises").select("id", { count: "exact", head: true }).is("organization_id", null);
       expect(count).toBeGreaterThanOrEqual(50);
       const { count: c } = await trainer.client.from("health_conditions").select("id", { count: "exact", head: true }).is("organization_id", null);
-      expect(c).toBe(11);
+      // 11 regiões/condições iniciais + 8 da base de conhecimento (2.10).
+      expect(c).toBe(19);
     });
 
-    it("biblioteca global sem contraindicações pré-marcadas", async () => {
-      const { count } = await fx.db.from("exercise_contraindications").select("id", { count: "exact", head: true }).is("organization_id", null);
-      expect(count).toBe(0);
+    it("regras globais: só as 19 aprovadas na revisão clínica (2.10), todas cautela", async () => {
+      const { data } = await fx.db.from("exercise_contraindications").select("level").is("organization_id", null);
+      expect(data).toHaveLength(19);
+      expect((data ?? []).every((r) => r.level === "caution")).toBe(true);
     });
 
     it("global é somente leitura para a organização", async () => {
@@ -206,7 +208,8 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
         level: "caution",
         note: "Carga axial",
       });
-      expect((await ownerB.client.from("exercise_contraindications").select("id").eq("exercise_id", ex.supra)).data).toHaveLength(0);
+      // Outra org vê só as regras globais do exercício, nunca a camada desta org.
+      expect((await ownerB.client.from("exercise_contraindications").select("id").eq("exercise_id", ex.supra).not("organization_id", "is", null)).data).toHaveLength(0);
       // Exercício de outra organização não pode receber regra.
       expect(
         (await trainer.client.from("exercise_contraindications").insert({ organization_id: org.id, exercise_id: exB, condition_id: joelho, level: "avoid" })).error,
