@@ -1,6 +1,7 @@
 import { Activity, HeartHandshake, TrendingUp, Users } from "lucide-react";
 import type { OverviewMetric } from "@/types/dashboard";
 import { cn } from "@/lib/utils";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 const tones: Record<OverviewMetric["tone"], string> = {
   brand: "bg-brand-50 text-brand-600",
@@ -27,7 +28,10 @@ export function OverviewMetrics({ metrics }: { metrics: OverviewMetric[] }) {
               <Icon className="size-[18px]" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-ink-2">{metric.label}</p>
+              <p className="flex items-center gap-0.5 text-xs font-medium text-ink-2">
+                <span className="truncate">{metric.label}</span>
+                {metric.formula && <InfoHint content={metric.formula} />}
+              </p>
               <p className="flex items-baseline gap-2">
                 <span className="tabular text-xl font-semibold tracking-tight text-ink">{metric.value}</span>
                 <span className="hidden truncate text-xs text-ink-3 xl:inline">{metric.hint}</span>

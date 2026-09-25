@@ -123,6 +123,8 @@ export interface OverviewMetric {
   label: string;
   value: string;
   hint: string;
+  /** Como o número é calculado (tooltip). */
+  formula?: string;
   tone: "brand" | "positive" | "neutral" | "violet";
 }
 

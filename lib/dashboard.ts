@@ -168,6 +168,7 @@ export function getDashboardSummary(): DashboardSummary {
         label: "Engajamento semanal",
         value: `${pct(trainedThisWeek, active.length)}%`,
         hint: `${trainedThisWeek} de ${active.length} treinaram em 7 dias`,
+        formula: "Engajamento = alunos ativos com pelo menos 1 treino registrado nos últimos 7 dias ÷ alunos ativos × 100.",
         tone: "violet",
       },
       {
@@ -182,6 +183,7 @@ export function getDashboardSummary(): DashboardSummary {
         label: "Retenção",
         value: `${pct(active.length, students.length)}%`,
         hint: plural(inactive, "aluno inativo", "alunos inativos"),
+        formula: "Retenção = alunos ativos ÷ total de alunos cadastrados (ativos + inativos) × 100.",
         tone: "positive",
       },
     ],
