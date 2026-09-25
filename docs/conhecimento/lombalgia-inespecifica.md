@@ -1,7 +1,7 @@
 # Dor lombar inespecífica — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 2 · 24/09/2026 · referências conferidas em 24/09/2026.
+> Versão 3 · 25/09/2026 · referências conferidas em 24/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -9,8 +9,8 @@
 
 - **Mantenha o aluno ativo:** exercício é tratamento de primeira linha na dor crônica; nenhum tipo é claramente
   superior — escolha o que ele gosta e consegue manter.
-- **Adapte, não proíba:** ajuste amplitude, carga, apoio, cadência, posição e volume conforme os sintomas; não há
-  exercício a evitar por padrão.
+- **Adapte, não proíba:** sem alerta automático; se um exercício reproduzir sintomas, ajuste amplitude, carga,
+  apoio, cadência, posição e volume. Nenhum exercício a evitar por padrão.
 - **Guie-se pelos sintomas, não pelo laudo:** achados de imagem são comuns em pessoas sem dor.
 - **Monitore a dor:** até 5/10 durante e de volta ao habitual no dia seguinte → siga/progrida; acima disso → reduza.
 - **Progrida aos poucos:** 2–10% de carga quando sobrarem 1–2 repetições além do alvo.
@@ -111,36 +111,58 @@ padrão direcional (hérnia discal, estenose, espondilolistese) terão documento
   de 5/10 [R24], avaliada durante o exercício, logo depois e no dia seguinte [R25]. **[consenso — extrapolado de
   tendinopatia]** (não foi testada na lombalgia). *Base do aviso de dor da Fase 3.*
 
-## 3. Exercícios a ADAPTAR (nível "cautela")
+## 3. Adaptar quando o exercício reproduzir sintomas (conteúdo do Guia)
 
-**Princípio:** na lombalgia inespecífica, preferir **adaptar** a proibir. Não há base para restringir um
-exercício só pelo diagnóstico: por exemplo, flexão lombar maior ao levantar peso **não** se mostrou fator de risco
-para início/persistência da dor (evidência de baixa qualidade) [R13] **[fraca]**, e os eventos adversos do exercício
-foram majoritariamente leves (ex.: dor muscular) [R6] **[moderada]**. A adaptação é guiada pelo **comportamento dos
-sintomas daquele aluno** (seção 1).
+> **Lombalgia inespecífica NÃO gera alerta automático em nenhum exercício.** Esta seção é orientação do Guia do
+> montador — *"se o exercício reproduzir sintomas, adapte assim"* —, não uma regra de contraindicação. Alertas de
+> "cautela" existem só nas condições por padrão ("Dor lombar — intolerância à flexão" / "— intolerância à
+> extensão") e nos diagnósticos com padrão direcional (hérnia, estenose, espondilolistese).
 
-Alavancas de adaptação **[consenso]** (prática profissional; não testadas uma a uma):
+**Princípio:** preferir **adaptar** a proibir. Não há base para restringir um exercício só pelo diagnóstico: por
+exemplo, flexão lombar maior ao levantar peso **não** se mostrou fator de risco para início/persistência da dor
+(evidência de baixa qualidade) [R13] **[fraca]**, e os eventos adversos do exercício foram majoritariamente leves
+(ex.: dor muscular) [R6] **[moderada]**. A adaptação é guiada pelo **comportamento dos sintomas daquele aluno** (seção 1).
 
-| Alavanca | Como aplicar |
-|---|---|
-| Amplitude | Reduzir a amplitude à faixa sem piora e ampliar aos poucos (ex.: agachar até uma caixa). |
-| Carga | Reduzir a carga e progredir 2–10% conforme tolerância [R17]. |
-| Apoio | Acrescentar apoio (banco, parede, máquina) para diminuir a exigência de estabilização. |
-| Cadência | Execução controlada; evitar rebotes e movimentos balísticos enquanto houver piora. |
-| Posição | Trocar a variação (ex.: em pé → apoiado; carga axial → carga à frente). |
-| Volume | Menos séries/repetições na crise; retomar gradualmente. |
+**Alavancas de adaptação:**
 
-Exemplos na biblioteca atual (**[consenso]**; o nível e o texto finais vão para o CSV v2 para sua aprovação):
+| Alavanca | Como aplicar | Nível | Referência |
+|---|---|---|---|
+| Amplitude | Reduzir a amplitude à faixa sem piora e ampliar aos poucos (ex.: agachar até uma caixa). | consenso | prática clínica |
+| Carga | Reduzir a carga e progredir 2–10% conforme tolerância. | consenso | [R17] (extrapolado) |
+| Apoio | Acrescentar apoio (banco, parede, máquina) para diminuir a exigência de estabilização. | consenso | prática clínica |
+| Cadência | Execução controlada; evitar rebotes e movimentos balísticos enquanto houver piora. | consenso | prática clínica |
+| Posição | Trocar a variação (ex.: em pé → apoiado; carga axial → carga à frente). | consenso | prática clínica |
+| Volume | Menos séries/repetições na crise; retomar gradualmente. | consenso | prática clínica |
 
-| Exercício | Por que cautela | Como adaptar |
-|---|---|---|
-| Levantamento terra / Levantamento terra romeno | Carga alta com flexão de quadril; costuma ser o que o aluno teme ou o que reproduz sintomas | Começar com barra elevada (blocos/rack), menor amplitude e carga; progredir conforme tolerância |
-| Agachamento livre com barra | Carga axial | Agachamento goblet ou até a caixa; reduzir profundidade/carga na crise |
-| Remada curvada com barra | Tronco inclinado sustentado sob carga | Remada unilateral com halter apoiada no banco ou remada baixa na polia |
-| Kettlebell swing | Balístico, exige controle | Reduzir carga e ritmo; substituir temporariamente por elevação pélvica |
-| Extensão lombar no banco romano | Extensão repetida pode piorar quem tolera mal extensão | Amplitude até neutro, sem hiperextensão; ou bird dog/ponte |
-| Abdominal supra / Elevação de pernas deitado | Flexão repetida pode piorar quem tolera mal flexão | Isometrias (prancha, dead bug, Pallof press) |
-| Burpee | Transições rápidas e impacto | Versão sem salto, mais lenta, ou retirar na crise |
+**Exemplos da biblioteca (Guia — sem alerta):**
+
+| Exercício | Quando adaptar | Como adaptar | Nível | Referência |
+|---|---|---|---|---|
+| Levantamento terra / Levantamento terra romeno | Se reproduzir sintomas ou gerar receio | Barra elevada (blocos/rack), menor amplitude e carga; progredir conforme tolerância | consenso | prática clínica |
+| Agachamento livre com barra | Se reproduzir sintomas | Agachamento goblet ou até a caixa; reduzir profundidade/carga | consenso | prática clínica |
+| Remada curvada com barra | Se reproduzir sintomas (tronco inclinado sustentado sob carga) | Remada unilateral com halter apoiada no banco ou remada baixa na polia | consenso | prática clínica |
+| Kettlebell swing | Fase de crise | Reduzir carga e ritmo; trocar temporariamente por elevação pélvica | consenso | prática clínica |
+| Burpee | Fase de crise | Versão sem salto e mais lenta, ou retirar temporariamente | consenso | prática clínica |
+
+**Levantamento terra pode fazer parte do tratamento.** Em ensaio clínico com 70 pessoas com dor lombar recorrente
+de padrão mecânico, um programa de levantamento terra com carga alta + educação sobre dor melhorou dor, força e
+resistência dentro do grupo; o controle motor de baixa carga foi superior em atividade e controle do movimento, mas
+não em dor [R26]. No seguimento de 24 meses, não houve diferença entre os grupos, e 50–80% dos participantes
+relataram menos dor e incapacidade [R27]. **[fraca]** (um ensaio pequeno) — base para **não** evitar o exercício por
+padrão; a escolha depende da preferência e da tolerância do aluno.
+
+**Itens direcionais — saíram daqui para as condições por padrão** (entram no CSV v2 como "cautela"):
+
+| Condição | Exercício | Nível | Referência |
+|---|---|---|---|
+| Dor lombar — intolerância à flexão | Abdominal supra | consenso | prática clínica |
+| Dor lombar — intolerância à flexão | Elevação de pernas deitado | consenso | prática clínica |
+| Dor lombar — intolerância à extensão | Extensão lombar no banco romano | consenso | prática clínica |
+
+**Extensão lombar: fortalecer os extensores é útil.** Treino resistido de extensão lombar trouxe melhora de dor e
+incapacidade na lombalgia crônica, em revisão não sistemática [R28] **[fraca]**; treino resistido está entre as
+modalidades mais eficazes em meta-análise em rede (qualidade baixa) [R8] **[fraca]**. Por isso a extensão lombar
+**não** tem cautela na lombalgia inespecífica — só em quem tem **intolerância à extensão** (condição por padrão).
 
 ## 4. Exercícios a EVITAR
 
@@ -278,6 +300,16 @@ como parte do problema [R22] **[consenso]**.
   for Achilles tendinopathy: a modified Delphi study with international experts. *Br J Sports Med.*
   2025;59(19):1337-1349. doi:10.1136/bjsports-2025-110183
 
+- **[R26]** Aasa B, Berglund L, Michaelson P, Aasa U. Individualized Low-Load Motor Control Exercises and Education
+  Versus a High-Load Lifting Exercise and Education to Improve Activity, Pain Intensity, and Physical Performance in
+  Patients With Low Back Pain: A Randomized Controlled Trial. *J Orthop Sports Phys Ther.* 2015;45(2):77-85.
+  doi:10.2519/jospt.2015.5021
+- **[R27]** Michaelson P, Holmberg D, Aasa B, Aasa U. High load lifting exercise and low load motor control exercises as
+  interventions for patients with mechanical low back pain: A randomized controlled trial with 24-month follow-up.
+  *J Rehabil Med.* 2016;48(5):456-463. doi:10.2340/16501977-2091
+- **[R28]** Steele J, Bruce-Low S, Smith D. A Review of the Clinical Value of Isolated Lumbar Extension Resistance
+  Training for Chronic Low Back Pain. *PM&R.* 2015;7(2):169-187. doi:10.1016/j.pmrj.2014.10.009
+
 ### Fontes NÃO VERIFICADAS (não sustentam nenhuma afirmação acima)
 - George SZ, Fritz JM, Silfies SP, et al. Interventions for the Management of Acute and Chronic Low Back Pain:
   Revision 2021. *J Orthop Sports Phys Ther.* 2021;51(11):CPG1-CPG60. doi:10.2519/jospt.2021.0304 — citação
@@ -287,4 +319,6 @@ como parte do problema [R22] **[consenso]**.
 - ✔ Regra de monitoramento da dor (2.4) — mantida, com base em Silbernagel 2007 (extrapolada).
 - ✔ Seção 4 ("Evitar") vazia — confirmada.
 - ✔ Formato aprovado como modelo, com "Resumo prático" no topo.
-- ⏳ **Seção 3** (exemplos de adaptação, nível "cautela") — aguardando sua revisão antes do CSV v2 e dos demais documentos.
+- ✔ Seção 3 — revisada: sem alerta automático (conteúdo do Guia); itens direcionais movidos para as condições por
+  padrão; levantamento terra com base em Aasa 2015/Michaelson 2016; extensão lombar útil (cautela só na intolerância
+  à extensão); colunas "Nível" e "Referência".
