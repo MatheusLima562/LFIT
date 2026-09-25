@@ -178,8 +178,8 @@ effective_status =
 - `organization_id` nulo = **global** (biblioteca de exercícios, catálogo de condições, regras de
   contraindicação): somente leitura para as organizações; muda só por migration.
 - **Regras globais de contraindicação só entram após revisão/aprovação do dono** (CSV em
-  `docs/revisao/contraindicacoes-sugeridas.csv`, coluna "aprovar"); aplicar apenas as linhas aprovadas,
-  numa migration própria. A biblioteca inicial foi publicada SEM contraindicações.
+  `docs/revisao/contraindicacoes-v2.csv`, coluna "aprovar"; o `contraindicacoes-sugeridas.csv` foi substituído);
+  aplicar apenas as linhas aprovadas, numa migration própria. A biblioteca inicial foi publicada SEM contraindicações.
 - Organizações têm condições próprias e uma **camada própria de contraindicações** (inclusive sobre
   exercícios globais). Níveis: `avoid` (evitar) e `caution` (cautela) + nota (≤ 300).
 - Alerta = grupos especiais do aluno → `special_group_conditions` → regras (globais + da org). Não

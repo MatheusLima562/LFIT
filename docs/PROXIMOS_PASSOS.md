@@ -44,8 +44,14 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    2.4 mantida, "Evitar" vazio confirmado, seção 3 revisada (sem alerta automático; itens direcionais nas condições por
    padrão). `hernia-discal-lombar-flexao.md` revisado; `estenose-lombar-extensao.md` e `espondilolistese-extensao.md` revisados (tabela única de alertas de extensão).
    **Pendência registrada:** espondilólise/espondilolistese ístmica em jovens atletas (não pesquisar por ora).
-   `cervicalgia.md` e `ombro-manguito.md` — **aguardando sua revisão**; depois joelho (patelofemoral, osteoartrite) e os demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
-   aprovado: quadril, hipertensão, osteoporose, gestação). Fase B (app) só após sua aprovação clínica.
+   `cervicalgia.md` revisado (sem alerta; regra do braço; sinais vasculares = SAMU 192) e `ombro-manguito.md` revisado
+   ("Dor no ombro relacionada ao manguito rotador"; cautela só no tríceps no banco; dor cardíaca referida pela NICE CG95).
+   `joelho-patelofemoral.md` e `joelho-artrose.md` — **aguardando sua revisão**. **`docs/revisao/contraindicacoes-v2.csv`
+   gerado** (21 linhas: 19 já aprovadas nas revisões com "S"; 2 de patelofemoral em branco, para sua decisão); o CSV
+   antigo ficou marcado como substituído. Depois, se aprovado: quadril, hipertensão, osteoporose, gestação.
+   **Fase B (app), só após sua aprovação clínica:** migration com as linhas "S" do CSV v2 (cria as condições novas),
+   exercícios globais "Rotação externa com elástico/polia" e "Elevação no plano da escápula", botão "Guia" por
+   condição, checklist de sinais de alerta na anamnese, aviso fixo de apoio à decisão.
 5. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
 6. **C1** Contas com múltiplos vínculos (sem cobrança).
@@ -76,8 +82,8 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 `app/(app)/alunos/[id]/treinos`, migrations `20260929*` a `20261002*`.
 
 ## Decisões pendentes com você
-- **CSV de contraindicações** (`docs/revisao/contraindicacoes-sugeridas.csv`): devolver com a coluna "aprovar (S/N)";
-  só as linhas aprovadas viram regras globais, numa migration própria.
+- **CSV de contraindicações v2** (`docs/revisao/contraindicacoes-v2.csv`, substitui o `contraindicacoes-sugeridas.csv`):
+  conferir as linhas e decidir as 2 de patelofemoral; só as linhas "S" viram regras globais, numa migration própria.
 - **Gateway** da C2: Asaas (decidido); confirmar no contrato: subconta aceita CPF? tarifa de subconta é por conta
   ativa ou criada? (ver seções C2 e C8 de `docs/planos/fase-c.md`).
 - **Resultado do seu teste do montador** — ajustes que surgirem entram na 2.8.

@@ -1,4 +1,5 @@
-﻿exercicio;condicao;nivel_sugerido;nota_sugerida;aprovar (S/N);ajuste
+﻿SUBSTITUÍDO em 25/09/2026 por contraindicacoes-v2.csv — não aplicar (mantido só como histórico);;;;;
+exercicio;condicao;nivel_sugerido;nota_sugerida;aprovar (S/N);ajuste
 Levantamento terra;Coluna lombar;cautela;"Carga axial e flexão de quadril; exige coluna neutra e progressão";;
 Levantamento terra romeno;Coluna lombar;cautela;"Momento de flexão lombar alto; controlar amplitude";;
 Remada curvada com barra;Coluna lombar;cautela;"Isometria lombar em flexão de quadril; considerar remada apoiada";;
