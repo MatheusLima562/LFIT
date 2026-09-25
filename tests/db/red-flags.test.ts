@@ -62,6 +62,13 @@ describe.runIf(dbTestsEnabled)("Etapa 2.10 (Fase B): triagem de sinais de alerta
     expect(data).toEqual({ referred: true, clearance_kind: "medico" });
     await expect(rpc(owner.client, "record_red_flag_check", { p_student_id: s2, p_items: ["diagnostico"] })).rejects.toThrow("INVALID_INPUT");
     await expect(rpc(owner.client, "record_red_flag_check", { p_student_id: s2, p_items: [], p_referred: true })).rejects.toThrow("INVALID_INPUT");
+    // Observação acima de 300 caracteres: recusada na triagem e na liberação.
+    await expect(rpc(owner.client, "record_red_flag_check", { p_student_id: s2, p_items: [], p_note: "a".repeat(301) })).rejects.toThrow("INVALID_INPUT");
+    const withFlag = await rpc<string>(owner.client, "record_red_flag_check", { p_student_id: sNoConsent, p_items: ["recent_trauma"], p_note: "a".repeat(300) });
+    await expect(
+      rpc(owner.client, "record_red_flag_clearance", { p_check_id: withFlag, p_kind: "medico", p_name: "Dr. Exemplo", p_on: spDateDaysAgo(0), p_note: "a".repeat(301) }),
+    ).rejects.toThrow("INVALID_INPUT");
+    await rpc(owner.client, "record_red_flag_clearance", { p_check_id: withFlag, p_kind: "medico", p_name: "Dr. Exemplo", p_on: spDateDaysAgo(0) });
     const direct = await owner.client.from("student_red_flag_checks").insert({ organization_id: org.id, student_id: s2, items: [] });
     expect(direct.error).not.toBeNull();
   });

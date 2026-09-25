@@ -653,6 +653,7 @@ export const messages = {
     note: "Observação (opcional)",
     notePlaceholder: "Ex.: relatado antes do treino; orientado a procurar o médico.",
     noteHint: "Só o necessário para o encaminhamento — sem outros dados de saúde.",
+    noteCount: (n: number, max: number) => `${n}/${max} caracteres`,
     referred: "Aluno encaminhado a médico/fisioterapeuta",
     referredDone: "Aluno encaminhado a médico/fisioterapeuta.",
     referredNeedsItems: "Encaminhamento só com sinais marcados.",

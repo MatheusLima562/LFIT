@@ -18,6 +18,9 @@ describe("triagem de sinais de alerta", () => {
     expect(redFlagCheckSchema.safeParse(v({})).success).toBe(false);
     expect(redFlagCheckSchema.safeParse(v({ items: ["recent_trauma"], noneObserved: true })).success).toBe(false);
     expect(redFlagCheckSchema.safeParse(v({ items: ["diagnostico"] })).success).toBe(false);
+    // Observação: até 300 caracteres (depois de aparar os espaços).
+    expect(redFlagCheckSchema.safeParse(v({ noneObserved: true, note: "a".repeat(300) })).success).toBe(true);
+    expect(redFlagCheckSchema.safeParse(v({ noneObserved: true, note: "a".repeat(301) })).success).toBe(false);
     // Encaminhamento só com sinais.
     expect(redFlagCheckSchema.safeParse(v({ noneObserved: true, referred: true })).success).toBe(false);
   });
@@ -28,6 +31,7 @@ describe("triagem de sinais de alerta", () => {
     expect(redFlagClearanceSchema.safeParse({ ...ok, kind: "" }).success).toBe(false);
     expect(redFlagClearanceSchema.safeParse({ ...ok, name: "A" }).success).toBe(false);
     expect(redFlagClearanceSchema.safeParse({ ...ok, on: "31/02/2026" }).success).toBe(false);
+    expect(redFlagClearanceSchema.safeParse({ ...ok, note: "a".repeat(301) }).success).toBe(false);
   });
 
   it("aviso só com sinais e sem liberação", () => {

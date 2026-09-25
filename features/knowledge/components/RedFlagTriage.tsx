@@ -85,6 +85,11 @@ export function RedFlagTriage({ studentId, check }: { studentId: string; check: 
   );
 }
 
+/** "120/300" — o limite também vale no banco (CHECK e RPC). */
+function NoteCount({ value }: { value: string }) {
+  return <span className="shrink-0 tabular-nums">{t.noteCount(value.length, RED_FLAG_NOTE_MAX)}</span>;
+}
+
 function CheckDialog({ studentId, onClose }: { studentId: string; onClose: () => void }) {
   const router = useRouter();
   const [items, setItems] = useState<RedFlagKey[]>([]);
@@ -177,7 +182,10 @@ function CheckDialog({ studentId, onClose }: { studentId: string; onClose: () =>
               aria-describedby="rf-note-hint"
               onChange={(e) => setNote(e.target.value)}
             />
-            <p id="rf-note-hint" className="text-xs text-ink-3">{t.noteHint}</p>
+            <p id="rf-note-hint" className="flex justify-between gap-2 text-xs text-ink-3">
+              <span>{t.noteHint}</span>
+              <NoteCount value={note} />
+            </p>
           </Field>
           {error && <FieldError>{error}</FieldError>}
         </form>
@@ -263,7 +271,18 @@ function ClearanceDialog({ check, onClose }: { check: RedFlagCheck; onClose: () 
           </Field>
           <Field>
             <FieldLabel htmlFor="rf-clear-note">{t.clearanceNote}</FieldLabel>
-            <Textarea id="rf-clear-note" rows={2} maxLength={RED_FLAG_NOTE_MAX} value={note} placeholder={t.clearanceNotePlaceholder} onChange={(e) => setNote(e.target.value)} />
+            <Textarea
+              id="rf-clear-note"
+              rows={2}
+              maxLength={RED_FLAG_NOTE_MAX}
+              value={note}
+              placeholder={t.clearanceNotePlaceholder}
+              aria-describedby="rf-clear-note-count"
+              onChange={(e) => setNote(e.target.value)}
+            />
+            <p id="rf-clear-note-count" className="text-right text-xs text-ink-3">
+              <NoteCount value={note} />
+            </p>
           </Field>
           {errors.form && <FieldError>{errors.form}</FieldError>}
         </form>
