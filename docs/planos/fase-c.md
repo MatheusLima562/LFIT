@@ -153,6 +153,25 @@ cobrando *os próprios alunos* (mensalidade, pacote de sessões etc.) dentro do 
   - a tarifa de subconta é cobrada por subconta **ativa** (com movimentação) ou por subconta **criada** (mesma
     pergunta, mantida para referência futura).
 
+### C9. White label (planos superiores) — registrado, NÃO implementar ainda
+Personalização da marca do personal, em níveis. **Limites de customização vêm do banco por plano
+(`plan_tier_limits`), nunca fixos no código** (ex.: `white_label_level`, `custom_domain_allowed`,
+`hide_lfit_footer`), com exceção por organização quando fizer sentido (como `video_quota_bytes`).
+
+- **Nível 1 (Gold):**
+  - Logo da organização (upload no Storage, com limites de tipo/tamanho).
+  - 1–2 cores de marca, com **validação de contraste AA** (texto e botões) e **variante para o modo escuro**; cor que
+    não passar é recusada ou ajustada, nunca aplicada sem contraste.
+  - Nome e ícone do app do aluno: **manifest PWA dinâmico por organização**.
+  - Logo na impressão/PDF do treino.
+  - Nome do personal como **remetente** dos e-mails (o endereço técnico continua o da plataforma).
+  - Rodapé discreto "feito com LFit".
+- **Nível 2 (plano acima do Gold ou add-on):**
+  - **Domínio próprio por organização** via API de domínios da Vercel, com **SSL automático** e **instruções de DNS
+    guiadas** (passo a passo e verificação do registro).
+  - Remoção do "feito com LFit".
+- **Nível 3 (app nas lojas):** fora do escopo; avaliar só sob demanda, com taxa de implantação.
+
 ## Etapas e checkpoints
 - **C.1 Banco** (migrations aditivas, com dry-run): `memberships` + `session_contexts` + novas `current_org_id()`/`current_user_role()`;
   unicidade de `students.user_id` por organização; FKs de trainer; `subscriptions`, `billing_settings`, limites do plano,
