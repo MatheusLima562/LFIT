@@ -2212,6 +2212,8 @@ export type Database = {
         | "meters"
         | "km"
         | "arrivals"
+        | "ascents"
+        | "descents"
       set_type: "warmup" | "work" | "drop"
       sex: "M" | "F"
       signup_status: "pending" | "approved" | "rejected"
@@ -2362,6 +2364,8 @@ export const Constants = {
         "meters",
         "km",
         "arrivals",
+        "ascents",
+        "descents",
       ],
       set_type: ["warmup", "work", "drop"],
       sex: ["M", "F"],

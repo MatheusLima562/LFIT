@@ -5,14 +5,14 @@
  */
 import { messages } from "@/messages/pt-BR";
 
-export const QUANTITY_UNITS = ["reps", "failure", "seconds", "minutes", "meters", "km", "arrivals"] as const;
+export const QUANTITY_UNITS = ["reps", "failure", "seconds", "minutes", "meters", "km", "arrivals", "ascents", "descents"] as const;
 export const SPEED_PRESETS = ["slow", "moderate", "fast", "explosive"] as const;
 
 export type QuantityUnit = (typeof QUANTITY_UNITS)[number];
 export type SpeedPreset = (typeof SPEED_PRESETS)[number];
 
 /** Unidades contadas em inteiros. */
-export const INTEGER_UNITS: readonly QuantityUnit[] = ["reps", "arrivals"];
+export const INTEGER_UNITS: readonly QuantityUnit[] = ["reps", "arrivals", "ascents", "descents"];
 
 const p = messages.plans.prescription;
 const num = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });

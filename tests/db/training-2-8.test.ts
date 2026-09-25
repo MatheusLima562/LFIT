@@ -201,6 +201,16 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
       expect(set).toEqual({ intensity: "RIR 2" });
     });
 
+    it("Subida e Descida: unidades inteiras aceitas", async () => {
+      const id = await rpc<string>(owner.client, "save_training_plan", {
+        p_plan: plan(null, [item(ex.supra, { quantity_unit: "ascents", quantity_min: 10, quantity_max: 12, sets_detail: [{ set_type: "work", quantity_unit: "descents", quantity_min: 8 }] })]),
+      });
+      const it = await firstItem(id);
+      expect(it).toMatchObject({ quantity_unit: "ascents", quantity_min: 10, quantity_max: 12 });
+      const { data: set } = await fx.db.from("plan_item_sets").select("quantity_unit, quantity_min").eq("item_id", it.id as string).single();
+      expect(set).toEqual({ quantity_unit: "descents", quantity_min: 8 });
+    });
+
     it("unidade 'até a falha' descarta quantidade enviada (normalização no servidor)", async () => {
       const id = await rpc<string>(owner.client, "save_training_plan", { p_plan: plan(null, [item(ex.supra, { quantity_unit: "failure", quantity_min: 5 })]) });
       expect(await firstItem(id)).toMatchObject({ quantity_unit: "failure", quantity_min: null, quantity_max: null });
@@ -208,6 +218,7 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
 
     it.each([
       ["reps fracionadas", { quantity_min: 8.5, quantity_max: null }],
+      ["subidas fracionadas", { quantity_unit: "ascents", quantity_min: 2.5 }],
       ["máx < mín", { quantity_min: 12, quantity_max: 8 }],
       ["intensidade com mais de 20 caracteres", { intensity: "x".repeat(21) }],
       ["velocidade e cadência juntas", { speed: "fast", tempo: "3010" }],

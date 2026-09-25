@@ -735,8 +735,8 @@ export const messages = {
       open: "Abrir treinos",
     },
     prescription: {
-      units: { reps: "Repetições", failure: "Até a falha", seconds: "Segundos", minutes: "Minutos", meters: "Metros", km: "Km", arrivals: "Chegadas" },
-      suffix: { reps: "reps", failure: "", seconds: "s", minutes: "min", meters: "m", km: "km", arrivals: "chegadas" },
+      units: { reps: "Repetições", failure: "Até a falha", seconds: "Segundos", minutes: "Minutos", meters: "Metros", km: "Km", arrivals: "Chegadas", ascents: "Subida", descents: "Descida" },
+      suffix: { reps: "reps", failure: "", seconds: "s", minutes: "min", meters: "m", km: "km", arrivals: "chegadas", ascents: "subidas", descents: "descidas" },
       unit: "Unidade",
       min: "Mín.",
       max: "Máx.",
