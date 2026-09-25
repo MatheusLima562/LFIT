@@ -42,7 +42,7 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    orienta a adaptação. `contraindicacoes-v2.csv` substitui o CSV antigo (marcar o antigo como substituído, sem apagar).
    **Feito:** `lombalgia-inespecifica.md` — formato aprovado como modelo (com "Resumo prático" no topo), regra de dor
    2.4 mantida, "Evitar" vazio confirmado, seção 3 revisada (sem alerta automático; itens direcionais nas condições por
-   padrão). `hernia-discal-lombar-flexao.md` — **aguardando sua revisão** antes dos demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
+   padrão). `hernia-discal-lombar-flexao.md` revisado; `estenose-lombar-extensao.md` e `espondilolistese-extensao.md` — **aguardando sua revisão** antes dos demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
    aprovado: quadril, hipertensão, osteoporose, gestação). Fase B (app) só após sua aprovação clínica.
 5. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
