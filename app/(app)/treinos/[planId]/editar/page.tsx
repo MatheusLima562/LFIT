@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth/session";
 import { fromSaved } from "@/features/plans/builder";
 import { PlanBuilder } from "@/features/plans/components/PlanBuilder";
 import { getPlanForBuilder, getStudentRules, listTrainingLists } from "@/features/plans/queries";
+import { getStudentHealthGuides } from "@/features/knowledge/queries";
 import { messages } from "@/messages/pt-BR";
 
 export const metadata: Metadata = { title: messages.plans.editTitle };
@@ -15,7 +16,11 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
   if (!z.uuid().safeParse(planId).success) notFound();
   const data = await getPlanForBuilder(planId, session);
   if (!data) notFound();
-  const [rules, lists] = await Promise.all([data.student ? getStudentRules(data.student.id) : Promise.resolve({ hidden: false, rules: [] }), listTrainingLists()]);
+  const [rules, lists, health] = await Promise.all([
+    data.student ? getStudentRules(data.student.id) : Promise.resolve({ hidden: false, rules: [] }),
+    listTrainingLists(),
+    data.student ? getStudentHealthGuides(data.student.id) : Promise.resolve(null),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pt-5 sm:px-6 lg:px-8 lg:pt-6">
@@ -27,6 +32,7 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
         trainers={data.trainers}
         lists={lists}
         rules={rules}
+        health={health}
         canEdit={data.canEdit}
         otherActive={data.otherActive}
         backHref={data.student ? `/alunos/${data.student.id}/treinos` : "/treinos/modelos"}

@@ -52,6 +52,8 @@ import {
 } from "../builder";
 import type { PlanStatus, StudentRule, TrainingListOption } from "../queries";
 import { MAX_ITEMS, MAX_WORKOUTS, PLAN_LEVELS, type PlanLevel } from "../schemas";
+import { StudentConditionsPanel } from "@/features/knowledge/components/StudentConditionsPanel";
+import type { StudentHealthGuides } from "@/features/knowledge/queries";
 import { ExercisePicker } from "./ExercisePicker";
 import { ImportItemsDialog } from "./ImportItemsDialog";
 import { DragHandle, ItemCard } from "./ItemCard";
@@ -68,6 +70,8 @@ export interface PlanBuilderProps {
   /** Listas de métodos e objetivos da organização. */
   lists?: { methods: TrainingListOption[]; objectives: TrainingListOption[] };
   rules: { hidden: boolean; rules: StudentRule[] };
+  /** Condições e Guias do aluno — só no nível completo de saúde (null nos demais). */
+  health?: StudentHealthGuides | null;
   canEdit: boolean;
   otherActive: { id: string; name: string } | null;
   backHref: string;
@@ -75,7 +79,7 @@ export interface PlanBuilderProps {
 
 const NO_LISTS = { methods: [], objectives: [] };
 
-export function PlanBuilder({ initial, status, student, trainers = [], lists = NO_LISTS, rules, canEdit, otherActive, backHref }: PlanBuilderProps) {
+export function PlanBuilder({ initial, status, student, trainers = [], lists = NO_LISTS, rules, health = null, canEdit, otherActive, backHref }: PlanBuilderProps) {
   const router = useRouter();
   const [draft, setDraft] = useState<PlanDraft>(initial);
   const [dirty, setDirty] = useState(false);
@@ -458,6 +462,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
 
       {/* Alertas (só plano de aluno) */}
       {student && <AlertsPanel hidden={rules.hidden} restricted={rules.rules.some((r) => r.restricted)} counts={alertCounts} />}
+      {student && health && <StudentConditionsPanel health={health} />}
 
       {/* Divisões */}
       <section aria-label={t.workouts.label} className="flex flex-col gap-3">

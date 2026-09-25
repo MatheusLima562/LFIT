@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, ArchiveRestore, Dumbbell, HeartPulse, Lock, Pencil, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, BookOpen, Dumbbell, HeartPulse, Lock, Pencil, Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { messages } from "@/messages/pt-BR";
@@ -59,6 +59,16 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
             {t.exercises(c.exercises)}
           </Link>
           <span className="text-ink-3">{t.groups(c.groups)}</span>
+          {c.guideKey && (
+            <Link
+              href={`/treinos/condicoes/guia/${c.guideKey}`}
+              aria-label={messages.guides.openFor(c.name)}
+              className="inline-flex items-center gap-1 rounded text-brand-700 hover:underline"
+            >
+              <BookOpen aria-hidden className="size-3.5" />
+              {messages.guides.open}
+            </Link>
+          )}
         </p>
       </div>
       {!c.isGlobal && !c.archived && (

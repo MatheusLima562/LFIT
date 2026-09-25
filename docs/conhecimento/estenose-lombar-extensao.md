@@ -1,6 +1,7 @@
 # Estenose lombar (intolerância à extensão) — base de conhecimento
 
-> **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
+> **Status: APROVADO** na revisão clínica do dono (25/09/2026). No app como Guia (`features/knowledge/guides.ts`):
+> ao revisar este documento, atualize o Guia correspondente.
 > Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**

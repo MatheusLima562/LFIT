@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth/session";
 import { newKey, type PlanDraft } from "@/features/plans/builder";
 import { PlanBuilder } from "@/features/plans/components/PlanBuilder";
 import { getActivePlan, getStudentName, getStudentRules, getStudentTrainerId, listOrgTrainers, listTrainingLists } from "@/features/plans/queries";
+import { getStudentHealthGuides } from "@/features/knowledge/queries";
 import { messages } from "@/messages/pt-BR";
 
 export const metadata: Metadata = { title: messages.plans.newTitle };
@@ -18,9 +19,15 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
 
   const student = studentId ? await getStudentName(studentId) : null;
   if (studentId && !student) notFound();
-  const [rules, otherActive, trainers, defaultTrainerId] = student
-    ? await Promise.all([getStudentRules(student.id), getActivePlan(student.id), listOrgTrainers(), getStudentTrainerId(student.id)])
-    : [{ hidden: false, rules: [] }, null, [], null];
+  const [rules, otherActive, trainers, defaultTrainerId, health] = student
+    ? await Promise.all([
+        getStudentRules(student.id),
+        getActivePlan(student.id),
+        listOrgTrainers(),
+        getStudentTrainerId(student.id),
+        getStudentHealthGuides(student.id),
+      ])
+    : [{ hidden: false, rules: [] }, null, [], null, null];
 
   const lists = await listTrainingLists();
   const initial: PlanDraft = {
@@ -48,6 +55,7 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
         trainers={trainers}
         lists={lists}
         rules={rules}
+        health={health}
         canEdit
         otherActive={otherActive}
         backHref={student ? `/alunos/${student.id}/treinos` : "/treinos/modelos"}

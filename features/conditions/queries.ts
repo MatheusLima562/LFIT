@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
+import { guideKeyFor } from "@/features/knowledge/guide-for";
 import { orderByRegion } from "./regions";
 
 export interface ConditionRow {
@@ -13,6 +14,8 @@ export interface ConditionRow {
   /** Região (condição pai). */
   parentId: string | null;
   parentName: string | null;
+  /** Guia desta condição (ou da região), se houver. */
+  guideKey: string | null;
   searchTerms: string[];
   /** Exercícios (visíveis à equipe) com contraindicação para a condição. */
   exercises: number;
@@ -39,7 +42,7 @@ export async function listConditions(): Promise<ConditionRow[]> {
   for (const l of links.data ?? []) groupsBy.set(l.condition_id, (groupsBy.get(l.condition_id) ?? 0) + 1);
 
   const rows = conditions.data ?? [];
-  const names = new Map(rows.map((c) => [c.id, c.name]));
+  const byId = new Map(rows.map((c) => [c.id, c]));
   return orderByRegion(
     rows.map((c) => ({
       id: c.id,
@@ -49,7 +52,8 @@ export async function listConditions(): Promise<ConditionRow[]> {
       isGlobal: c.organization_id === null,
       archived: c.archived_at !== null,
       parentId: c.parent_id,
-      parentName: c.parent_id ? (names.get(c.parent_id) ?? null) : null,
+      parentName: c.parent_id ? (byId.get(c.parent_id)?.name ?? null) : null,
+      guideKey: guideKeyFor({ key: c.key, parentKey: c.parent_id ? (byId.get(c.parent_id)?.key ?? null) : null }),
       searchTerms: c.search_terms,
       exercises: exercisesBy.get(c.id)?.size ?? 0,
       groups: groupsBy.get(c.id) ?? 0,
