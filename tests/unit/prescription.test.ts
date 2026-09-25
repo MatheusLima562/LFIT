@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatIntensity, formatQuantity, formatRestRange, formatSpeed } from "@/features/plans/prescription";
+import { formatQuantity, formatRestRange, formatSpeed } from "@/features/plans/prescription";
 
 describe("formatação da prescrição", () => {
   it("quantidade por unidade", () => {
@@ -10,8 +10,7 @@ describe("formatação da prescrição", () => {
     expect(formatQuantity("failure", null, null, null)).toBe("Até a falha");
     expect(formatQuantity("reps", null, null, null)).toBeNull();
   });
-  it("intensidade, velocidade e pausa", () => {
-    expect([formatIntensity("pct_1rm", 75), formatIntensity("rpe", 7.5), formatIntensity("rir", 2), formatIntensity(null, 3)]).toEqual(["75% 1RM", "RPE 7,5", "RIR 2", null]);
+  it("velocidade e pausa", () => {
     expect([formatSpeed("slow", null), formatSpeed(null, "3010"), formatSpeed(null, null)]).toEqual(["Lenta", "Cadência 3010", null]);
     expect([formatRestRange(60, 90), formatRestRange(45, null), formatRestRange(120, 180), formatRestRange(60, 60), formatRestRange(null, null)]).toEqual([
       "60–90 s",

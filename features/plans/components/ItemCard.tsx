@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import type { StudentRule, TrainingListOption } from "../queries";
-import { formatIntensity, formatQuantity, formatRestRange } from "../prescription";
-import { BasicErrors, LoadInputs, MoreToggle, PrescriptionMore, prescriptionExtras, QuantityRange, RestRange } from "./PrescriptionFields";
+import { formatQuantity, formatRestRange } from "../prescription";
+import { BasicErrors, IntensityInput, LoadInputs, MoreToggle, PrescriptionMore, prescriptionExtras, QuantityRange, RestRange } from "./PrescriptionFields";
 import { TipEditor } from "./TipEditor";
 import type { DraftErrors, ItemDraft, SetDraft } from "../builder";
 import { SetsEditor } from "./SetsEditor";
@@ -54,7 +54,7 @@ export function ItemCard(props: ItemCardProps) {
   // "Mais opções" abre sozinho quando algo dali já está preenchido; erro num campo escondido força a abertura.
   const extras = itemExtras(item);
   const [more, setMore] = useState(extras > 0);
-  const moreOpen = more || ["qtyNote", "intensityValue", "tempo", "loadText", "substitutes"].some((f) => err(f));
+  const moreOpen = more || ["qtyNote", "tempo", "loadText", "substitutes"].some((f) => err(f));
 
   const field = (f: keyof ItemDraft, label: string, opts: { placeholder?: string; inputMode?: "numeric" | "decimal" | "text"; maxLength?: number; className?: string } = {}) => (
     <label className={cn("flex min-w-0 flex-col gap-1 text-[11px] text-ink-3", opts.className)} htmlFor={id(f)}>
@@ -178,6 +178,7 @@ export function ItemCard(props: ItemCardProps) {
             onValue={(v) => props.onChange({ loadValue: v })}
             onUnit={(u) => props.onChange({ loadUnit: u })}
           />
+          <IntensityInput idPrefix={item.key} value={item} readOnly={readOnly} error={err} onChange={props.onChange} />
           <RestRange idPrefix={item.key} value={item} readOnly={readOnly} error={err} onChange={props.onChange} />
         </div>
         {err("sets") && <span className="text-xs text-destructive">{err("sets")}</span>}
@@ -309,7 +310,7 @@ function itemSummary(it: ItemDraft) {
   return [
     it.setsDetail.length ? t.sets.show(it.setsDetail.length) : [it.sets && `${it.sets} ×`, qty].filter(Boolean).join(" "),
     it.loadValue ? `${it.loadValue} ${it.loadUnit}` : it.loadText || null,
-    formatIntensity(it.intensityType || null, num(it.intensityValue)),
+    it.intensity.trim() || null,
     formatRestRange(num(it.restMin), num(it.restMax)),
     it.substitutes.length ? `${t.substitutes.label}: ${it.substitutes.length}` : null,
   ]

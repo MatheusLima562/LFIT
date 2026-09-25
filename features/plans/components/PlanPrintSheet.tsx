@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { RichTip } from "@/components/ui/RichTip";
 import { groupLabel, toBlocks } from "../builder";
 import { formatLoad, planPeriod } from "../format";
-import { formatIntensity, formatQuantity, formatRestRange, formatSpeed } from "../prescription";
+import { formatQuantity, formatRestRange, formatSpeed } from "../prescription";
 import type { PlanForPrint } from "../queries";
 import { PrintButton } from "./PrintButton";
 
@@ -242,7 +242,7 @@ function ItemRows({
                   messages.plans.sets.types[set.setType],
                   formatQuantity(sp.quantityUnit, sp.quantityMin, sp.quantityMax, sp.quantityNote),
                   formatLoad(set.loadValue, set.loadUnit, set.loadText),
-                  formatIntensity(sp.intensityType, sp.intensityValue),
+                  sp.intensity,
                   formatSpeed(sp.speed, sp.tempo),
                   formatRestRange(sp.restMin, sp.restMax),
                 ].filter(Boolean);
@@ -262,7 +262,7 @@ function ItemRows({
               {formatLoad(it.loadValue, it.loadUnit, it.loadText) ?? "—"}
             </td>
             <td className={cn(cell, "whitespace-nowrap")}>{formatRestRange(pr.restMin, pr.restMax) ?? "—"}</td>
-            <td className={cn(cell, "whitespace-nowrap")}>{formatIntensity(pr.intensityType, pr.intensityValue) ?? "—"}</td>
+            <td className={cn(cell, "whitespace-nowrap")}>{pr.intensity ?? "—"}</td>
             <td className="py-1.5 align-top whitespace-nowrap">{formatSpeed(pr.speed, pr.tempo) ?? "—"}</td>
           </>
         )}

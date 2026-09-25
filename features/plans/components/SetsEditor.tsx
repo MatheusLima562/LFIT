@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { duplicateSet, moveSet, newKey, pickPrescription, type DraftErrors, type ItemDraft, type SetDraft } from "../builder";
 import { MAX_SETS, SET_TYPES, type SetType } from "../schemas";
-import { BasicErrors, LoadInputs, MoreToggle, PrescriptionMore, prescriptionExtras, QuantityRange, RestRange } from "./PrescriptionFields";
+import { BasicErrors, IntensityInput, LoadInputs, MoreToggle, PrescriptionMore, prescriptionExtras, QuantityRange, RestRange } from "./PrescriptionFields";
 
 const t = messages.plans;
 const p = messages.plans.prescription;
@@ -103,7 +103,7 @@ function SetRow({
   const err = (f: string) => errors[`${s.key}.${f}`];
   const extras = prescriptionExtras(s) + (s.loadText.trim() ? 1 : 0);
   const [more, setMore] = useState(extras > 0);
-  const moreOpen = more || ["qtyNote", "intensityValue", "tempo"].some((f) => err(f));
+  const moreOpen = more || ["qtyNote", "tempo"].some((f) => err(f));
   return (
     <li className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-2">
       <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
@@ -133,6 +133,7 @@ function SetRow({
           onValue={(v) => onUpdate({ loadValue: v })}
           onUnit={(u) => onUpdate({ loadUnit: u })}
         />
+        <IntensityInput idPrefix={s.key} value={s} readOnly={readOnly} error={err} onChange={onUpdate} />
         <RestRange idPrefix={s.key} value={s} readOnly={readOnly} error={err} onChange={onUpdate} />
         {!readOnly && (
           <DropdownMenu>

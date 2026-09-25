@@ -5,7 +5,7 @@
  */
 import { isoToBR, parseBRDate } from "@/lib/dates";
 import { messages } from "@/messages/pt-BR";
-import type { IntensityType, QuantityUnit, SpeedPreset } from "./prescription";
+import type { QuantityUnit, SpeedPreset } from "./prescription";
 import { planPayloadSchema, type LoadUnit, type PlanLevel, type PlanPayload, type SetType } from "./schemas";
 
 /** Prescrição comum ao resumo do item e às séries detalhadas (strings do formulário). */
@@ -15,8 +15,8 @@ export interface PrescriptionDraft {
   qtyMax: string;
   /** Complemento da quantidade (ex.: "por lado"). */
   qtyNote: string;
-  intensityType: IntensityType | "";
-  intensityValue: string;
+  /** Texto livre curto: "RPE 8", "RIR 2", "70%". */
+  intensity: string;
   /** Velocidade por preset OU cadência numérica (nunca os dois). */
   speedMode: "preset" | "tempo";
   speed: SpeedPreset | "";
@@ -93,8 +93,7 @@ export function emptyPrescription(): PrescriptionDraft {
     qtyMin: "10",
     qtyMax: "12",
     qtyNote: "",
-    intensityType: "",
-    intensityValue: "",
+    intensity: "",
     speedMode: "preset",
     speed: "",
     tempo: "",
@@ -105,8 +104,8 @@ export function emptyPrescription(): PrescriptionDraft {
 
 /** Só os campos de prescrição (para copiar do resumo para as séries e vice-versa). */
 export function pickPrescription(d: PrescriptionDraft): PrescriptionDraft {
-  const { quantityUnit, qtyMin, qtyMax, qtyNote, intensityType, intensityValue, speedMode, speed, tempo, restMin, restMax } = d;
-  return { quantityUnit, qtyMin, qtyMax, qtyNote, intensityType, intensityValue, speedMode, speed, tempo, restMin, restMax };
+  const { quantityUnit, qtyMin, qtyMax, qtyNote, intensity, speedMode, speed, tempo, restMin, restMax } = d;
+  return { quantityUnit, qtyMin, qtyMax, qtyNote, intensity, speedMode, speed, tempo, restMin, restMax };
 }
 
 /** Valores padrão de um exercício (camada da equipe → LFit). */
@@ -306,8 +305,7 @@ function prescriptionPayload(d: PrescriptionDraft) {
     quantity_min: failure ? null : parseNumber(d.qtyMin),
     quantity_max: failure ? null : parseNumber(d.qtyMax),
     quantity_note: text(d.qtyNote),
-    intensity_type: d.intensityType || null,
-    intensity_value: d.intensityType ? parseNumber(d.intensityValue) : null,
+    intensity: text(d.intensity),
     speed: d.speedMode === "preset" ? d.speed || null : null,
     tempo: d.speedMode === "tempo" ? (text(d.tempo)?.toUpperCase() ?? null) : null,
     rest_min: parseNumber(d.restMin),
@@ -368,8 +366,7 @@ const FIELD: Record<string, string> = {
   quantity_min: "qtyMin",
   quantity_max: "qtyMax",
   quantity_note: "qtyNote",
-  intensity_type: "intensityType",
-  intensity_value: "intensityValue",
+  intensity: "intensity",
   speed: "speed",
   tempo: "tempo",
   rest_min: "restMin",
@@ -473,8 +470,7 @@ export interface SavedPrescription {
   quantityMin: number | null;
   quantityMax: number | null;
   quantityNote: string | null;
-  intensityType: IntensityType | null;
-  intensityValue: number | null;
+  intensity: string | null;
   speed: SpeedPreset | null;
   tempo: string | null;
   restMin: number | null;
@@ -489,8 +485,7 @@ function prescriptionDraft(p: SavedPrescription): PrescriptionDraft {
     qtyMin: str(p.quantityMin),
     qtyMax: str(p.quantityMax),
     qtyNote: p.quantityNote ?? "",
-    intensityType: p.intensityType ?? "",
-    intensityValue: str(p.intensityValue),
+    intensity: p.intensity ?? "",
     speedMode: p.tempo && !p.speed ? "tempo" : "preset",
     speed: p.speed ?? "",
     tempo: p.tempo ?? "",

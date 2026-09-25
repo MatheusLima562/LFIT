@@ -705,6 +705,7 @@ export type Database = {
       plan_item_sets: {
         Row: {
           id: string
+          intensity: string | null
           intensity_type: Database["public"]["Enums"]["intensity_type"] | null
           intensity_value: number | null
           item_id: string
@@ -725,6 +726,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          intensity?: string | null
           intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
           intensity_value?: number | null
           item_id: string
@@ -745,6 +747,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          intensity?: string | null
           intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
           intensity_value?: number | null
           item_id?: string
@@ -839,6 +842,7 @@ export type Database = {
           exercise_id: string
           group_key: string | null
           id: string
+          intensity: string | null
           intensity_type: Database["public"]["Enums"]["intensity_type"] | null
           intensity_value: number | null
           load_text: string | null
@@ -864,6 +868,7 @@ export type Database = {
           exercise_id: string
           group_key?: string | null
           id?: string
+          intensity?: string | null
           intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
           intensity_value?: number | null
           load_text?: string | null
@@ -889,6 +894,7 @@ export type Database = {
           exercise_id?: string
           group_key?: string | null
           id?: string
+          intensity?: string | null
           intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
           intensity_value?: number | null
           load_text?: string | null

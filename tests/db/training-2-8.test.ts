@@ -167,15 +167,15 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
   });
 
   describe("prescrição nova e compatibilidade com o formato antigo", () => {
-    it("campos novos gravados (colunas legadas removidas)", async () => {
+    it("campos novos gravados (colunas legadas removidas; intensidade em texto)", async () => {
       const id = await rpc<string>(owner.client, "save_training_plan", {
         p_plan: plan(null, [
-          item(ex.prancha, { quantity_unit: "seconds", quantity_min: 20, quantity_max: 30, intensity_type: "rpe", intensity_value: 7.5, speed: "slow", rest_min: 60, rest_max: 90, tip: "**Coluna neutra**\n- respire" }),
+          item(ex.prancha, { quantity_unit: "seconds", quantity_min: 20, quantity_max: 30, intensity: " RPE 7,5 ", speed: "slow", rest_min: 60, rest_max: 90, tip: "**Coluna neutra**\n- respire" }),
         ]),
       });
       const it = await firstItem(id);
       expect(it).toMatchObject({
-        quantity_unit: "seconds", quantity_min: 20, quantity_max: 30, intensity_type: "rpe", intensity_value: 7.5, speed: "slow", rest_min: 60, rest_max: 90,
+        quantity_unit: "seconds", quantity_min: 20, quantity_max: 30, intensity: "RPE 7,5", intensity_type: null, intensity_value: null, speed: "slow", rest_min: 60, rest_max: 90,
         tip: "**Coluna neutra**\n- respire",
       });
       for (const legacy of ["reps", "rest_seconds", "rpe_target", "notes"]) expect(it).not.toHaveProperty(legacy);
@@ -186,9 +186,19 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
         p_plan: plan(null, [{ exercise_id: ex.deadbug, sets: 3, reps: "8 por lado", rest_seconds: 45, rpe_target: 8, notes: "Lento", sets_detail: [{ set_type: "work", reps: "até a falha", rest_seconds: 30 }] }]),
       });
       const it = await firstItem(id);
-      expect(it).toMatchObject({ quantity_unit: "reps", quantity_min: 8, quantity_max: null, quantity_note: "por lado", rest_min: 45, intensity_type: "rpe", intensity_value: 8, tip: "Lento" });
+      expect(it).toMatchObject({ quantity_unit: "reps", quantity_min: 8, quantity_max: null, quantity_note: "por lado", rest_min: 45, intensity: "RPE 8", tip: "Lento" });
       const { data: set } = await fx.db.from("plan_item_sets").select("quantity_unit, quantity_min, rest_min").eq("item_id", it.id as string).single();
       expect(set).toEqual({ quantity_unit: "failure", quantity_min: null, rest_min: 30 });
+    });
+
+    it("intensidade no formato antigo (tipo + valor) vira texto", async () => {
+      const id = await rpc<string>(owner.client, "save_training_plan", {
+        p_plan: plan(null, [item(ex.supino, { intensity_type: "pct_1rm", intensity_value: 75, sets_detail: [{ set_type: "work", quantity_unit: "reps", quantity_min: 8, intensity_type: "rir", intensity_value: 2 }] })]),
+      });
+      const it = await firstItem(id);
+      expect(it).toMatchObject({ intensity: "75%", intensity_type: null, intensity_value: null });
+      const { data: set } = await fx.db.from("plan_item_sets").select("intensity").eq("item_id", it.id as string).single();
+      expect(set).toEqual({ intensity: "RIR 2" });
     });
 
     it("unidade 'até a falha' descarta quantidade enviada (normalização no servidor)", async () => {
@@ -199,8 +209,7 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
     it.each([
       ["reps fracionadas", { quantity_min: 8.5, quantity_max: null }],
       ["máx < mín", { quantity_min: 12, quantity_max: 8 }],
-      ["RIR fora da faixa", { intensity_type: "rir", intensity_value: 11 }],
-      ["%1RM sem valor", { intensity_type: "pct_1rm", intensity_value: null }],
+      ["intensidade com mais de 20 caracteres", { intensity: "x".repeat(21) }],
       ["velocidade e cadência juntas", { speed: "fast", tempo: "3010" }],
       ["pausa máx < mín", { rest_min: 90, rest_max: 60 }],
     ])("recusa %s", async (_label, patch) => {
@@ -225,14 +234,14 @@ describe.runIf(dbTestsEnabled)("Etapa 2.8: plano, prescrição, substitutos, lis
     it("alertas incluem substitutos; cópia preserva substitutos e prescrição", async () => {
       await fx.db.from("students").update({ health_data_consent_at: new Date().toISOString() }).eq("id", s1);
       const id = await rpc<string>(trainer.client, "save_training_plan", {
-        p_plan: plan(s1, [item(ex.supino, { substitutes: [ex.supra], quantity_unit: "reps", quantity_min: 6, intensity_type: "pct_1rm", intensity_value: 75 })]),
+        p_plan: plan(s1, [item(ex.supino, { substitutes: [ex.supra], quantity_unit: "reps", quantity_min: 6, intensity: "75%" })]),
       });
       const alerts = await rpc<Row[]>(trainer.client, "plan_contraindication_alerts", { p_plan_id: id });
       expect(alerts).toEqual([expect.objectContaining({ exercise_id: ex.supra, substitute: true, level: "avoid" })]);
 
       const dup = await rpc<string>(trainer.client, "duplicate_plan", { p_plan_id: id });
       const it = await firstItem(dup);
-      expect(it).toMatchObject({ quantity_min: 6, intensity_type: "pct_1rm", intensity_value: 75 });
+      expect(it).toMatchObject({ quantity_min: 6, intensity: "75%" });
       const { data: subs } = await fx.db.from("plan_item_substitutes").select("exercise_id").eq("item_id", it.id as string);
       expect(subs).toEqual([{ exercise_id: ex.supra }]);
     });

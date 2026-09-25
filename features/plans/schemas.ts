@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { sanitizeTip } from "@/lib/rich-tip";
-import { INTEGER_UNITS, INTENSITY_RANGE, INTENSITY_TYPES, QUANTITY_UNITS, SPEED_PRESETS } from "./prescription";
+import { INTEGER_UNITS, QUANTITY_UNITS, SPEED_PRESETS } from "./prescription";
 import { messages } from "@/messages/pt-BR";
 
 const v = messages.plans.validation;
@@ -11,6 +11,8 @@ export const LOAD_UNITS = ["kg", "lb"] as const;
 export const MAX_WORKOUTS = 12;
 export const MAX_ITEMS = 40;
 export const MAX_SETS = 20;
+/** Intensidade em texto livre ("RPE 8", "RIR 2", "70%"). */
+export const INTENSITY_MAX = 20;
 
 export type PlanLevel = (typeof PLAN_LEVELS)[number];
 export type SetType = (typeof SET_TYPES)[number];
@@ -29,8 +31,7 @@ const prescriptionShape = {
   quantity_min: quantity,
   quantity_max: quantity,
   quantity_note: optionalText(40),
-  intensity_type: z.enum(INTENSITY_TYPES).nullable(),
-  intensity_value: z.number({ error: v.intensity }).nullable(),
+  intensity: optionalText(INTENSITY_MAX, v.intensity),
   speed: z.enum(SPEED_PRESETS).nullable(),
   tempo: z
     .string()
@@ -49,11 +50,6 @@ function refinePrescription(p: Prescription, ctx: z.RefinementCtx) {
     if (p.quantity_max !== null && !Number.isInteger(p.quantity_max)) issue("quantity_max", v.quantityInteger);
   }
   if (p.quantity_max !== null && (p.quantity_min === null || p.quantity_max < p.quantity_min)) issue("quantity_max", v.quantityRange);
-  if (p.intensity_type) {
-    const r = INTENSITY_RANGE[p.intensity_type];
-    if (p.intensity_value === null) issue("intensity_value", v.intensity);
-    else if (p.intensity_value < r.min || p.intensity_value > r.max) issue("intensity_value", v.intensityRange(r.min, r.max));
-  }
   if (p.speed && p.tempo) issue("tempo", v.speedOrTempo);
   if (p.rest_max !== null && (p.rest_min === null || p.rest_max < p.rest_min)) issue("rest_max", v.restRange);
 }

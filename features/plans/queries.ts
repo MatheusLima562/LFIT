@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/db/server";
 import type { ContraindicationLevel } from "@/features/exercises/constants";
 import type { SavedPlan, SavedPrescription } from "./builder";
-import type { IntensityType, QuantityUnit, SpeedPreset } from "./prescription";
+import type { QuantityUnit, SpeedPreset } from "./prescription";
 import type { LoadUnit, PlanLevel, SetType } from "./schemas";
 
 export type PlanStatus = "draft" | "active" | "scheduled" | "archived";
@@ -24,23 +24,21 @@ type PrescriptionRow = {
   quantity_min: number | null;
   quantity_max: number | null;
   quantity_note: string | null;
-  intensity_type: IntensityType | null;
-  intensity_value: number | null;
+  intensity: string | null;
   speed: SpeedPreset | null;
   tempo: string | null;
   rest_min: number | null;
   rest_max: number | null;
 };
 
-const PRESCRIPTION_COLS = "quantity_unit, quantity_min, quantity_max, quantity_note, intensity_type, intensity_value, speed, tempo, rest_min, rest_max";
+const PRESCRIPTION_COLS = "quantity_unit, quantity_min, quantity_max, quantity_note, intensity, speed, tempo, rest_min, rest_max";
 
 const toPrescription = (r: PrescriptionRow): SavedPrescription => ({
   quantityUnit: r.quantity_unit,
   quantityMin: r.quantity_min,
   quantityMax: r.quantity_max,
   quantityNote: r.quantity_note,
-  intensityType: r.intensity_type,
-  intensityValue: r.intensity_value,
+  intensity: r.intensity,
   speed: r.speed,
   tempo: r.tempo,
   restMin: r.rest_min,

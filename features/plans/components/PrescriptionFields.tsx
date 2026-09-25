@@ -7,12 +7,11 @@ import { messages } from "@/messages/pt-BR";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { PrescriptionDraft } from "../builder";
-import { LOAD_UNITS, type LoadUnit } from "../schemas";
-import { INTEGER_UNITS, INTENSITY_TYPES, QUANTITY_UNITS, SPEED_PRESETS, type QuantityUnit, type SpeedPreset } from "../prescription";
+import { INTENSITY_MAX, LOAD_UNITS, type LoadUnit } from "../schemas";
+import { INTEGER_UNITS, QUANTITY_UNITS, SPEED_PRESETS, type QuantityUnit, type SpeedPreset } from "../prescription";
 
 const p = messages.plans.prescription;
 const NONE = "__none__";
-const i = messages.plans.prescription;
 const small = "h-8 text-[13px]";
 const selectSmall = "w-full text-[13px] data-[size=default]:h-8";
 
@@ -89,22 +88,42 @@ export function QuantityRange(props: Props) {
   );
 }
 
+/** Básico: intensidade em texto curto livre ("RPE 8", "RIR 2", "70%"), ao lado da carga. */
+export function IntensityInput({ idPrefix, value: v, readOnly, error, onChange }: Props) {
+  const id = `${idPrefix}-intensity`;
+  return (
+    <label htmlFor={id} className="flex w-24 flex-col gap-1 text-[11px] text-ink-3">
+      {p.intensity}
+      <Input
+        id={id}
+        className={small}
+        value={v.intensity}
+        maxLength={INTENSITY_MAX}
+        placeholder={p.intensityPlaceholder}
+        disabled={readOnly}
+        aria-invalid={!!error("intensity")}
+        onChange={(e) => onChange({ intensity: e.target.value })}
+      />
+    </label>
+  );
+}
+
 /** Básico: pausa mín–máx em segundos. */
 export function RestRange(props: Props) {
   return <RangeInputs {...props} label={p.rest} min="restMin" max="restMax" inputMode="numeric" />;
 }
 
 export function BasicErrors({ error }: { error: Props["error"] }) {
-  return <Errors error={error} fields={["qtyMin", "qtyMax", "restMin", "restMax"]} />;
+  return <Errors error={error} fields={["qtyMin", "qtyMax", "intensity", "restMin", "restMax"]} />;
 }
 
 /** Quantos campos de "Mais opções" da prescrição estão preenchidos (abre sozinho se > 0). */
 export function prescriptionExtras(v: PrescriptionDraft) {
-  return [v.quantityUnit !== "reps", v.qtyNote.trim(), v.intensityType, v.speed || v.tempo.trim() || v.speedMode === "tempo"].filter(Boolean).length;
+  return [v.quantityUnit !== "reps", v.qtyNote.trim(), v.speed || v.tempo.trim() || v.speedMode === "tempo"].filter(Boolean).length;
 }
 
 /**
- * "Mais opções" da prescrição: unidade, complemento, intensidade, velocidade OU cadência.
+ * "Mais opções" da prescrição: unidade, complemento, velocidade OU cadência.
  * A unidade muda o rótulo e o teclado da quantidade ("até a falha" não tem quantidade).
  */
 export function PrescriptionMore({ idPrefix, value: v, readOnly, error, onChange }: Props) {
@@ -140,8 +159,6 @@ export function PrescriptionMore({ idPrefix, value: v, readOnly, error, onChange
             onChange={(e) => onChange({ qtyNote: e.target.value })}
           />
         </label>
-
-        <IntensityField idPrefix={idPrefix} value={v} readOnly={readOnly} invalid={!!error("intensityValue")} onChange={onChange} />
 
         <div className="flex w-36 flex-col gap-1 text-[11px] text-ink-3">
           <div role="radiogroup" aria-label={p.speed} className="flex gap-2">
@@ -187,7 +204,7 @@ export function PrescriptionMore({ idPrefix, value: v, readOnly, error, onChange
           )}
         </div>
       </div>
-      <Errors error={error} fields={["qtyNote", "intensityValue", "tempo"]} />
+      <Errors error={error} fields={["qtyNote", "tempo"]} />
     </div>
   );
 }
@@ -248,71 +265,5 @@ export function MoreToggle({ open, count, controls, label, onToggle }: { open: b
       {messages.plans.more.label}
       {count > 0 && <span className="text-ink-3">({count})</span>}
     </button>
-  );
-}
-
-/**
- * Intensidade num controle só: seletor compacto RPE | RIR | %1RM (clicar no ativo remove) + valor com
- * sufixo e dica da faixa. Sem tipo, o campo de valor não aparece. Trocar de tipo limpa o valor.
- */
-function IntensityField({
-  idPrefix,
-  value: v,
-  readOnly,
-  invalid,
-  onChange,
-}: {
-  idPrefix: string;
-  value: PrescriptionDraft;
-  readOnly: boolean;
-  invalid: boolean;
-  onChange: (patch: Partial<PrescriptionDraft>) => void;
-}) {
-  const id = (f: string) => `${idPrefix}-${f}`;
-  const type = v.intensityType || null;
-  return (
-    <div className="flex min-w-0 flex-col gap-1 text-[11px] text-ink-3">
-      <span id={id("intensity-label")}>{i.intensity}</span>
-      <div className="flex items-center gap-1.5">
-        <div role="group" aria-labelledby={id("intensity-label")} className="inline-flex h-8 shrink-0 rounded-md border border-line bg-canvas p-0.5">
-          {INTENSITY_TYPES.map((it) => (
-            <button
-              key={it}
-              type="button"
-              aria-pressed={type === it}
-              title={i.intensityToggle(i.intensityTypes[it])}
-              disabled={readOnly}
-              onClick={() => onChange(type === it ? { intensityType: "", intensityValue: "" } : { intensityType: it, intensityValue: "" })}
-              className={cn(
-                "rounded px-2 text-[12px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60",
-                type === it ? "bg-surface text-ink shadow-sm" : "text-ink-3 hover:text-ink",
-              )}
-            >
-              {i.intensityTypes[it]}
-            </button>
-          ))}
-        </div>
-        {type && (
-          <div className="relative w-20 min-w-0">
-            <Input
-              id={id("intensityValue")}
-              aria-label={`${i.intensityTypes[type]}: ${i.intensityValue}`}
-              aria-describedby={id("intensity-hint")}
-              aria-invalid={invalid}
-              inputMode="decimal"
-              className="h-8 pr-9 text-[13px]"
-              value={v.intensityValue}
-              placeholder={i.intensityExample[type]}
-              disabled={readOnly}
-              onChange={(e) => onChange({ intensityValue: e.target.value })}
-            />
-            <span aria-hidden className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[11px] text-ink-3">
-              {i.intensitySuffix[type]}
-            </span>
-          </div>
-        )}
-      </div>
-      {type && <span id={id("intensity-hint")}>{i.intensityHint[type]}</span>}
-    </div>
   );
 }

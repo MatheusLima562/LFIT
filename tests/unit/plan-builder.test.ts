@@ -31,8 +31,7 @@ const pr = (patch: Partial<SavedPrescription>): SavedPrescription => ({
   quantityMin: null,
   quantityMax: null,
   quantityNote: null,
-  intensityType: null,
-  intensityValue: null,
+  intensity: null,
   speed: null,
   tempo: null,
   restMin: null,
@@ -122,7 +121,7 @@ describe("agrupar / desagrupar", () => {
 
 describe("validação e payload", () => {
   it("aceita 8–12 reps, cadência 30X0, RPE 7,5, pausa 60–90, carga 12,5 kg e séries detalhadas (copiam a prescrição)", () => {
-    const it: ItemDraft = { ...mk("a"), qtyMin: "8", qtyMax: "12", speedMode: "tempo", tempo: "30x0", intensityType: "rpe", intensityValue: "7,5", loadValue: "12,5", restMin: "60", restMax: "90" };
+    const it: ItemDraft = { ...mk("a"), qtyMin: "8", qtyMax: "12", speedMode: "tempo", tempo: "30x0", intensity: " RPE 7,5 ", loadValue: "12,5", restMin: "60", restMax: "90" };
     it.setsDetail = setsFromSummary({ ...it, sets: "2" });
     const r = validateDraft(draft([it]));
     expect(r.ok).toBe(true);
@@ -130,10 +129,10 @@ describe("validação e payload", () => {
     const item = r.payload.workouts[0].items[0];
     expect(item).toMatchObject({
       quantity_unit: "reps", quantity_min: 8, quantity_max: 12, tempo: "30X0", speed: null,
-      intensity_type: "rpe", intensity_value: 7.5, load_value: 12.5, load_unit: "kg", rest_min: 60, rest_max: 90,
+      intensity: "RPE 7,5", load_value: 12.5, load_unit: "kg", rest_min: 60, rest_max: 90,
     });
     expect(item.sets_detail).toHaveLength(2);
-    expect(item.sets_detail[0]).toMatchObject({ set_type: "work", quantity_min: 8, quantity_max: 12, tempo: "30X0", intensity_value: 7.5, load_value: 12.5, rest_max: 90 });
+    expect(item.sets_detail[0]).toMatchObject({ set_type: "work", quantity_min: 8, quantity_max: 12, tempo: "30X0", intensity: "RPE 7,5", load_value: 12.5, rest_max: 90 });
   });
 
   it("unidade muda a validação: até a falha não envia quantidade; reps inteiras; segundos aceitam decimal", () => {
@@ -157,9 +156,7 @@ describe("validação e payload", () => {
 
   it.each([
     ["tempo", { speedMode: "tempo" as const, tempo: "301" }],
-    ["intensityValue", { intensityType: "rpe" as const, intensityValue: "11" }],
-    ["intensityValue", { intensityType: "pct_1rm" as const, intensityValue: "" }],
-    ["intensityValue", { intensityType: "rir" as const, intensityValue: "11" }],
+    ["intensity", { intensity: "x".repeat(21) }],
     ["restMin", { restMin: "1000" }],
     ["restMax", { restMin: "90", restMax: "60" }],
     ["qtyMax", { qtyMin: "12", qtyMax: "8" }],
@@ -205,8 +202,7 @@ describe("validação e payload", () => {
             quantity_min: 10,
             quantity_max: null,
             quantity_note: null,
-            intensity_type: null,
-            intensity_value: null,
+            intensity: null,
             speed: null,
             tempo: null,
             rest_min: null,
@@ -249,7 +245,7 @@ describe("validação e payload", () => {
           name: null,
           notes: null,
           items: [
-            { exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, loadValue: 12.5, loadUnit: "kg", loadText: null, prescription: pr({ quantityMin: 10, intensityType: "rpe", intensityValue: 8, restMin: 60 }), tip: null, substitutes: [], methodId: null, objectiveId: null, setsDetail: [] },
+            { exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, loadValue: 12.5, loadUnit: "kg", loadText: null, prescription: pr({ quantityMin: 10, intensity: "RPE 8", restMin: 60 }), tip: null, substitutes: [], methodId: null, objectiveId: null, setsDetail: [] },
             {
               exerciseId: EX, exerciseName: "y", groupKey: "bi1", sets: null, loadValue: null, loadUnit: null, loadText: null, prescription: pr({ tempo: "3010" }), tip: null, substitutes: [], methodId: null, objectiveId: null,
               setsDetail: [{ setType: "warmup", loadValue: null, loadUnit: null, loadText: "leve", prescription: pr({ quantityMin: 12, restMin: 45, restMax: 60 }) }],
@@ -264,7 +260,7 @@ describe("validação e payload", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.payload.workouts[0].items.map((i) => i.group_key)).toEqual(["bi1", "bi1"]);
-    expect(r.payload.workouts[0].items[0]).toMatchObject({ quantity_min: 10, intensity_type: "rpe", intensity_value: 8, rest_min: 60 });
+    expect(r.payload.workouts[0].items[0]).toMatchObject({ quantity_min: 10, intensity: "RPE 8", rest_min: 60 });
     expect(r.payload.workouts[0].items[1]).toMatchObject({ tempo: "3010", speed: null });
     expect(r.payload.workouts[0].items[1].sets_detail[0]).toMatchObject({ set_type: "warmup", load_text: "leve", quantity_min: 12, rest_min: 45, rest_max: 60 });
   });
