@@ -40,8 +40,8 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    e condições só de padrão para quem não tem laudo: "Dor lombar — intolerância à flexão" / "— intolerância à
    extensão". Guias registram que achados de imagem são comuns em assintomáticos e que o comportamento dos sintomas
    orienta a adaptação. `contraindicacoes-v2.csv` substitui o CSV antigo (marcar o antigo como substituído, sem apagar).
-   **Feito:** `lombalgia-inespecifica.md` (modelo de formato). **Parado para você validar formato e referências**
-   antes dos demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
+   **Feito:** `lombalgia-inespecifica.md` — formato aprovado como modelo (com "Resumo prático" no topo), regra de dor
+   2.4 mantida, "Evitar" vazio confirmado. **Aguardando sua revisão da seção 3** (adaptações) antes dos demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
    aprovado: quadril, hipertensão, osteoporose, gestação). Fase B (app) só após sua aprovação clínica.
 5. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
@@ -55,8 +55,11 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
   o montador **sugere** um texto a partir da nota, em linguagem positiva (ex.: "coluna neutra, amplitude
   confortável; se dor > 3/10, pare e avise"). O professor edita e aprova. **Só o texto aprovado** aparece no app do
   aluno, com um ícone neutro de "cuidado" (sem cor ou rótulo de alerta).
-- **Escala de dor 0–10 por exercício na execução**, com orientação. **Dor ≥ 5 gera aviso ao professor
-  responsável.** A dor é dado de saúde: nunca em URLs, logs ou e-mails, e o aviso não mostra o valor fora do app.
+- **Escala de dor 0–10 por exercício na execução**, com orientação. **Aviso ao professor responsável quando a dor
+  for > 5 OU quando a dor não voltar ao habitual no dia seguinte** (coerente com a regra de monitoramento de
+  `docs/conhecimento/lombalgia-inespecifica.md`, seção 2.4 — modelo de Silbernagel 2007, extrapolado). Implica um
+  check-in do aluno no dia seguinte ao treino. A dor é dado de saúde: nunca em URLs, logs ou e-mails, e o aviso não
+  mostra o valor fora do app.
 - **Avisos fora do app (e-mail, push) nunca citam dor nem saúde**: texto genérico (ex.: "Você tem um feedback que
   precisa da sua atenção") com link para o app; o detalhe só aparece dentro do app, para quem pode ver a saúde do aluno.
 - **Professor do plano sem acesso à saúde recebe a versão restrita do aviso** (mesmo padrão dos alertas restritos da

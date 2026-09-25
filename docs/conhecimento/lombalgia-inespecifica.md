@@ -1,9 +1,22 @@
 # Dor lombar inespecífica — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 24/09/2026 · referências conferidas em 24/09/2026.
+> Versão 2 · 24/09/2026 · referências conferidas em 24/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
+
+## Resumo prático (para o Guia do montador)
+
+- **Mantenha o aluno ativo:** exercício é tratamento de primeira linha na dor crônica; nenhum tipo é claramente
+  superior — escolha o que ele gosta e consegue manter.
+- **Adapte, não proíba:** ajuste amplitude, carga, apoio, cadência, posição e volume conforme os sintomas; não há
+  exercício a evitar por padrão.
+- **Guie-se pelos sintomas, não pelo laudo:** achados de imagem são comuns em pessoas sem dor.
+- **Monitore a dor:** até 5/10 durante e de volta ao habitual no dia seguinte → siga/progrida; acima disso → reduza.
+- **Progrida aos poucos:** 2–10% de carga quando sobrarem 1–2 repetições além do alvo.
+- **Sinais de alerta** (bexiga/intestino, dormência na "sela", fraqueza que piora, câncer, febre, perda de peso,
+  trauma) → pare e encaminhe.
+- **Fale de forma positiva:** "sua coluna é forte e se adapta"; evite "desgaste", "coluna frágil".
 
 ## Como ler este documento
 
@@ -90,10 +103,13 @@ padrão direcional (hérnia discal, estenose, espondilolistese) terão documento
 - **Dor durante o exercício:** protocolos que aceitam dor durante o exercício tiveram benefício pequeno a curto
   prazo sobre protocolos sem dor, sem diferença clara a médio/longo prazo; dor durante o exercício **não precisa
   ser barreira** [R14]. **[moderada]**
-- **Regra prática de monitoramento (SEM referência verificada — decisão sua):** dor que fica dentro de um limite
-  combinado com o aluno (ex.: até 5/10) e volta ao habitual até o dia seguinte → manter/progredir; acima disso ou
-  que persiste → reduzir amplitude, carga ou volume na sessão seguinte. **[consenso — NÃO VERIFICADO]**
-  *(Se aprovada, conversa com o aviso de dor ≥ 5 previsto para a Fase 3.)*
+- **Regra de monitoramento da dor (aprovada):** dor durante o exercício **até 5/10** e que **volta ao habitual até o
+  dia seguinte** → manter ou progredir; **acima de 5/10** ou que **não volta ao habitual no dia seguinte** → reduzir
+  amplitude, carga ou volume na sessão seguinte. Baseada no modelo de monitoramento da dor de Silbernagel et al.,
+  testado em ensaio clínico na tendinopatia do Aquiles (continuar a atividade com monitoramento da dor não trouxe
+  efeitos negativos) [R23]. Os parâmetros foram conferidos em publicações que aplicam o modelo: dor tolerável abaixo
+  de 5/10 [R24], avaliada durante o exercício, logo depois e no dia seguinte [R25]. **[consenso — extrapolado de
+  tendinopatia]** (não foi testada na lombalgia). *Base do aviso de dor da Fase 3.*
 
 ## 3. Exercícios a ADAPTAR (nível "cautela")
 
@@ -175,13 +191,12 @@ como parte do problema [R22] **[consenso]**.
 **Sugestões de orientação** (para o campo "Orientação de cuidado ao aluno", Fase 3):
 - "Sua coluna é forte e se adapta ao treino. Vamos aumentar aos poucos."
 - "Movimento ajuda na recuperação. Mantenha suas atividades do dia a dia."
-- "Um pouco de desconforto durante o exercício pode acontecer. Se passar de 5/10 ou não melhorar até amanhã,
-  me avise para ajustarmos."
+- "Um pouco de desconforto durante o exercício pode acontecer. Se passar de 5/10 ou não voltar ao normal até
+  amanhã, me avise para ajustarmos."
 - "Hoje faremos este exercício com menos amplitude; vamos ampliar conforme você se sentir bem."
 - "Achados em exames são comuns em pessoas sem dor. O que guia o treino é como você se sente."
 - "Na crise, prefira se movimentar dentro do confortável em vez de ficar parado."
 
-*(A frase com "5/10" depende da sua decisão sobre a regra da seção 2.4.)*
 
 ---
 
@@ -252,13 +267,24 @@ como parte do problema [R22] **[consenso]**.
   pain: evidence, challenges, and promising directions. *Lancet.* 2018;391(10137):2368-2383.
   doi:10.1016/S0140-6736(18)30489-6
 
+- **[R23]** Silbernagel KG, Thomeé R, Eriksson BI, Karlsson J. Continued Sports Activity, Using a Pain-Monitoring
+  Model, during Rehabilitation in Patients with Achilles Tendinopathy: a randomized controlled study. *Am J Sports
+  Med.* 2007;35(6):897-906. doi:10.1177/0363546506298279 — citação e resumo conferidos; texto completo não
+  acessível (parâmetros do modelo conferidos em [R24] e [R25]).
+- **[R24]** Hanlon SL, Scattone Silva R, Honick BJ, Silbernagel KG. Effect of Symptom Duration on Injury Severity and
+  Recovery in Patients With Achilles Tendinopathy. *Orthop J Sports Med.* 2023;11(5):23259671231164956.
+  doi:10.1177/23259671231164956
+- **[R25]** Demangeot Y, O'Neill S, Degache F, Rapin A, Asgher U, Alfredson H, et al. Exercise parameters to consider
+  for Achilles tendinopathy: a modified Delphi study with international experts. *Br J Sports Med.*
+  2025;59(19):1337-1349. doi:10.1136/bjsports-2025-110183
+
 ### Fontes NÃO VERIFICADAS (não sustentam nenhuma afirmação acima)
 - George SZ, Fritz JM, Silfies SP, et al. Interventions for the Management of Acute and Chronic Low Back Pain:
   Revision 2021. *J Orthop Sports Phys Ther.* 2021;51(11):CPG1-CPG60. doi:10.2519/jospt.2021.0304 — citação
   conferida, mas o texto e os graus das recomendações não estavam acessíveis. **NÃO VERIFICADO** (conteúdo).
 
-## Pontos para a sua revisão
-1. **Regra de monitoramento da dor** (seção 2.4): aprovar, ajustar o limite (5/10?) ou remover.
-2. **Seção 4** vazia de propósito: confirme que nenhum exercício deve ser "evitar" por padrão.
-3. **Exemplos da seção 3**: nível "cautela" e textos — ajuste antes de irem para o CSV v2.
-4. **Formato**: tamanho, profundidade, escala de evidência e estilo das referências servem de modelo para os demais?
+## Revisão
+- ✔ Regra de monitoramento da dor (2.4) — mantida, com base em Silbernagel 2007 (extrapolada).
+- ✔ Seção 4 ("Evitar") vazia — confirmada.
+- ✔ Formato aprovado como modelo, com "Resumo prático" no topo.
+- ⏳ **Seção 3** (exemplos de adaptação, nível "cautela") — aguardando sua revisão antes do CSV v2 e dos demais documentos.
