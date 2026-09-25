@@ -1,7 +1,7 @@
 # Estenose lombar (intolerância à extensão) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -13,8 +13,8 @@
   caminhada; em ensaio clínico, fisioterapia teve resultado semelhante à cirurgia em 2 anos.
 - **Prefira posições em flexão leve:** bicicleta ergométrica, exercícios sentados ou apoiados; caminhada em
   intervalos, com pausas sentado.
-- **Adapte a extensão:** evite arquear a lombar (desenvolvimento em pé, fim da ponte/elevação pélvica, extensão
-  lombar além do neutro).
+- **Adapte a extensão:** evite arquear a lombar (desenvolvimento em pé, extensão lombar além do neutro); na ponte e
+  na elevação pélvica, termine com retroversão da pelve.
 - **Monitore a dor:** até 5/10 durante e de volta ao habitual até o dia seguinte → siga; acima disso → reduza.
 - **Sinais de alerta:** alteração de bexiga/intestino, dormência na "sela", fraqueza ou dormência nas pernas que
   piora → pare e encaminhe.
@@ -73,27 +73,32 @@ sintomas** que orienta o treino. Quem tem o mesmo comportamento **sem laudo** en
   tendinopatia]**.
 - **Caminhada:** usar como medida de progresso a distância ou o tempo até os sintomas; caminhar em **intervalos**,
   com pausas sentado ou inclinado para a frente, e aumentar aos poucos. **[consenso]** — prática clínica.
-- **Formigamento, peso ou fraqueza nas pernas que aumentam ao longo das semanas** → encaminhamento, não ajuste de
-  treino (seção 5). **[consenso]**
+- **Bicicleta ergométrica** como aeróbico de melhor tolerância: pedala-se com o tronco em leve flexão, posição em que
+  o canal vertebral é maior [E5]; teve efeito semelhante à esteira com suporte de peso [E10] e fez parte do programa
+  supervisionado eficaz [E9]. **[consenso]** (tolerância por mecanismo e prática clínica; não há superioridade
+  demonstrada)
+- **Piora progressiva da distância de caminhada acompanhada de fraqueza ou dormência nas pernas** →
+  encaminhamento, não ajuste de treino (seção 5). **[consenso]**
 
 ## 3. Exercícios a ADAPTAR
 
 **Princípio:** adaptar em vez de proibir. Nesta condição a cautela é **direcional**: exercícios que levam a lombar à
 **extensão** (arquear), sob carga ou sustentada, e ficar muito tempo em pé. O alerta não bloqueia o treino.
 
-**Cautela — candidatos ao CSV v2** (para sua decisão):
+**Cautela — entram no CSV v2** (tabela única de alertas para as três condições de extensão: estenose lombar,
+espondilolistese e "Dor lombar — intolerância à extensão"; os guias continuam separados):
 
 | Exercício | Por que cautela | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
 | Extensão lombar no banco romano | Extensão lombar repetida | Amplitude só até o neutro, sem hiperextensão; ou bird dog | fraca (mecanismo) | [E5] + prática clínica |
-| Desenvolvimento militar com barra | Em pé com carga acima da cabeça, tendência a arquear a lombar | Sentado com encosto; halteres; carga menor | consenso | prática clínica |
-| Elevação pélvica | Hiperextensão lombar no topo | Subir só até alinhar quadril e tronco, sem arquear | consenso | prática clínica |
-| Ponte de glúteos | Hiperextensão lombar no topo | Idem: parar no alinhamento quadril–tronco | consenso | prática clínica |
+| Desenvolvimento militar com barra | Em pé com carga acima da cabeça, tendência a arquear a lombar | Sentado com apoio nas costas, ou halteres/landmine, sem arquear a lombar | consenso | prática clínica |
 
 **Só no Guia — sem alerta** (adaptar se reproduzir sintomas):
 
 | Exercício | Quando adaptar | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
+| Elevação pélvica | Sempre (técnica) | No topo, terminar com retroversão da pelve, sem hiperestender | consenso | prática clínica |
+| Ponte de glúteos | Sempre (técnica) | No topo, terminar com retroversão da pelve, sem hiperestender | consenso | prática clínica |
 | Pullover com halter | Se arquear a lombar no alongamento | Amplitude menor; lombar apoiada no banco | consenso | prática clínica |
 | Prancha frontal | Se o quadril "cair" (lombar em extensão) | Apoio nos joelhos; tempo menor | consenso | prática clínica |
 | Agachamento búlgaro / Afundo com halteres | Se a perna de trás levar a lombar à extensão | Passada menor; tronco levemente inclinado à frente | consenso | prática clínica |
@@ -121,9 +126,8 @@ Nível entre parênteses: o atribuído pelo modelo IFOMPT **[consenso]**.
 - **Fraqueza** nas pernas que piora rapidamente, ou sintomas novos nas **duas pernas**.
 
 **Encaminhar para reavaliação** [E11; E1 — 1.1.1]:
-- **Perda de força, dormência ou sensação de "perna pesada" progressivas** ao longo de semanas — encaminhamento,
-  não ajuste de treino.
-- **Queda da distância de caminhada** sem outra explicação, apesar dos ajustes.
+- **Perda de força ou dormência progressivas** ao longo de semanas — encaminhamento, não ajuste de treino.
+- **Piora progressiva da distância de caminhada com fraqueza ou dormência** nas pernas.
 - Sinais de alerta gerais do documento-base (seção 5) ou sintomas **novos ou diferentes**.
 
 ## 6. Orientação ao aluno — linguagem positiva
@@ -187,10 +191,9 @@ As palavras usadas podem ajudar ou prejudicar o resultado [E12] **[consenso]**.
 - Whitman JM, et al. Ensaio de 2006 comparando dois programas de fisioterapia na estenose lombar — não localizei o
   registro do artigo (só o do protocolo). **NÃO VERIFICADO**.
 
-## Pontos para a sua revisão
-1. **Cautela (CSV v2):** quais dos 4 candidatos entram? Extensão lombar no banco romano já estava definida para
-   "intolerância à extensão"; desenvolvimento militar, elevação pélvica e ponte são só prática clínica.
-2. **"Dor lombar — intolerância à extensão"** (sem laudo): usar a mesma tabela desta condição?
-3. **Seção 2.2 — caminhada em intervalos** e **queda da distância de caminhada** como motivo de reavaliação: aprovar?
-4. **Elevação pélvica e ponte** também aparecem como "bem toleradas" no documento de hérnia (padrão oposto): ok
-   manter a diferença por direção?
+## Revisão
+- ✔ Tabela única de alertas para as três condições de extensão; guias separados.
+- ✔ CSV v2 (cautela): extensão lombar no banco romano e desenvolvimento militar com barra. Elevação pélvica e ponte
+  só no Guia, com retroversão da pelve no topo.
+- ✔ Caminhada em intervalos aprovada; bicicleta como aeróbico de melhor tolerância; piora progressiva da distância
+  com fraqueza/dormência = encaminhamento.

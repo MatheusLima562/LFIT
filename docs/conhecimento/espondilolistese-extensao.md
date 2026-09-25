@@ -1,7 +1,7 @@
 # Espondilolistese (intolerância à extensão) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -78,22 +78,22 @@ espondilólise) e **degenerativa** (ligada à idade, muitas vezes junto com este
 ## 3. Exercícios a ADAPTAR
 
 **Princípio:** adaptar em vez de proibir. A cautela é **direcional** (extensão lombar sob carga, repetida ou
-sustentada) e é a mesma da estenose — proposta: **uma tabela única para as condições com intolerância à extensão**
-(estenose, espondilolistese e "Dor lombar — intolerância à extensão").
+sustentada) e usa a **mesma tabela de alertas** da estenose.
 
-**Cautela — candidatos ao CSV v2** (para sua decisão):
+**Cautela — entram no CSV v2** (tabela única de alertas para as três condições de extensão: estenose lombar,
+espondilolistese e "Dor lombar — intolerância à extensão"; os guias continuam separados):
 
 | Exercício | Por que cautela | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
 | Extensão lombar no banco romano | Extensão lombar repetida | Amplitude só até o neutro, sem hiperextensão; ou bird dog | fraca (mecanismo) | [S8] + prática clínica |
-| Desenvolvimento militar com barra | Em pé com carga acima da cabeça, tendência a arquear a lombar | Sentado com encosto; halteres; carga menor | consenso | prática clínica |
-| Elevação pélvica | Hiperextensão lombar no topo | Subir só até alinhar quadril e tronco, sem arquear | consenso | prática clínica |
-| Ponte de glúteos | Hiperextensão lombar no topo | Idem: parar no alinhamento quadril–tronco | consenso | prática clínica |
+| Desenvolvimento militar com barra | Em pé com carga acima da cabeça, tendência a arquear a lombar | Sentado com apoio nas costas, ou halteres/landmine, sem arquear a lombar | consenso | prática clínica |
 
 **Só no Guia — sem alerta** (adaptar se reproduzir sintomas):
 
 | Exercício | Quando adaptar | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
+| Elevação pélvica | Sempre (técnica) | No topo, terminar com retroversão da pelve, sem hiperestender | consenso | prática clínica |
+| Ponte de glúteos | Sempre (técnica) | No topo, terminar com retroversão da pelve, sem hiperestender | consenso | prática clínica |
 | Pullover com halter | Se arquear a lombar no alongamento | Amplitude menor; lombar apoiada no banco | consenso | prática clínica |
 | Prancha frontal | Se o quadril "cair" (lombar em extensão) | Apoio nos joelhos; tempo menor | consenso | prática clínica |
 | Agachamento búlgaro / Afundo com halteres | Se a perna de trás levar a lombar à extensão | Passada menor; tronco levemente inclinado à frente | consenso | prática clínica |
@@ -182,11 +182,10 @@ faça extensão".
 - Sinaki M, et al. Flexion versus extension exercises in spondylolisthesis (1989) — não localizei o registro.
   **NÃO VERIFICADO**.
 
-## Pontos para a sua revisão
-1. **Tabela única** para as três condições de intolerância à extensão (estenose, espondilolistese e "Dor lombar —
-   intolerância à extensão")?
-2. **Cautela (CSV v2):** quais dos 4 candidatos entram (mesma pergunta da estenose)?
-3. **Divergência de direção** (seção 2.1): alguns programas com ênfase em extensão também melhoraram — ok manter a
-   cautela só para quem tem intolerância à extensão?
-4. **Espondilolistese ístmica em jovens atletas** (esportes com extensão/rotação): fica fora deste documento por falta
-   de fonte verificada até aqui; quer que eu pesquise à parte?
+## Revisão
+- ✔ Tabela única de alertas para as três condições de extensão; guias separados.
+- ✔ CSV v2 (cautela): extensão lombar no banco romano e desenvolvimento militar com barra. Elevação pélvica e ponte
+  só no Guia, com retroversão da pelve no topo.
+- ✔ Cautela em extensão só para quem tem intolerância à extensão (seção 2.1).
+- ⏳ **Pendência:** espondilólise/espondilolistese ístmica em jovens atletas (esportes com extensão/rotação) — não
+  pesquisado; fica para depois.

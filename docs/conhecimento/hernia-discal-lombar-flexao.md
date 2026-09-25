@@ -1,7 +1,7 @@
 # Hérnia discal lombar (intolerância à flexão) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 3 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -120,9 +120,11 @@ para **"Dor lombar — intolerância à flexão"** (sem laudo).
 | Agachamento livre com barra | Se reproduzir sintomas (flexão lombar no fundo) | Agachar até uma caixa na altura sem sintomas; agachamento goblet | consenso | prática clínica |
 | Kettlebell swing | Fase de crise | Reduzir carga e ritmo; trocar temporariamente por elevação pélvica | consenso | prática clínica |
 | Burpee | Fase de crise | Versão sem salto e mais lenta, ou retirar temporariamente | consenso | prática clínica |
+| Elevação pélvica | Sempre (técnica) | No topo, terminar com retroversão da pelve, sem hiperestender | consenso | prática clínica |
+| Ponte de glúteos | Sempre (técnica) | No topo, terminar com retroversão da pelve, sem hiperestender | consenso | prática clínica |
 
-**Costumam ser bem tolerados** (sem alerta; confirmar pelos sintomas): ponte de glúteos, elevação pélvica, bird dog,
-prancha frontal e lateral, Pallof press, caminhada. **[consenso]** — prática clínica.
+**Costumam ser bem tolerados** (sem alerta; confirmar pelos sintomas): ponte de glúteos e elevação pélvica (com a
+técnica acima), bird dog, prancha frontal e lateral, Pallof press, caminhada. **[consenso]** — prática clínica.
 
 **Horário:** evitar concentrar exercícios de flexão lombar logo após acordar [H15]. **[fraca]** (extrapolado)
 
