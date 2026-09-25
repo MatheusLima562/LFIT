@@ -52,6 +52,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["ensure_signup_link", () => ({})],
     ["approve_signup", () => ({ p_id: pendingId })],
     ["approve_signups", () => ({ p_ids: [pendingId] })],
+    ["record_red_flag_check", () => ({ p_student_id: studentId, p_items: ["recent_trauma"] })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -84,6 +85,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "hard_delete_student", "soft_delete_student", "update_student", "reactivate_student", "log_students_export",
     "regenerate_signup_token", "reject_signups", "create_student", "approve_signup", "respond_my_health_consent",
     "consume_access_link", "submit_public_signup", "get_public_signup_form", "hit_rate_limit", "student_effective_status",
+    "record_red_flag_check", "record_red_flag_clearance",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

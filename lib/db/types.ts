@@ -1210,6 +1210,72 @@ export type Database = {
           },
         ]
       }
+      student_red_flag_checks: {
+        Row: {
+          clearance_kind: string | null
+          clearance_name: string | null
+          clearance_note: string | null
+          clearance_on: string | null
+          clearance_recorded_at: string | null
+          clearance_recorded_by: string | null
+          id: string
+          items: string[]
+          note: string | null
+          organization_id: string
+          recorded_at: string
+          recorded_by: string | null
+          source: string
+          student_id: string
+        }
+        Insert: {
+          clearance_kind?: string | null
+          clearance_name?: string | null
+          clearance_note?: string | null
+          clearance_on?: string | null
+          clearance_recorded_at?: string | null
+          clearance_recorded_by?: string | null
+          id?: string
+          items?: string[]
+          note?: string | null
+          organization_id: string
+          recorded_at?: string
+          recorded_by?: string | null
+          source?: string
+          student_id: string
+        }
+        Update: {
+          clearance_kind?: string | null
+          clearance_name?: string | null
+          clearance_note?: string | null
+          clearance_on?: string | null
+          clearance_recorded_at?: string | null
+          clearance_recorded_by?: string | null
+          id?: string
+          items?: string[]
+          note?: string | null
+          organization_id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          source?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_red_flag_checks_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "student_red_flag_checks_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       students: {
         Row: {
           access_expires_at: string | null
@@ -2083,6 +2149,20 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_red_flag_check: {
+        Args: { p_items: string[]; p_note?: string; p_student_id: string }
+        Returns: string
+      }
+      record_red_flag_clearance: {
+        Args: {
+          p_check_id: string
+          p_kind: string
+          p_name: string
+          p_note?: string
+          p_on: string
+        }
+        Returns: undefined
       }
       record_student_access_email: {
         Args: { p_student_id: string }

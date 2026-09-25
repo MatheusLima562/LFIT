@@ -1,6 +1,9 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
 import { getGuide, guideKeyFor } from "./guide-for";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/db/types";
+import type { ClearanceKind, RedFlagCheck, RedFlagKey } from "./red-flags";
 import type { Guide } from "./types";
 
 export interface StudentCondition {
@@ -13,6 +16,30 @@ export interface StudentCondition {
 export interface StudentHealthGuides {
   conditions: StudentCondition[];
   guides: Record<string, Guide>;
+  /** Última triagem de sinais de alerta (ou null se nunca registrada). */
+  redFlag: RedFlagCheck | null;
+}
+
+/** Última triagem (RLS: só com can_view_student_health; nos demais níveis volta null). */
+export async function getLatestRedFlagCheck(supabase: SupabaseClient<Database>, studentId: string): Promise<RedFlagCheck | null> {
+  const { data } = await supabase
+    .from("student_red_flag_checks")
+    .select("id, items, note, recorded_at, clearance_kind, clearance_name, clearance_on, clearance_note, clearance_recorded_at")
+    .eq("student_id", studentId)
+    .order("recorded_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    items: data.items as RedFlagKey[],
+    note: data.note,
+    recordedAt: data.recorded_at,
+    clearance:
+      data.clearance_recorded_at && data.clearance_kind && data.clearance_on
+        ? { kind: data.clearance_kind as ClearanceKind, name: data.clearance_name, on: data.clearance_on, note: data.clearance_note }
+        : null,
+  };
 }
 
 /**
@@ -24,9 +51,12 @@ export async function getStudentHealthGuides(studentId: string): Promise<Student
   const { data: canView } = await supabase.rpc("can_view_student_health", { p_student_id: studentId });
   if (canView !== true) return null;
 
-  const { data: groups } = await supabase.from("student_groups").select("group_id").eq("student_id", studentId);
+  const [{ data: groups }, redFlag] = await Promise.all([
+    supabase.from("student_groups").select("group_id").eq("student_id", studentId),
+    getLatestRedFlagCheck(supabase, studentId),
+  ]);
   const groupIds = (groups ?? []).map((g) => g.group_id);
-  if (!groupIds.length) return { conditions: [], guides: {} };
+  if (!groupIds.length) return { conditions: [], guides: {}, redFlag };
 
   const { data: links } = await supabase
     .from("special_group_conditions")
@@ -51,5 +81,5 @@ export async function getStudentHealthGuides(studentId: string): Promise<Student
     const g = c.guideKey ? getGuide(c.guideKey) : null;
     if (g) guides[g.key] = g;
   }
-  return { conditions, guides };
+  return { conditions, guides, redFlag };
 }

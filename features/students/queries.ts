@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
 import type { Database } from "@/lib/db/types";
+import { getLatestRedFlagCheck } from "@/features/knowledge/queries";
+import type { RedFlagCheck } from "@/features/knowledge/red-flags";
 import { searchKey } from "@/lib/text";
 import { PAGE_SIZE, type StudentListParams } from "./search-params";
 
@@ -190,6 +192,8 @@ export interface StudentForEdit {
   healthConsentDeclaredAt: string | null;
   /** O usuário atual pode ver/editar os dados de saúde deste aluno? */
   healthVisible: boolean;
+  /** Última triagem de sinais de alerta (só quando healthVisible). */
+  redFlag: RedFlagCheck | null;
   accessExpiresAt: string | null;
   trainingLocation: string | null;
   notes: string | null;
@@ -215,6 +219,7 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
     signPhotoUrls(supabase, data.photo_path ? [data.photo_path] : []),
     supabase.rpc("can_view_student_health", { p_student_id: id }).then((r) => r.data === true),
   ]);
+  const redFlag = healthVisible ? await getLatestRedFlagCheck(supabase, id) : null;
   return {
     id: data.id,
     firstName: data.first_name,
@@ -228,6 +233,7 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
     healthConsentAt: data.health_data_consent_at,
     healthConsentDeclaredAt: data.health_consent_declared_at,
     healthVisible,
+    redFlag,
     accessExpiresAt: data.access_expires_at,
     trainingLocation: data.training_location,
     notes: data.notes,

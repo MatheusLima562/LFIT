@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RedFlagTriage } from "@/features/knowledge/components/RedFlagTriage";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { saveStudent, setStudentPhoto } from "../actions";
@@ -330,6 +331,14 @@ export function StudentFormDialog({
                           </div>
                         </Field>
                       ))}
+
+                    {student && (
+                      <RedFlagTriage
+                        studentId={student.id}
+                        check={student.redFlag}
+                        consentOnFile={Boolean(student.healthConsentAt || student.healthConsentDeclaredAt)}
+                      />
+                    )}
                   </>
                 )}
 

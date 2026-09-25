@@ -52,7 +52,9 @@ import {
 } from "../builder";
 import type { PlanStatus, StudentRule, TrainingListOption } from "../queries";
 import { MAX_ITEMS, MAX_WORKOUTS, PLAN_LEVELS, type PlanLevel } from "../schemas";
+import { RedFlagBanner } from "@/features/knowledge/components/RedFlagBanner";
 import { StudentConditionsPanel } from "@/features/knowledge/components/StudentConditionsPanel";
+import { isPendingRedFlag } from "@/features/knowledge/red-flags";
 import type { StudentHealthGuides } from "@/features/knowledge/queries";
 import { ExercisePicker } from "./ExercisePicker";
 import { ImportItemsDialog } from "./ImportItemsDialog";
@@ -462,6 +464,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
 
       {/* Alertas (só plano de aluno) */}
       {student && <AlertsPanel hidden={rules.hidden} restricted={rules.rules.some((r) => r.restricted)} counts={alertCounts} />}
+      {student && health?.redFlag && isPendingRedFlag(health.redFlag) && <RedFlagBanner studentId={student.id} check={health.redFlag} />}
       {student && health && <StudentConditionsPanel health={health} />}
 
       {/* Divisões */}
