@@ -234,8 +234,10 @@ effective_status =
 - **Agendado:** `activate_plan` devolve o status; início futuro → `scheduled` (sem sobrepor outro agendado:
   `PLAN_OVERLAP`). Job **pg_cron `lfit-activate-due-plans` às 03:05 UTC (= 00:05 SP)** roda
   `private.activate_due_plans()` (ativa e arquiva o anterior). Disparo manual: `admin_activate_due_plans()` (service_role).
-- **Prescrição** (item e série, mesmos campos): `quantity_unit` (reps, failure, seconds, minutes, meters, km, arrivals) +
-  `quantity_min/max` + `quantity_note` ("por lado"), `intensity_type/value` (%1RM 1–120, RPE 1–10, RIR 0–10),
+- **Prescrição** (item e série, mesmos campos): `quantity_unit` (reps, failure, seconds, minutes, meters, km, arrivals,
+  ascents "Subida", descents "Descida"; inteiras: reps/arrivals/ascents/descents) + `quantity_min/max` +
+  `quantity_note` ("por lado"), **`intensity` texto livre ≤ 20** ("RPE 8", "RIR 2", "70%"; desde
+  `20261007120000`; `intensity_type/value` ficam **sem uso** e saem na próxima limpeza de legadas),
   `speed` (preset) **ou** `tempo`, `rest_min/max`. Item: `method_id`, `objective_id` (listas por org; só o owner
   gerencia), `tip` (substitui a observação), até 3 substitutos (`plan_item_substitutes`; alertas incluem substitutos).
 - **Colunas legadas** `reps`, `rest_seconds`, `rpe_target`, `notes` **removidas** depois da 2.8.3
@@ -250,11 +252,11 @@ effective_status =
   exercícios" (outra divisão, outro plano do aluno ou modelo; `importItems` gera chaves novas e preserva grupos e
   séries), "Expandir/Recolher todos" e "Copiar para alunos" (`BulkApplyDialog`: prévia de alertas por aluno →
   `apply_plan_to_students`, resultado por aluno; até 50).
-- **Ajustes após o teste do dono:** intensidade num controle só (RPE | RIR | %1RM + valor com sufixo e dica; **RIR
-  0–5 no formulário**, o CHECK do banco aceita até 10 para importações); clique no exercício abre o item com foco
+- **Ajustes após os testes do dono:** intensidade em texto curto na linha principal (ao lado da carga; o seletor
+  RPE | RIR | %1RM foi descartado no reteste); clique no exercício abre o item com foco
   no primeiro campo, "+ Rápido" entra recolhido com resumo no toast; dica com editor de formatação visível
   (`TipEditor`, contentEditable convertido para o texto saneado; `sanitizeTip` normaliza negrito duplicado);
-  item e séries mostram só Séries · Quantidade (mín–máx) · Carga · Pausa, o resto em "Mais opções" (abre sozinho
+  item e séries mostram só Séries · Quantidade (mín–máx) · Carga · Intensidade · Pausa, o resto em "Mais opções" (abre sozinho
   se algo estiver preenchido ou com erro).
 
 ### Métrica de engajamento

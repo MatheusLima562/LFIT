@@ -6,7 +6,8 @@ _Atualizado em 24/09/2026 (fim da 2.8 — aguardando seu teste)._
 **Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. **2.8.0 (banco) aprovada** + ajustes pedidos:
 alerta **restrito** (nível + texto genérico, sem condição/grupo/nota) para o professor do plano sem acesso ao aluno e
 para o owner com consentimento só declarado; trava `organizations.is_seed` no `seed --reset`. 2.8.1 (plano), 2.8.2 (exercício no plano), 2.8.3 (prescrição da série) e **2.8.4 (produtividade) ✔**. Colunas legadas removidas.
-Ajustes do seu teste aplicados (intensidade, adicionar exercício, dica, densidade do item).
+Ajustes do 1º teste (adicionar exercício, dica, densidade do item) e do reteste (intensidade em texto livre, unidades
+Subida/Descida, sem faixa de RIR/RPE) aplicados.
 **Parado para o seu novo teste da 2.8.** Nada em andamento no código.
 
 ## Concluído (branch `feat/fase-2-treinos`)
@@ -29,7 +30,9 @@ Ajustes do seu teste aplicados (intensidade, adicionar exercício, dica, densida
 3. **2.8** Ajustes do montador — plano aprovado (`~/.claude/plans/…` e `docs/planos/etapa-2.8.md`). 2.8.0 banco ✔
    (migrations `20261004120000`–`20261005120100`, 253 testes no total). 2.8.1 plano ✔, 2.8.2 exercício no plano ✔, 2.8.3 série ✔ (colunas legadas removidas), 2.8.4 produtividade ✔
    (padrões editáveis, "+ Rápido", importar exercícios, expandir/recolher, copiar para alunos). 274 testes.
-   Ajustes do 1º teste ✔ (intensidade num controle só, clique/+ Rápido, editor da dica, "Mais opções"). 290 testes.
+   Ajustes do 1º teste ✔ (clique/+ Rápido, editor da dica, "Mais opções") e do reteste ✔ (intensidade em texto ≤ 20
+   na linha principal — migration `20261007120000`; Subida/Descida — `20261007120100`/`…120200`). 291 testes.
+   **Limpeza futura:** remover `intensity_type`/`intensity_value` (sem uso) junto com as próximas colunas legadas.
    **Aguardando o seu novo teste**; ajustes que surgirem entram aqui.
 4. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
