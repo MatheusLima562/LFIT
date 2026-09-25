@@ -1,7 +1,7 @@
-# Dor no ombro (impacto / tendinopatia do manguito rotador) — base de conhecimento
+# Dor no ombro relacionada ao manguito rotador (impacto) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -12,9 +12,9 @@
 - **Carregue o manguito aos poucos:** exercício progressivo aumenta a capacidade de carga; não há protocolo único
   comprovado.
 - **Achados de imagem são comuns sem dor** e aumentam com a idade; guie-se pelos sintomas.
-- **Adapte o que reproduz sintomas:** elevação acima da altura do ombro, rotações no fim da amplitude e apoio no
-  fim da extensão do ombro (ex.: tríceps no banco) — reduza amplitude/carga e progrida.
-- **Monitore a dor:** até 5/10 durante e de volta ao habitual até o dia seguinte → siga; acima disso → reduza.
+- **Adapte o que reproduz sintomas:** tríceps no banco → tríceps na polia ou francês; acima da cabeça, amplitude
+  sem dor e no plano da escápula. Monitore: até 5/10 e de volta ao habitual até o dia seguinte → siga.
+- **Emergência (192):** dor no ombro/braço com esforço + falta de ar, sudorese ou dor no peito.
 - **Sinais de alerta:** suspeita de infecção na articulação, luxação, ruptura após trauma, suspeita de tumor,
   várias articulações inflamadas → pare e encaminhe.
 - **Fale de forma positiva:** "o tendão se adapta à carga"; evite "tendão rasgando", "osso raspando no tendão".
@@ -24,6 +24,9 @@
 Mesma escala de evidência e método do documento-base [`lombalgia-inespecifica.md`](lombalgia-inespecifica.md):
 **forte / moderada / fraca / consenso**; referências `[O1]`, `[O2]`… conferidas por DOI (Crossref), resumo ou texto
 indexado (Europe PMC) ou página oficial; o que não pude confirmar está em "Fontes NÃO VERIFICADAS".
+
+**Nome da condição (aprovado):** "Dor no ombro relacionada ao manguito rotador" (sinônimo: impacto), ligada à
+região "Ombro".
 
 **Escopo.** Dor no ombro não traumática, principalmente ao elevar o braço — síndrome da dor subacromial / dor no
 ombro relacionada ao manguito rotador, incluindo tendinopatia, tendinite calcária e rupturas degenerativas do
@@ -74,18 +77,22 @@ supraespinal [O1]. Ficam fora: luxação, instabilidade, capsulite adesiva e rup
 
 **Princípio:** adaptar em vez de proibir; o objetivo é **carregar** o manguito de forma progressiva, não poupá-lo.
 
-**Cautela — candidatos ao CSV v2** (para sua decisão):
+**Cautela — CSV v2** (aprovado):
 
 | Exercício | Por que cautela | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
-| Tríceps no banco | Peso do corpo com o ombro no fim da extensão | Tríceps na polia ou tríceps francês; amplitude menor | consenso | prática clínica |
-| Desenvolvimento militar com barra | Carga acima da cabeça, no arco em que a dor costuma aparecer | Halteres com pegada neutra, landmine press ou amplitude até a altura tolerada | consenso | [O1] (ergonomia) + prática clínica |
-| Elevação lateral com halteres | Elevação acima do ombro sob carga | Até a altura do ombro, no plano da escápula (braço um pouco à frente), polegar para cima | consenso | [O1] (ergonomia) + prática clínica |
+| Tríceps no banco | Peso do corpo com o ombro no fim da extensão | Tríceps na polia ou francês com halter | consenso | prática clínica |
+
+Variações **"atrás da nuca"** também entrariam como cautela, mas **não existem na biblioteca global** (conferido em
+25/09/2026); se forem criadas, entram numa revisão do CSV. Se o francês com halter doer com o braço acima da cabeça,
+vale a linha dele na tabela abaixo.
 
 **Só no Guia — sem alerta** (adaptar se reproduzir sintomas):
 
 | Exercício | Quando adaptar | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
+| Desenvolvimento militar com barra | Se a carga acima da cabeça reproduzir sintomas | Amplitude sem dor, no plano da escápula; halteres com pegada neutra ou landmine press | consenso | [O1] (ergonomia) + prática clínica |
+| Elevação lateral com halteres | Se a elevação acima do ombro reproduzir sintomas | Amplitude sem dor, no plano da escápula (braço um pouco à frente), polegar para cima | consenso | [O1] (ergonomia) + prática clínica |
 | Desenvolvimento com halteres | Se a elevação acima da cabeça doer | Amplitude até a altura tolerada; pegada neutra | consenso | prática clínica |
 | Elevação frontal com halteres | Se doer acima do ombro | Até a altura do ombro | consenso | prática clínica |
 | Supino reto com barra / Supino reto e inclinado com halteres | Se doer no fundo do movimento | Pegada um pouco mais fechada, cotovelos mais junto ao corpo, amplitude menor | consenso | prática clínica |
@@ -96,7 +103,8 @@ supraespinal [O1]. Ficam fora: luxação, instabilidade, capsulite adesiva e rup
 
 **Costumam ajudar** (sem alerta): remadas, face pull na polia, crucifixo inverso e fortalecimento dos rotadores
 externos [O3, O4] — **[fraca]** (as referências apoiam exercício com carga para o ombro, não exercícios específicos).
-*Observação:* a biblioteca não tem rotação externa (elástico/polia) — ponto para sua revisão.
+*Biblioteca (aprovado):* incluir na biblioteca global **"Rotação externa com elástico/polia"** e **"Elevação no
+plano da escápula"** — entram na migration da Fase B.
 
 ## 4. Exercícios a EVITAR
 
@@ -106,6 +114,15 @@ Nenhum exercício com base clara para ser evitado por padrão nas fontes consult
 ## 5. Sinais de alerta → encaminhar
 
 Da diretriz britânica de dor subacromial [O9] **[consenso]** (diretriz de sociedades de ombro):
+
+**Emergência imediata — interromper o treino e acionar o SAMU (192) / pronto-socorro** [O12] **[consenso]**
+(diretriz de dor torácica; conduta aprovada):
+- **Dor no ombro ou no braço que aparece com o esforço** acompanhada de **falta de ar, sudorese ou dor/aperto no
+  peito**. A diretriz descreve a dor anginosa como desconforto no peito **ou no pescoço, ombros, mandíbula ou
+  braços**, desencadeado pelo esforço e aliviado pelo repouso; dor no peito e/ou em outras áreas (ex.: braços,
+  costas, mandíbula) por mais de 15 minutos, ou dor no peito com náusea/vômito, sudorese intensa ou falta de ar,
+  pode indicar síndrome coronariana aguda, e a suspeita com dor atual leva a **encaminhamento de emergência** ao
+  hospital [O12 — rec. 1.2.1.3, 1.2.1.7 e 1.3.3.1].
 
 **Emergência — encaminhar no mesmo dia** [O9]:
 - **Suspeita de infecção articular.**
@@ -170,6 +187,10 @@ precisar operar".
   (position stand). *Med Sci Sports Exerc.* 2009;41(3):687-708. doi:10.1249/MSS.0b013e3181915670
 - **[O11]** Stewart M, Loftus S. Sticks and Stones: The Impact of Language in Musculoskeletal Rehabilitation.
   *J Orthop Sports Phys Ther.* 2018;48(7):519-522. doi:10.2519/jospt.2018.0610
+- **[O12]** National Institute for Health and Care Excellence (NICE). Recent-onset chest pain of suspected cardiac
+  origin: assessment and diagnosis. Clinical guideline CG95. Publicada em 24/03/2010, atualizada em 30/11/2016.
+  https://www.nice.org.uk/guidance/cg95/chapter/Recommendations — recomendações 1.2.1.3, 1.2.1.7 e 1.3.3.1 lidas na
+  página oficial.
 - Regra de monitoramento da dor: referências no documento-base (Silbernagel 2007; Hanlon 2023; Demangeot 2025).
 
 ### Fontes NÃO VERIFICADAS (não sustentam nenhuma afirmação acima)
@@ -180,12 +201,13 @@ precisar operar".
 - Diercks R, et al. Guideline for diagnosis and treatment of subacromial pain syndrome. *Acta Orthop.*
   2014;85(3):314-322. doi:10.3109/17453674.2014.920991 — conferida, mas substituída pela atualização de 2026 [O1, O2];
   não usada.
-- Dor referida de origem cardíaca no ombro: não encontrei fonte verificada nesta pesquisa. **NÃO VERIFICADO**.
 
-## Pontos para a sua revisão
-1. **Cautela (CSV v2):** quais dos 3 candidatos entram — tríceps no banco, desenvolvimento militar com barra,
-   elevação lateral com halteres?
-2. **Nome da condição:** "Dor no ombro — impacto/tendinopatia do manguito" (ligada à região "Ombro")?
-3. **Biblioteca:** incluir "Rotação externa com elástico/polia" (exercício global) para os guias de ombro?
-4. **Diretriz JOSPT 2025** (NÃO VERIFICADA no conteúdo): se você tiver acesso ao texto, reviso o documento com ela.
-5. **Dor cardíaca referida** como sinal de alerta: quer que eu procure uma fonte específica?
+## Revisão
+- ✔ CSV v2 (cautela): tríceps no banco (adaptar: tríceps na polia ou francês com halter). Variações "atrás da nuca"
+  não existem na biblioteca global.
+- ✔ Desenvolvimento militar com barra e elevação lateral: só no Guia ("amplitude sem dor, plano da escápula").
+- ✔ Nome: "Dor no ombro relacionada ao manguito rotador" (sinônimo: impacto).
+- ✔ Biblioteca global (Fase B): "Rotação externa com elástico/polia" e "Elevação no plano da escápula".
+- ✔ Diretriz JOSPT 2025 mantida como NÃO VERIFICADA.
+- ✔ Dor cardíaca referida: fonte encontrada (NICE CG95 [O12]); emergência (192) com falta de ar, sudorese ou dor no
+  peito.

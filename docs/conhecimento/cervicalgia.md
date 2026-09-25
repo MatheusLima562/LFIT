@@ -1,19 +1,20 @@
 # Cervicalgia (dor no pescoço inespecífica) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
 ## Resumo prático (para o Guia do montador)
 
 - **Bom prognóstico:** a dor no pescoço costuma ter curso benigno; tranquilize e mantenha o aluno ativo.
-- **Fortaleça pescoço, escápulas e ombros:** treino de força e resistência dessa região ajuda; só alongar, não.
-- **Nenhum tipo de exercício é claramente superior** — escolha o que o aluno gosta e mantém (inclusive pilates/yoga).
-- **Pouco já ajuda:** 2 minutos por dia de exercício resistido para pescoço/ombro reduziram a dor em ensaio clínico.
+- **Fortaleça pescoço, escápulas e ombros:** força e resistência dessa região ajudam (só alongar, não); pouco já ajuda
+  (2 min/dia em ensaio clínico) e nenhum tipo é claramente superior — escolha o que o aluno mantém.
 - **Adapte se reproduzir sintomas:** amplitude, carga e posição da cabeça (sem projetar o queixo, sem puxar a nuca).
-- **Sinais de alerta:** cefaleia súbita e intensa, tontura, fala enrolada, visão dupla, dificuldade para engolir,
-  desequilíbrio, fraqueza/dormência que piora nos braços ou pernas → pare e encaminhe.
+- **Observe o braço:** dor que recua do braço para o pescoço é bom sinal; dor que desce mais no braço → ajuste o
+  treino; **perda de força ou dormência que piora → encaminhe** (não é ajuste de treino).
+- **Emergência:** cefaleia súbita e intensa, tontura, fala enrolada, visão dupla, dificuldade para engolir,
+  desequilíbrio → **interrompa e acione o SAMU (192) / pronto-socorro**.
 - **Fale de forma positiva:** "seu pescoço é forte e vamos fortalecê-lo"; evite "bico de papagaio", "coluna gasta".
 
 ## Como ler este documento
@@ -23,7 +24,9 @@ Mesma escala de evidência e método do documento-base [`lombalgia-inespecifica.
 indexado (Europe PMC) ou página oficial; o que não pude confirmar está em "Fontes NÃO VERIFICADAS".
 
 **Escopo.** Dor cervical inespecífica (sem causa grave identificada), com ou sem dor irradiada para o braço. Como na
-lombalgia inespecífica, **proposta: sem alerta automático** — a seção 3 é conteúdo do Guia (ponto para sua revisão).
+lombalgia inespecífica, **sem alerta automático** (aprovado): a condição global "Coluna cervical" fica sem regras de
+contraindicação, e a seção 3 é conteúdo do Guia. A dor irradiada para o braço (radiculopatia) é tratada aqui mesmo,
+pela **regra do braço** (seção 2.2), sem documento próprio.
 
 ---
 
@@ -57,13 +60,17 @@ lombalgia inespecífica, **proposta: sem alerta automático** — a seção 3 é
 - Mesma base do documento-base (seção 2.4): progressão de carga de 2–10% [C11] **[consenso]** e regra de dor
   **até 5/10** durante o exercício e **de volta ao habitual até o dia seguinte** **[consenso — extrapolado de
   tendinopatia]**.
-- **Dor ou formigamento que desce para o braço** → ajustar como na regra da perna (hérnia lombar); **perda de força
-  ou dormência progressiva no braço** → encaminhamento. Após lesão (ex.: acidente), sinais neurológicos que persistem
-  mais de 3 meses devem ser investigados pelo médico [C4 — rec. 7]. **[consenso]**
+- **Regra do braço (aprovada; espelho da regra da perna da hérnia lombar):** dor ou formigamento que **recua** do
+  braço em direção ao pescoço → sinal favorável, manter/progredir; que **desce mais** no braço → reduzir amplitude/
+  carga, voltar à variação anterior e reavaliar; se persistir, encaminhar. Dor que desce mais no braço pede ajuste
+  mesmo abaixo de 5/10. **Perda de força ou dormência progressiva no braço → encaminhamento, não ajuste de treino**
+  (seção 5). **[consenso]** (extrapolado da regra lombar; sem estudo cervical específico conferido)
+- Após lesão (ex.: acidente), sinais neurológicos que persistem mais de 3 meses devem ser investigados pelo médico
+  [C4 — rec. 7]. **[moderada]** (diretriz)
 
 ## 3. Adaptar quando o exercício reproduzir sintomas (conteúdo do Guia)
 
-> **Proposta: cervicalgia inespecífica NÃO gera alerta automático** (como a lombalgia inespecífica). A tabela é
+> **Cervicalgia inespecífica NÃO gera alerta automático** (aprovado, como a lombalgia inespecífica). A tabela é
 > orientação do Guia: *"se o exercício reproduzir sintomas, adapte assim"*.
 
 | Exercício | Quando adaptar | Como adaptar | Nível | Referência |
@@ -86,10 +93,11 @@ Nenhum exercício com base clara para ser evitado por padrão nas fontes consult
 ## 5. Sinais de alerta → encaminhar
 
 Patologias vasculares do pescoço são **raras**, mas os sinais abaixo são os descritos no modelo IFOMPT cervical
-[C8] (entre parênteses, a frequência relatada, quando houver). O modelo descreve os sinais, não o prazo; **proposta:
-tratar como emergência** (serviço de urgência no mesmo dia), como na cauda equina. **[consenso]**
+[C8] (entre parênteses, a frequência relatada, quando houver). O modelo descreve os sinais, não a conduta de
+urgência; a conduta abaixo é decisão de prática (aprovada). **[consenso]**
 
-**Emergência — encaminhar no mesmo dia** (proposta) [C8]:
+**Emergência imediata — interromper o treino e acionar o SAMU (192) / pronto-socorro** [sinais: C8; conduta:
+consenso]:
 - **Cefaleia súbita e intensa ("em trovoada")**, ou dor de cabeça/pescoço descrita como **incomum** e que **piora
   progressivamente**, sobretudo após trauma (caso típico de dissecção no modelo; cefaleia em 81% e dor no pescoço em
   57–80% das dissecções).
@@ -163,9 +171,9 @@ pescoço".
   2017;47(7):A1-A83. doi:10.2519/jospt.2017.0302 — citação conferida; o resumo não traz as recomendações.
   **NÃO VERIFICADO** (conteúdo).
 
-## Pontos para a sua revisão
-1. **Sem alerta automático** para cervicalgia inespecífica (como na lombalgia)? A condição global "Coluna cervical"
-   hoje existe no catálogo — ela seguiria sem regras de contraindicação.
-2. **Tabela do Guia** (seção 3): ok?
-3. **Radiculopatia cervical** (dor/formigamento no braço): tratada aqui só pela regra do braço e pelos sinais de
-   alerta. Quer um documento próprio, como na hérnia lombar?
+## Revisão
+- ✔ Sem alerta automático; a condição global "Coluna cervical" fica sem regras (nada entra no CSV v2).
+- ✔ Tabela do Guia (seção 3) mantida.
+- ✔ Sinais vasculares: emergência imediata — interromper e acionar SAMU 192 / pronto-socorro (consenso).
+- ✔ Radiculopatia sem documento próprio: regra do braço (espelho da regra da perna); fraqueza ou dormência
+  progressiva = encaminhamento.
