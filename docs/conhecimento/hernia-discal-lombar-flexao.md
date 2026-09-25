@@ -1,7 +1,7 @@
 # Hérnia discal lombar (intolerância à flexão) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -9,7 +9,7 @@
 
 - **Bom prognóstico:** muitas hérnias diminuem sozinhas e a maioria das pessoas melhora sem cirurgia; mantenha o aluno ativo.
 - **Guie-se pelos sintomas:** nesta condição, flexão da coluna (e ficar sentado) costuma piorar; ajuste pelo que o aluno sente.
-- **Observe a perna:** dor que recua da perna para a lombar é bom sinal; dor que desce mais na perna, formigamento ou fraqueza que piora → reduza e reavalie.
+- **Observe a perna:** dor que recua da perna para a lombar é bom sinal; dor que desce mais na perna → ajuste o treino; **perda de força ou dormência que piora → encaminhe** (não é ajuste de treino).
 - **Adapte a flexão com carga:** carga junto ao corpo, amplitude até onde não há sintomas, variações apoiadas; troque abdominais em flexão por isometrias.
 - **Monitore a dor:** até 5/10 durante e de volta ao habitual até o dia seguinte → siga; acima disso → reduza.
 - **Sinais de alerta:** alteração de bexiga/intestino, dormência na "sela", fraqueza na perna que piora, sintomas nas duas pernas → pare e encaminhe **no mesmo dia**.
@@ -26,7 +26,7 @@ confirmar está em "Fontes NÃO VERIFICADAS" e não sustenta nenhuma afirmação
 perna — ciatalgia) que **pioram com flexão da coluna ou ao ficar sentado** e costumam aliviar em pé, andando ou
 com extensão. O nome da condição traz o padrão porque é o **comportamento dos sintomas** que orienta o treino, não o
 laudo (seção 1). Quem tem o mesmo comportamento **sem laudo** entra na condição "Dor lombar — intolerância à flexão",
-que pode usar a mesma tabela de adaptação (ponto para sua revisão). O documento-base (lombalgia inespecífica) vale
+que **usa a mesma tabela** da seção 3. O documento-base (lombalgia inespecífica) vale
 para tudo o que não for específico daqui.
 
 ---
@@ -62,6 +62,8 @@ para tudo o que não for específico daqui.
   de viés) é **insuficiente** para recomendações sobre intervenções de fisioterapia na ciatalgia [H8]; revisões de
   2025–2026 relatam melhora da dor com exercício na hérnia discal, sem consenso sobre tipo, intensidade ou frequência
   [H9, H10]. **[fraca]** — registro a divergência em vez de escolher um lado.
+- **Conclusão prática:** exercício é seguro e razoável na ciatalgia; a evidência de superioridade sobre outras
+  abordagens é modesta. **[consenso]**
 
 ### 2.2 Preferência direcional e centralização
 - Em ensaio com 312 pessoas com dor lombar (com e sem ciatalgia), 74% tinham uma **preferência direcional** (um
@@ -72,9 +74,10 @@ para tudo o que não for específico daqui.
   apareceu em 44% das pessoas (74% nos casos agudos) e teve validade prognóstica em 21 de 23 estudos; centralização e
   preferência direcional parecem modificar o efeito do tratamento [H13]. **[moderada]**
 - Outra revisão sobre manejo por preferência direcional teve resultados mistos [H12]. **[fraca]**
-- **Regra de treino (prática clínica):** dor que **recua** da perna → sinal favorável, manter/progredir; dor que
-  **desce mais** na perna (periferalização), formigamento ou fraqueza que aumentam → reduzir amplitude/carga,
-  voltar à variação anterior e reavaliar; se persistir, encaminhar. **[consenso]**
+- **Regra de treino (aprovada):** dor que **recua** da perna → sinal favorável, manter/progredir; dor que **desce
+  mais** na perna (periferalização) → reduzir amplitude/carga, voltar à variação anterior e reavaliar; se persistir,
+  encaminhar. **Perda de força ou dormência progressiva na perna → encaminhamento, não ajuste de treino** (seção 5).
+  **[consenso]**
 
 ### 2.3 Por que a flexão com carga merece cautela nesta condição
 - Em medição direta da pressão no disco (um voluntário), a pressão foi maior com o tronco inclinado para a frente em
@@ -97,7 +100,10 @@ para tudo o que não for específico daqui.
 ## 3. Exercícios a ADAPTAR (nível "cautela" — gera alerta nesta condição)
 
 **Princípio:** adaptar em vez de proibir. Nesta condição a cautela é **direcional**: exercícios com flexão lombar
-sob carga, repetida ou sustentada. O alerta não bloqueia o treino; lembra o professor de ajustar.
+sob carga, repetida ou sustentada. O alerta não bloqueia o treino; lembra o professor de ajustar. A mesma tabela vale
+para **"Dor lombar — intolerância à flexão"** (sem laudo).
+
+**Cautela — entram no CSV v2** (hérnia discal lombar e "Dor lombar — intolerância à flexão"):
 
 | Exercício | Por que cautela | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
@@ -105,10 +111,15 @@ sob carga, repetida ou sustentada. O alerta não bloqueia o treino; lembra o pro
 | Elevação de pernas deitado | Tende a levar a lombar à flexão no fim da amplitude | Joelhos flexionados, amplitude menor sem tirar a lombar do apoio, ou dead bug | consenso | prática clínica |
 | Levantamento terra / Levantamento terra romeno | Flexão sob carga; pressão no disco maior com costas curvadas e carga longe do corpo | Barra elevada (blocos/rack), carga junto ao corpo, amplitude até onde não há sintomas; progredir conforme tolerância | fraca (mecanismo) | [H14] + prática clínica |
 | Remada curvada com barra | Tronco inclinado sustentado sob carga | Remada unilateral apoiada no banco ou remada baixa na polia com tronco ereto | fraca (mecanismo) | [H14] + prática clínica |
-| Leg press 45° | No fundo do movimento a pelve pode "enrolar" (flexão lombar sob carga) | Limitar a profundidade para a pelve e a lombar não saírem do encosto | consenso | prática clínica |
+| Leg press 45° | No fundo do movimento a pelve pode "enrolar" (flexão lombar sob carga) | Limitar a amplitude antes da retroversão da pelve | consenso | prática clínica |
+
+**Só no Guia — sem alerta** (adaptar se reproduzir sintomas):
+
+| Exercício | Quando adaptar | Como adaptar | Nível | Referência |
+|---|---|---|---|---|
 | Agachamento livre com barra | Se reproduzir sintomas (flexão lombar no fundo) | Agachar até uma caixa na altura sem sintomas; agachamento goblet | consenso | prática clínica |
-| Kettlebell swing | Flexão balística | Reduzir carga e ritmo; na crise, trocar por elevação pélvica | consenso | prática clínica |
-| Burpee | Flexão rápida e impacto | Versão sem salto e mais lenta, ou retirar na crise | consenso | prática clínica |
+| Kettlebell swing | Fase de crise | Reduzir carga e ritmo; trocar temporariamente por elevação pélvica | consenso | prática clínica |
+| Burpee | Fase de crise | Versão sem salto e mais lenta, ou retirar temporariamente | consenso | prática clínica |
 
 **Costumam ser bem tolerados** (sem alerta; confirmar pelos sintomas): ponte de glúteos, elevação pélvica, bird dog,
 prancha frontal e lateral, Pallof press, caminhada. **[consenso]** — prática clínica.
@@ -132,7 +143,9 @@ Nível entre parênteses: o atribuído pelo modelo IFOMPT **[consenso]**.
 - Dor, dormência ou **fraqueza** nas pernas que está **piorando**, especialmente **nas duas pernas**.
 
 **Encaminhar para reavaliação** [H17; H1 — 1.1.1]:
-- Dor na perna que continua **descendo** ou dormência/fraqueza que aumenta apesar dos ajustes (seção 2.2).
+- **Perda de força ou dormência progressiva** na perna (mesmo sem os sinais de emergência acima) — encaminhamento,
+  não ajuste de treino.
+- Dor na perna que continua **descendo** apesar dos ajustes (seção 2.2).
 - Qualquer sinal de alerta geral do documento-base (seção 5: câncer, perda de peso sem explicação, febre,
   imunossupressão, trauma, dor noturna que impede dormir) ou sintomas **novos ou diferentes**.
 
@@ -215,10 +228,9 @@ dobrar as costas".
   doi:10.1097/00007632-198205000-00002 — só o registro da citação; sem resumo acessível. **NÃO VERIFICADO**
   (conteúdo).
 
-## Pontos para a sua revisão
-1. **Tabela da seção 3** (8 exercícios com "cautela"): quais entram no CSV v2 para esta condição? Leg press 45°,
-   agachamento, kettlebell swing e burpee são candidatos mais fracos (só prática clínica).
-2. **"Dor lombar — intolerância à flexão"** (sem laudo): usar a mesma tabela desta condição, ou só abdominal supra e
-   elevação de pernas deitado (como definido na revisão da lombalgia)?
-3. **Regra da perna** (seção 2.2): dor que desce na perna pede ajuste mesmo abaixo de 5/10 — aprovar?
-4. **Divergência das revisões** (seção 2.1): manter como está (registrada) ou você prefere outro enquadramento?
+## Revisão
+- ✔ CSV v2 (cautela): abdominal supra, elevação de pernas deitado, levantamento terra (e terra romeno, mesma linha),
+  remada curvada com barra, leg press 45°. Agachamento, kettlebell swing e burpee só no Guia.
+- ✔ "Dor lombar — intolerância à flexão" usa a mesma tabela.
+- ✔ Regra da perna aprovada, com perda de força/dormência progressiva = encaminhamento.
+- ✔ Divergência mantida, com conclusão prática.
