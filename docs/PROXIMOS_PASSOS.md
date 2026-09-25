@@ -44,7 +44,12 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
      (cautela global + "evitar" da camada da org no seed).
    - Alunos → editar a Ana → "Triagem de sinais de alerta": registre um sinal (+ encaminhamento) → aviso no montador →
      "Registrar liberação" → o aviso some. Repita com um aluno **sem consentimento de saúde**: a triagem funciona.
-   - Com um professor sem acesso à saúde do aluno: nada de condições, Guia do aluno ou triagem.
+   - Com um professor sem acesso à saúde do aluno: nada de condições, Guia do aluno ou triagem. Se ele for o **professor
+     do plano** e houver sinal pendente, só o aviso restrito "Aluno com pendência de liberação — alinhe com o professor
+     responsável antes de prescrever" (sem sinais nem observação).
+   - Observações da triagem e da liberação: contador até 300 caracteres.
+   - Início: fórmula da retenção e do engajamento no ícone (i); sem o banner "Conteúdos Prontos + Limite em Dobro".
+   **Pendente:** seu teste final da Fase B. A 2.11 só começa depois da sua aprovação.
    Documentos revisados em `docs/conhecimento/`: lombalgia inespecífica, hérnia (flexão), estenose e espondilolistese
    (extensão), cervicalgia, ombro (manguito), joelho patelofemoral e artrose. Sem alerta automático: lombalgia
    inespecífica, cervicalgia, dor patelofemoral e artrose de joelho (só Guia). `docs/revisao/contraindicacoes-v2.csv`:
