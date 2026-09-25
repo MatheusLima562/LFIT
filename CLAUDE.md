@@ -179,7 +179,8 @@ effective_status =
   contraindicação): somente leitura para as organizações; muda só por migration.
 - **Regras globais de contraindicação só entram após revisão/aprovação do dono** (CSV em
   `docs/revisao/contraindicacoes-v2.csv`, coluna "aprovar"; o `contraindicacoes-sugeridas.csv` foi substituído);
-  aplicar apenas as linhas aprovadas, numa migration própria. A biblioteca inicial foi publicada SEM contraindicações.
+  aplicar apenas as linhas aprovadas, numa migration própria. A biblioteca inicial foi publicada SEM contraindicações;
+  as **19 regras aprovadas** (todas "cautela") entraram em `20261008120000` (ver "Base de conhecimento").
 - Organizações têm condições próprias e uma **camada própria de contraindicações** (inclusive sobre
   exercícios globais). Níveis: `avoid` (evitar) e `caution` (cautela) + nota (≤ 300).
 - Alerta = grupos especiais do aluno → `special_group_conditions` → regras (globais + da org). Não
@@ -259,6 +260,29 @@ effective_status =
   item e séries mostram só Séries · Quantidade (mín–máx) · Carga · Intensidade · Pausa, o resto em "Mais opções" (abre sozinho
   se algo estiver preenchido ou com erro).
 
+### Base de conhecimento — etapa 2.10 (Fase B pronta; aguardando teste do dono)
+- **Fonte:** `docs/conhecimento/*.md`, aprovados na revisão clínica do dono (25/09/2026). O Guia no app
+  (`features/knowledge/guides.ts`) é transcrito deles: **ao revisar um documento, atualize o Guia** (teste unitário
+  confere chaves, referências citadas e termos internos). Plano: `docs/planos/etapa-2.10-fase-b.md`.
+- **Condições:** `health_conditions.parent_id` (região, **um nível só**; global só sob global; da org sob global ou da
+  própria org — gatilho `validate_condition_parent`) e `search_terms` (sinônimos de busca, até 10). 8 globais novas
+  (hérnia/estenose/espondilolistese com o padrão direcional no nome + "Dor lombar — intolerância à flexão/extensão",
+  ombro/manguito, dor patelofemoral, artrose de joelho). "Coluna lombar"/"Coluna cervical" seguem sem regras (os Guias
+  de lombalgia inespecífica e cervicalgia ficam nelas).
+- **Sem alerta automático** (só Guia): lombalgia inespecífica, cervicalgia, dor patelofemoral, artrose de joelho.
+  Alertas só direcionais + tríceps no banco (ombro). Balísticos/impacto: só orientação de fase de crise no Guia.
+- **Guia:** `/treinos/condicoes/guia/[key]` para qualquer staff (conteúdo geral, sem dado de aluno); no montador, painel
+  "Condições do aluno" + aba lateral **só no nível completo** (`getStudentHealthGuides` devolve null sem
+  `can_view_student_health`). Condição sem Guia próprio usa o da região. Aviso fixo de apoio à decisão em todo Guia.
+- **Triagem de sinais de alerta** (`student_red_flag_checks`, dado de saúde): sinais **relatados/observados** (lista fixa
+  `private.red_flag_keys()` = `features/knowledge/red-flags.ts`; nunca diagnóstico) ou "nenhum destes sinais"; escrita só
+  por `record_red_flag_check`/`record_red_flag_clearance`; exige consentimento registrado (declarado ou confirmado).
+  **Liberação registrada** (médico/fisioterapeuta, nome, data até hoje, observação) é o único jeito de tirar o aviso do
+  montador; o aviso nunca bloqueia. Auditoria sem os itens (`diff` nulo). Recusa do consentimento pelo titular apaga a
+  triagem (gatilho). Na Fase 3, as respostas da anamnese alimentam a mesma lista (`source = 'anamnesis'`).
+- "Personalizar" um exercício global copia também as regras globais dele para a camada da org (ficam congeladas: uma
+  mudança futura na regra global não chega à cópia).
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias. A fórmula deve aparecer na UI.
@@ -296,6 +320,7 @@ sem efeitos colaterais).
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
 | Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
 | Alertas de contraindicação (Fase 2/2.8) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem `restricted = true` (só nível, via `is_restricted_plan_viewer`/`is_restricted_health_viewer`) ou `hidden = true` (nada) — nunca condição/grupo/nota fora do nível completo |
+| Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` + `can_view_student_health` + consentimento registrado; chaves validadas contra `private.red_flag_keys()`; auditadas |
 | Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
@@ -347,7 +372,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
   de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
 - Fase 2 em andamento: 2.1 (banco) pronta — biblioteca global com 52 exercícios, 11 condições
-  globais, sem regras globais de contraindicação (aguardando revisão do CSV).
+  globais; regras globais de contraindicação só a partir da 2.10 (19 aprovadas).
 - 2.2 Biblioteca (`/treinos/exercicios`): view `exercise_library` (busca sem acento, `customized` esconde o
   global quando a equipe tem cópia), RPCs `save_exercise`/`customize_exercise` em **SECURITY INVOKER** (RLS e
   grants por coluna do chamador valem; não entram no aviso do advisor). Diálogos pela URL (`?ver=`,
@@ -366,7 +391,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
   por vencimento) e entrada "Treinos" no menu da linha de Meus alunos.
 - 2.6 Impressão: `/treinos/[planId]/imprimir` no grupo de rotas `(print)` (sem AppShell). Folha A4 com
   `@page` e cores fixas `neutral-*` (não remapeadas no tema escuro); agrupamentos numerados (2a, 2b), séries
-  detalhadas, sem grupos especiais, condições ou alertas. PDF pelo "Salvar como PDF" do navegador. Regras globais de contraindicação: aguardando o CSV revisado.
+  detalhadas, sem grupos especiais, condições ou alertas. PDF pelo "Salvar como PDF" do navegador.
 - Vídeo próprio nos exercícios (MP4/WebM, cota por plano): ver seção "Vídeo próprio de exercício".
 - **Notas para a Fase 3:** "Iniciar treino" pelo professor (modo presencial, registrando pelo aluno), evolução de
   cargas por exercício e volume de treino (séries × reps × carga) por sessão/semana.
@@ -376,8 +401,8 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B: plano em
-  `docs/planos/etapa-2.10-fase-b.md`); **2.11** ampliação da biblioteca global; **2.9** página do aluno
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔, aguardando
+  teste); **2.11** ampliação da biblioteca global; **2.9** página do aluno
   `/alunos/[id]`, planejar antes) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
   registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →

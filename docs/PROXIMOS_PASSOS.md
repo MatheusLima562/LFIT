@@ -34,8 +34,17 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    na linha principal — migration `20261007120000`; Subida/Descida — `20261007120100`/`…120200`). 291 testes.
    **Limpeza futura:** remover `intensity_type`/`intensity_value` (sem uso) junto com as próximas colunas legadas.
    **Aguardando o seu novo teste**; ajustes que surgirem entram aqui.
-4. **2.10** Base de conhecimento dor × exercício — **Fase A encerrada** (25/09/2026); **Fase B: plano em
-   `docs/planos/etapa-2.10-fase-b.md`, aguardando sua aprovação** antes de implementar.
+4. **2.10** Base de conhecimento dor × exercício — **Fase A encerrada** (25/09/2026); **Fase B pronta, aguardando o seu
+   teste** (plano em `docs/planos/etapa-2.10-fase-b.md`; commits B1 `8051a29`, B2 `65ea750`, B3 `b9c962b`, B4).
+   Migrations `20261008120000` (condições, 2 exercícios, 19 regras), `…120100` (triagem), `…120200` (índice).
+   **Roteiro de teste sugerido** (seed: `npm run db:seed -- --reset`; owner é o responsável pela Ana Duarte, do grupo
+   "Dor na Coluna"):
+   - `/treinos/condicoes`: busque "condromalácia"; abra "Guia" da hérnia e do ombro (também no celular).
+   - `/treinos/novo?aluno=` Ana Duarte: painel "Condições do aluno" → "Guia" na aba lateral; adicione "Abdominal supra"
+     (cautela global + "evitar" da camada da org no seed).
+   - Alunos → editar a Ana → "Triagem de sinais de alerta": registre um sinal → aviso no montador → "Registrar
+     liberação" → o aviso some.
+   - Com um professor sem acesso à saúde do aluno: nada de condições, Guia do aluno ou triagem.
    Documentos revisados em `docs/conhecimento/`: lombalgia inespecífica, hérnia (flexão), estenose e espondilolistese
    (extensão), cervicalgia, ombro (manguito), joelho patelofemoral e artrose. Sem alerta automático: lombalgia
    inespecífica, cervicalgia, dor patelofemoral e artrose de joelho (só Guia). `docs/revisao/contraindicacoes-v2.csv`:
@@ -56,6 +65,9 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
 8. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
 
 ## Requisitos registrados para a Fase 3 (não implementar antes)
+- **Anamnese → triagem:** as respostas do aluno sobre sinais de alerta alimentam a mesma lista da triagem
+  (`student_red_flag_checks`, `source = 'anamnesis'`, chaves de `features/knowledge/red-flags.ts`), com a mesma regra:
+  sinais relatados (nunca diagnóstico) e aviso até a liberação registrada.
 - **Alertas de contraindicação NUNCA aparecem ao aluno**: nem o nível ("Evitar"/"Cautela"), nem a condição, nem a
   nota. Vale para o app do aluno, a execução do treino e qualquer resposta de API acessível ao papel `student`.
 - **Novo campo por item: "Orientação de cuidado ao aluno"** (texto curto, opcional). Quando o item tiver alerta,
@@ -80,8 +92,7 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 `app/(app)/alunos/[id]/treinos`, migrations `20260929*` a `20261002*`.
 
 ## Decisões pendentes com você
-- **Plano da Fase B da 2.10** (`docs/planos/etapa-2.10-fase-b.md`): aprovar e responder as 4 decisões. O CSV v2 já foi
-  conferido (19 "S", 2 "N").
+- **Teste da Fase B da 2.10** (roteiro no item 4 acima). Depois: plano da 2.11.
 - **Gateway** da C2: Asaas (decidido); confirmar no contrato: subconta aceita CPF? tarifa de subconta é por conta
   ativa ou criada? (ver seções C2 e C8 de `docs/planos/fase-c.md`).
 - **Resultado do seu teste do montador** — ajustes que surgirem entram na 2.8.
