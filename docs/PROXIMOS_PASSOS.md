@@ -57,8 +57,10 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
   aluno, com um ícone neutro de "cuidado" (sem cor ou rótulo de alerta).
 - **Escala de dor 0–10 por exercício na execução**, com orientação. **Aviso ao professor responsável quando a dor
   for > 5 OU quando a dor não voltar ao habitual no dia seguinte** (coerente com a regra de monitoramento de
-  `docs/conhecimento/lombalgia-inespecifica.md`, seção 2.4 — modelo de Silbernagel 2007, extrapolado). Implica um
-  check-in do aluno no dia seguinte ao treino. A dor é dado de saúde: nunca em URLs, logs ou e-mails, e o aviso não
+  `docs/conhecimento/lombalgia-inespecifica.md`, seção 2.4 — modelo de Silbernagel 2007, extrapolado; limite
+  "até 5/10" mantido). **Sem check-in no dia seguinte:** no início do próximo treino o app pergunta "Como ficou a dor
+  desde o último treino?" — "Voltou ao normal" / "Ainda incomoda"; **"Ainda incomoda" gera o aviso ao professor**
+  (mesmas regras de visibilidade dos avisos de dor). A dor é dado de saúde: nunca em URLs, logs ou e-mails, e o aviso não
   mostra o valor fora do app.
 - **Avisos fora do app (e-mail, push) nunca citam dor nem saúde**: texto genérico (ex.: "Você tem um feedback que
   precisa da sua atenção") com link para o app; o detalhe só aparece dentro do app, para quem pode ver a saúde do aluno.
