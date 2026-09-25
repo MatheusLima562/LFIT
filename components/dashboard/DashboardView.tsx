@@ -31,7 +31,8 @@ const gridOrder = Object.keys(layout) as (keyof typeof layout)[];
 
 interface DashboardViewProps {
   firstName: string;
-  banner: Banner;
+  /** null = sem banner (recurso ainda não existe). */
+  banner: Banner | null;
   cards: Record<DashboardCardId, ReactNode>;
 }
 
@@ -56,7 +57,7 @@ export function DashboardView({ firstName, banner, cards }: DashboardViewProps) 
       <DashboardHeader firstName={firstName} onCustomize={() => setCustomizing(true)} />
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
-        {bannerVisible && <DashboardBanner banner={banner} onDismiss={() => setBannerVisible(false)} />}
+        {banner && bannerVisible && <DashboardBanner banner={banner} onDismiss={() => setBannerVisible(false)} />}
 
         {/* Só ações disponíveis aparecem (nada de botões mortos). */}
         <QuickActions />

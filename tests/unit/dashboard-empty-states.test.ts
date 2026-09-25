@@ -31,3 +31,12 @@ describe("Início: estados vazios", () => {
     expect(html.match(/Posição disponível/g)).toHaveLength(4);
   });
 });
+
+describe("Início: banner de oferta", () => {
+  // Ao entregar Vendas → Planos (rota "available"), o banner volta sozinho e este teste deve ser atualizado.
+  it("fica escondido enquanto o destino (/vendas/planos) não estiver disponível", async () => {
+    const { banner } = await import("@/data/dashboard");
+    const { isAvailableRoute } = await import("@/data/navigation");
+    expect(isAvailableRoute(banner.href)).toBe(false);
+  });
+});
