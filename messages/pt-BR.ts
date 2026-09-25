@@ -754,7 +754,7 @@ export const messages = {
       intensityValue: "Valor",
       intensityHint: {
         rpe: "1–10 · esforço percebido",
-        rir: "0–5 · repetições em reserva",
+        rir: "0–10 · repetições em reserva",
         pct_1rm: "1–120 · % da carga máxima",
       },
       intensitySuffix: { rpe: "/10", rir: "reps", pct_1rm: "%" },

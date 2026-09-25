@@ -17,11 +17,11 @@ export type SpeedPreset = (typeof SPEED_PRESETS)[number];
 /** Unidades contadas em inteiros. */
 export const INTEGER_UNITS: readonly QuantityUnit[] = ["reps", "arrivals"];
 
-/** Faixas do formulário. RIR: 0–5 na interface (o CHECK do banco aceita até 10, p/ importações). */
+/** Mesmas faixas do CHECK do banco. */
 export const INTENSITY_RANGE: Record<IntensityType, { min: number; max: number; step: number }> = {
   pct_1rm: { min: 1, max: 120, step: 1 },
   rpe: { min: 1, max: 10, step: 0.5 },
-  rir: { min: 0, max: 5, step: 1 },
+  rir: { min: 0, max: 10, step: 1 },
 };
 
 const p = messages.plans.prescription;

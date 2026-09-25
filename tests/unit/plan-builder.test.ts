@@ -159,7 +159,7 @@ describe("validação e payload", () => {
     ["tempo", { speedMode: "tempo" as const, tempo: "301" }],
     ["intensityValue", { intensityType: "rpe" as const, intensityValue: "11" }],
     ["intensityValue", { intensityType: "pct_1rm" as const, intensityValue: "" }],
-    ["intensityValue", { intensityType: "rir" as const, intensityValue: "6" }],
+    ["intensityValue", { intensityType: "rir" as const, intensityValue: "11" }],
     ["restMin", { restMin: "1000" }],
     ["restMax", { restMin: "90", restMax: "60" }],
     ["qtyMax", { qtyMin: "12", qtyMax: "8" }],
