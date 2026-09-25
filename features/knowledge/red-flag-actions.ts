@@ -15,7 +15,7 @@ function revalidate() {
   revalidatePath("/treinos", "layout");
 }
 
-/** Triagem: RPC SECURITY DEFINER (acesso ao aluno + saúde visível + consentimento) e auditoria no banco. */
+/** Triagem: RPC SECURITY DEFINER (owner ou professor responsável; não depende do consentimento) e auditoria no banco. */
 export async function recordRedFlagCheck(studentId: string, input: unknown): Promise<RedFlagActionResult> {
   if (!z.uuid().safeParse(studentId).success) return { ok: false, error: messages.dbErrors.INVALID_INPUT };
   const parsed = redFlagCheckSchema.safeParse(input);
@@ -24,6 +24,7 @@ export async function recordRedFlagCheck(studentId: string, input: unknown): Pro
   const { error } = await supabase.rpc("record_red_flag_check", {
     p_student_id: studentId,
     p_items: parsed.data.noneObserved ? [] : parsed.data.items,
+    p_referred: !parsed.data.noneObserved && parsed.data.referred,
     p_note: parsed.data.note || undefined,
   });
   if (error) return { ok: false, error: dbErrorMessage(error) };

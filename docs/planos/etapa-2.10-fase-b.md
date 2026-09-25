@@ -73,6 +73,11 @@
 
 ## B3 — Checklist de sinais de alerta (1 commit + migration)
 
+> **Ajuste do dono (depois do B3, migration `20261008120300`):** base legal própria (LGPD art. 11, II, "e"/"d", a
+> validar com advogado) — triagem, encaminhamento e liberação **sem depender do consentimento**; acesso só do
+> responsável e do owner; a recusa do consentimento mantém triagem e liberação. A liberação registrada (quem, data,
+> observação) é o que tira o aviso do montador. O texto abaixo é o plano original.
+
 Hoje a anamnese só registra a *solicitação*: as respostas chegam na Fase 3. Por isso proponho uma **triagem feita
 pelo professor**:
 

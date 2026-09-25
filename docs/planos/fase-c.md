@@ -118,6 +118,12 @@ do Pro** · **sem Free permanente** (só Pro e Gold pagos; `free` fica como tier
 - `docs/legal/termos-de-uso.md` e `docs/legal/politica-de-privacidade.md`, marcados **"RASCUNHO — revisar com advogado"**:
   personal = controlador dos dados dos alunos; LFit = operador (subprocessadores: Supabase, Vercel, Resend e o gateway);
   dados de saúde (art. 11), retenção, direitos do titular e encarregado.
+- **A validar com advogado (decisão do dono na 2.10):** a triagem de sinais de alerta, o encaminhamento e a liberação
+  (`student_red_flag_checks`) são registrados **sem consentimento de saúde**, com base no art. 11, II, "e" (proteção da
+  vida/incolumidade física) e "d" (exercício regular de direitos), só com dados mínimos (sinais + encaminhamento +
+  liberação), acessíveis ao professor responsável e ao owner, com auditoria. Se o aluno recusar o consentimento, os
+  grupos e demais dados de saúde são apagados, mas a triagem e a liberação ficam. Os Termos e a Política de Privacidade
+  precisam descrever essa base legal, a finalidade, quem acessa e a retenção desses registros.
 - Versões no código (`lib/legal.ts`). O aceite é registrado com documento, versão e data, e um aceite novo é exigido quando a versão muda.
 
 ### C8. Vendas (plano Gold) — pagamentos dos alunos

@@ -42,8 +42,8 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    - `/treinos/condicoes`: busque "condromalácia"; abra "Guia" da hérnia e do ombro (também no celular).
    - `/treinos/novo?aluno=` Ana Duarte: painel "Condições do aluno" → "Guia" na aba lateral; adicione "Abdominal supra"
      (cautela global + "evitar" da camada da org no seed).
-   - Alunos → editar a Ana → "Triagem de sinais de alerta": registre um sinal → aviso no montador → "Registrar
-     liberação" → o aviso some.
+   - Alunos → editar a Ana → "Triagem de sinais de alerta": registre um sinal (+ encaminhamento) → aviso no montador →
+     "Registrar liberação" → o aviso some. Repita com um aluno **sem consentimento de saúde**: a triagem funciona.
    - Com um professor sem acesso à saúde do aluno: nada de condições, Guia do aluno ou triagem.
    Documentos revisados em `docs/conhecimento/`: lombalgia inespecífica, hérnia (flexão), estenose e espondilolistese
    (extensão), cervicalgia, ombro (manguito), joelho patelofemoral e artrose. Sem alerta automático: lombalgia

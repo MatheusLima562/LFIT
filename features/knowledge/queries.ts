@@ -16,15 +16,16 @@ export interface StudentCondition {
 export interface StudentHealthGuides {
   conditions: StudentCondition[];
   guides: Record<string, Guide>;
-  /** Última triagem de sinais de alerta (ou null se nunca registrada). */
-  redFlag: RedFlagCheck | null;
 }
 
-/** Última triagem (RLS: só com can_view_student_health; nos demais níveis volta null). */
+/**
+ * Última triagem. RLS: owner e professor responsável (can_access_student), mesmo sem consentimento de saúde — base
+ * legal própria; professor do plano e demais staff recebem null.
+ */
 export async function getLatestRedFlagCheck(supabase: SupabaseClient<Database>, studentId: string): Promise<RedFlagCheck | null> {
   const { data } = await supabase
     .from("student_red_flag_checks")
-    .select("id, items, note, recorded_at, clearance_kind, clearance_name, clearance_on, clearance_note, clearance_recorded_at")
+    .select("id, items, referred, note, recorded_at, clearance_kind, clearance_name, clearance_on, clearance_note, clearance_recorded_at")
     .eq("student_id", studentId)
     .order("recorded_at", { ascending: false })
     .limit(1)
@@ -33,6 +34,7 @@ export async function getLatestRedFlagCheck(supabase: SupabaseClient<Database>, 
   return {
     id: data.id,
     items: data.items as RedFlagKey[],
+    referred: data.referred,
     note: data.note,
     recordedAt: data.recorded_at,
     clearance:
@@ -51,12 +53,9 @@ export async function getStudentHealthGuides(studentId: string): Promise<Student
   const { data: canView } = await supabase.rpc("can_view_student_health", { p_student_id: studentId });
   if (canView !== true) return null;
 
-  const [{ data: groups }, redFlag] = await Promise.all([
-    supabase.from("student_groups").select("group_id").eq("student_id", studentId),
-    getLatestRedFlagCheck(supabase, studentId),
-  ]);
+  const { data: groups } = await supabase.from("student_groups").select("group_id").eq("student_id", studentId);
   const groupIds = (groups ?? []).map((g) => g.group_id);
-  if (!groupIds.length) return { conditions: [], guides: {}, redFlag };
+  if (!groupIds.length) return { conditions: [], guides: {} };
 
   const { data: links } = await supabase
     .from("special_group_conditions")
@@ -81,5 +80,10 @@ export async function getStudentHealthGuides(studentId: string): Promise<Student
     const g = c.guideKey ? getGuide(c.guideKey) : null;
     if (g) guides[g.key] = g;
   }
-  return { conditions, guides, redFlag };
+  return { conditions, guides };
+}
+
+/** Triagem para o aviso do montador (null para quem não é owner nem responsável). */
+export async function getStudentRedFlag(studentId: string): Promise<RedFlagCheck | null> {
+  return getLatestRedFlagCheck(await createClient(), studentId);
 }

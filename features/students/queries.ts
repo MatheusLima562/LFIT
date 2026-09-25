@@ -192,7 +192,7 @@ export interface StudentForEdit {
   healthConsentDeclaredAt: string | null;
   /** O usuário atual pode ver/editar os dados de saúde deste aluno? */
   healthVisible: boolean;
-  /** Última triagem de sinais de alerta (só quando healthVisible). */
+  /** Última triagem de sinais de alerta (owner/responsável; independe do consentimento de saúde). */
   redFlag: RedFlagCheck | null;
   accessExpiresAt: string | null;
   trainingLocation: string | null;
@@ -219,7 +219,7 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
     signPhotoUrls(supabase, data.photo_path ? [data.photo_path] : []),
     supabase.rpc("can_view_student_health", { p_student_id: id }).then((r) => r.data === true),
   ]);
-  const redFlag = healthVisible ? await getLatestRedFlagCheck(supabase, id) : null;
+  const redFlag = await getLatestRedFlagCheck(supabase, id);
   return {
     id: data.id,
     firstName: data.first_name,

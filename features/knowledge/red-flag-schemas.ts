@@ -9,11 +9,13 @@ export const redFlagCheckSchema = z
   .object({
     items: z.array(z.enum(RED_FLAG_KEYS as [RedFlagKey, ...RedFlagKey[]])).max(RED_FLAG_KEYS.length),
     noneObserved: z.boolean(),
+    referred: z.boolean(),
     note: z.string().trim().max(RED_FLAG_NOTE_MAX, t.noteTooLong),
   })
   .superRefine((d, ctx) => {
     // "Nenhum destes sinais" é uma escolha explícita, não a ausência de marcação.
     if (d.noneObserved === d.items.length > 0) ctx.addIssue({ code: "custom", path: ["items"], message: t.chooseOne });
+    if (d.referred && d.items.length === 0) ctx.addIssue({ code: "custom", path: ["referred"], message: t.referredNeedsItems });
   });
 export type RedFlagCheckValues = z.infer<typeof redFlagCheckSchema>;
 

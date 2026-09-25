@@ -5,7 +5,7 @@ import { requireStaff } from "@/lib/auth/session";
 import { fromSaved } from "@/features/plans/builder";
 import { PlanBuilder } from "@/features/plans/components/PlanBuilder";
 import { getPlanForBuilder, getStudentRules, listTrainingLists } from "@/features/plans/queries";
-import { getStudentHealthGuides } from "@/features/knowledge/queries";
+import { getStudentHealthGuides, getStudentRedFlag } from "@/features/knowledge/queries";
 import { messages } from "@/messages/pt-BR";
 
 export const metadata: Metadata = { title: messages.plans.editTitle };
@@ -16,10 +16,11 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
   if (!z.uuid().safeParse(planId).success) notFound();
   const data = await getPlanForBuilder(planId, session);
   if (!data) notFound();
-  const [rules, lists, health] = await Promise.all([
+  const [rules, lists, health, redFlag] = await Promise.all([
     data.student ? getStudentRules(data.student.id) : Promise.resolve({ hidden: false, rules: [] }),
     listTrainingLists(),
     data.student ? getStudentHealthGuides(data.student.id) : Promise.resolve(null),
+    data.student ? getStudentRedFlag(data.student.id) : Promise.resolve(null),
   ]);
 
   return (
@@ -33,6 +34,7 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
         lists={lists}
         rules={rules}
         health={health}
+        redFlag={redFlag}
         canEdit={data.canEdit}
         otherActive={data.otherActive}
         backHref={data.student ? `/alunos/${data.student.id}/treinos` : "/treinos/modelos"}

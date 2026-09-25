@@ -1,6 +1,9 @@
 import type { GuideTone } from "./types";
 
 /**
+ * Base legal (a validar com advogado): LGPD art. 11, II, "e" e "d" — registrada mesmo sem consentimento de saúde, só
+ * com o mínimo (sinais + encaminhamento + liberação), acessível ao professor responsável e ao owner.
+ *
  * Sinais de alerta da triagem (relatados pelo aluno ou observados pelo professor) — tirados dos documentos
  * aprovados em docs/conhecimento/ (seção 5). Não são diagnóstico. As chaves são iguais às de
  * private.red_flag_keys() no banco (teste unitário confere); mudar a lista exige migration.
@@ -37,6 +40,8 @@ export function redFlagLabel(key: string): string {
 export interface RedFlagCheck {
   id: string;
   items: RedFlagKey[];
+  /** Aluno encaminhado a médico/fisioterapeuta. */
+  referred: boolean;
   note: string | null;
   recordedAt: string;
   clearance: { kind: ClearanceKind; name: string | null; on: string; note: string | null } | null;

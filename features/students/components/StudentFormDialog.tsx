@@ -331,16 +331,11 @@ export function StudentFormDialog({
                           </div>
                         </Field>
                       ))}
-
-                    {student && (
-                      <RedFlagTriage
-                        studentId={student.id}
-                        check={student.redFlag}
-                        consentOnFile={Boolean(student.healthConsentAt || student.healthConsentDeclaredAt)}
-                      />
-                    )}
                   </>
                 )}
+
+                {/* Base legal própria (proteção da vida): não depende do consentimento de saúde. */}
+                {student && <RedFlagTriage studentId={student.id} check={student.redFlag} />}
 
                 <Field>
                   <FieldLabel htmlFor="trainingLocation">{t.trainingLocation}</FieldLabel>

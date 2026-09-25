@@ -12,11 +12,14 @@ describe("triagem de sinais de alerta", () => {
   });
 
   it("marcar sinais OU 'nenhum destes sinais' — nunca os dois, nunca nada", () => {
-    expect(redFlagCheckSchema.safeParse({ items: [], noneObserved: true, note: "" }).success).toBe(true);
-    expect(redFlagCheckSchema.safeParse({ items: ["recent_trauma"], noneObserved: false, note: "" }).success).toBe(true);
-    expect(redFlagCheckSchema.safeParse({ items: [], noneObserved: false, note: "" }).success).toBe(false);
-    expect(redFlagCheckSchema.safeParse({ items: ["recent_trauma"], noneObserved: true, note: "" }).success).toBe(false);
-    expect(redFlagCheckSchema.safeParse({ items: ["diagnostico"], noneObserved: false, note: "" }).success).toBe(false);
+    const v = (extra: Record<string, unknown>) => ({ items: [], noneObserved: false, referred: false, note: "", ...extra });
+    expect(redFlagCheckSchema.safeParse(v({ noneObserved: true })).success).toBe(true);
+    expect(redFlagCheckSchema.safeParse(v({ items: ["recent_trauma"], referred: true })).success).toBe(true);
+    expect(redFlagCheckSchema.safeParse(v({})).success).toBe(false);
+    expect(redFlagCheckSchema.safeParse(v({ items: ["recent_trauma"], noneObserved: true })).success).toBe(false);
+    expect(redFlagCheckSchema.safeParse(v({ items: ["diagnostico"] })).success).toBe(false);
+    // Encaminhamento só com sinais.
+    expect(redFlagCheckSchema.safeParse(v({ noneObserved: true, referred: true })).success).toBe(false);
   });
 
   it("liberação exige quem, nome e data válida", () => {
@@ -28,7 +31,7 @@ describe("triagem de sinais de alerta", () => {
   });
 
   it("aviso só com sinais e sem liberação", () => {
-    const base = { id: "x", note: null, recordedAt: "2026-09-25T12:00:00Z" };
+    const base = { id: "x", note: null, referred: false, recordedAt: "2026-09-25T12:00:00Z" };
     expect(isPendingRedFlag(null)).toBe(false);
     expect(isPendingRedFlag({ ...base, items: [], clearance: null })).toBe(false);
     expect(isPendingRedFlag({ ...base, items: ["recent_trauma"], clearance: null })).toBe(true);

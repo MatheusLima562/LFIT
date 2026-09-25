@@ -24,8 +24,11 @@ const t = messages.redFlags;
 const TONES: GuideTone[] = ["emergency", "sameDay", "refer"];
 const TONE_ICON = { emergency: PhoneCall, sameDay: AlertTriangle, refer: Stethoscope };
 
-/** Triagem de sinais de alerta no cadastro do aluno (só no nível completo de saúde). */
-export function RedFlagTriage({ studentId, check, consentOnFile }: { studentId: string; check: RedFlagCheck | null; consentOnFile: boolean }) {
+/**
+ * Triagem de sinais de alerta no cadastro do aluno. Owner e professor responsável, mesmo sem consentimento de saúde
+ * (LGPD art. 11, II, "e"/"d" — a validar com advogado); só o mínimo: sinais, encaminhamento e liberação.
+ */
+export function RedFlagTriage({ studentId, check }: { studentId: string; check: RedFlagCheck | null }) {
   const [dialog, setDialog] = useState<"check" | "clear" | null>(null);
   const pending = !!check && check.items.length > 0 && !check.clearance;
 
@@ -49,6 +52,7 @@ export function RedFlagTriage({ studentId, check, consentOnFile }: { studentId: 
               <li key={k}>{redFlagLabel(k)}</li>
             ))}
           </ul>
+          {check.referred && <p className="mt-1 text-xs font-medium">{t.referredDone}</p>}
           {check.note && <p className="mt-1 text-xs">{check.note}</p>}
           {check.clearance ? (
             <p className="mt-2 flex items-start gap-1.5 text-emerald-700">
@@ -64,20 +68,16 @@ export function RedFlagTriage({ studentId, check, consentOnFile }: { studentId: 
         </div>
       )}
 
-      {consentOnFile ? (
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => setDialog("check")}>
-            {t.record}
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => setDialog("check")}>
+          {t.record}
+        </Button>
+        {pending && (
+          <Button type="button" size="sm" onClick={() => setDialog("clear")}>
+            {t.clear}
           </Button>
-          {pending && (
-            <Button type="button" size="sm" onClick={() => setDialog("clear")}>
-              {t.clear}
-            </Button>
-          )}
-        </div>
-      ) : (
-        <p className="text-xs text-ink-3">{t.consentFirst}</p>
-      )}
+        )}
+      </div>
 
       {dialog === "check" && <CheckDialog studentId={studentId} onClose={() => setDialog(null)} />}
       {dialog === "clear" && check && <ClearanceDialog check={check} onClose={() => setDialog(null)} />}
@@ -89,6 +89,8 @@ function CheckDialog({ studentId, onClose }: { studentId: string; onClose: () =>
   const router = useRouter();
   const [items, setItems] = useState<RedFlagKey[]>([]);
   const [noneObserved, setNoneObserved] = useState(false);
+  // Marcação explícita: o registro não afirma um encaminhamento que o professor não fez.
+  const [referred, setReferred] = useState(false);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -112,7 +114,7 @@ function CheckDialog({ studentId, onClose }: { studentId: string; onClose: () =>
             e.preventDefault();
             // O diálogo fica dentro do formulário do aluno na árvore React: não deixar o submit subir.
             e.stopPropagation();
-            const values = { items, noneObserved, note };
+            const values = { items, noneObserved, referred: items.length > 0 && referred, note };
             const parsed = redFlagCheckSchema.safeParse(values);
             if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? null);
             startTransition(async () => {
@@ -156,9 +158,26 @@ function CheckDialog({ studentId, onClose }: { studentId: string; onClose: () =>
               {t.noneObserved}
             </FieldLabel>
           </Field>
+          {items.length > 0 && (
+            <Field orientation="horizontal">
+              <Checkbox id="rf-referred" checked={referred} onCheckedChange={(v) => setReferred(v === true)} />
+              <FieldLabel htmlFor="rf-referred" className="leading-snug">
+                {t.referred}
+              </FieldLabel>
+            </Field>
+          )}
           <Field>
             <FieldLabel htmlFor="rf-note">{t.note}</FieldLabel>
-            <Textarea id="rf-note" rows={2} maxLength={RED_FLAG_NOTE_MAX} value={note} placeholder={t.notePlaceholder} onChange={(e) => setNote(e.target.value)} />
+            <Textarea
+              id="rf-note"
+              rows={2}
+              maxLength={RED_FLAG_NOTE_MAX}
+              value={note}
+              placeholder={t.notePlaceholder}
+              aria-describedby="rf-note-hint"
+              onChange={(e) => setNote(e.target.value)}
+            />
+            <p id="rf-note-hint" className="text-xs text-ink-3">{t.noteHint}</p>
           </Field>
           {error && <FieldError>{error}</FieldError>}
         </form>

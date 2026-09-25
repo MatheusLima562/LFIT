@@ -1224,6 +1224,7 @@ export type Database = {
           organization_id: string
           recorded_at: string
           recorded_by: string | null
+          referred: boolean
           source: string
           student_id: string
         }
@@ -1240,6 +1241,7 @@ export type Database = {
           organization_id: string
           recorded_at?: string
           recorded_by?: string | null
+          referred?: boolean
           source?: string
           student_id: string
         }
@@ -1256,6 +1258,7 @@ export type Database = {
           organization_id?: string
           recorded_at?: string
           recorded_by?: string | null
+          referred?: boolean
           source?: string
           student_id?: string
         }
@@ -2151,7 +2154,12 @@ export type Database = {
         }
       }
       record_red_flag_check: {
-        Args: { p_items: string[]; p_note?: string; p_student_id: string }
+        Args: {
+          p_items: string[]
+          p_note?: string
+          p_referred?: boolean
+          p_student_id: string
+        }
         Returns: string
       }
       record_red_flag_clearance: {

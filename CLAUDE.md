@@ -275,11 +275,16 @@ effective_status =
   "Condições do aluno" + aba lateral **só no nível completo** (`getStudentHealthGuides` devolve null sem
   `can_view_student_health`). Condição sem Guia próprio usa o da região. Aviso fixo de apoio à decisão em todo Guia.
 - **Triagem de sinais de alerta** (`student_red_flag_checks`, dado de saúde): sinais **relatados/observados** (lista fixa
-  `private.red_flag_keys()` = `features/knowledge/red-flags.ts`; nunca diagnóstico) ou "nenhum destes sinais"; escrita só
-  por `record_red_flag_check`/`record_red_flag_clearance`; exige consentimento registrado (declarado ou confirmado).
-  **Liberação registrada** (médico/fisioterapeuta, nome, data até hoje, observação) é o único jeito de tirar o aviso do
-  montador; o aviso nunca bloqueia. Auditoria sem os itens (`diff` nulo). Recusa do consentimento pelo titular apaga a
-  triagem (gatilho). Na Fase 3, as respostas da anamnese alimentam a mesma lista (`source = 'anamnesis'`).
+  `private.red_flag_keys()` = `features/knowledge/red-flags.ts`; nunca diagnóstico) ou "nenhum destes sinais",
+  **encaminhamento** (`referred`) e **liberação** (médico/fisioterapeuta, nome, data até hoje, observação) — só esse
+  mínimo. Escrita só por `record_red_flag_check`/`record_red_flag_clearance`. A liberação é o único jeito de tirar o aviso
+  do montador; o aviso nunca bloqueia. Auditoria sem os itens (`diff` nulo).
+  - **Base legal própria (decisão do dono, A VALIDAR COM ADVOGADO — ver `docs/planos/fase-c.md`, C7):** LGPD art. 11, II,
+    "e" (proteção da vida/incolumidade física) e "d" (exercício regular de direitos). Por isso a triagem **não depende do
+    consentimento de saúde**: acesso = professor responsável e owner (`can_access_student`), mesmo quando os grupos estão
+    ocultos para o owner; professor do plano e demais staff não veem. **Recusa do consentimento apaga grupos e demais
+    dados de saúde, mas mantém triagem e liberação** (`20261008120300`).
+  - Na Fase 3, as respostas da anamnese alimentam a mesma lista (`source = 'anamnesis'`).
 - "Personalizar" um exercício global copia também as regras globais dele para a camada da org (ficam congeladas: uma
   mudança futura na regra global não chega à cópia).
 
@@ -290,6 +295,8 @@ effective_status =
 ## Segurança e LGPD (obrigatório)
 - Grupos especiais (ex.: "Dor na Coluna"), anamnese e escala de dor são **dados de saúde**
   (dados sensíveis, LGPD art. 11) e **nunca** aparecem em URLs, logs ou e-mails.
+- **Exceção (a validar com advogado):** a triagem de sinais de alerta + encaminhamento + liberação usa a base legal do
+  art. 11, II, "e"/"d" e não depende do consentimento (ver "Base de conhecimento"); a recusa não a apaga.
 - **Consentimento em duas etapas:** no cadastro pelo professor, ele DECLARA ter obtido o consentimento
   (`health_consent_declared_at/_by`); o aluno CONFIRMA pessoalmente no primeiro acesso
   (`health_data_consent_at`, tela `/acesso/consentimento`) ou recusa (dados de saúde apagados).
@@ -320,7 +327,7 @@ sem efeitos colaterais).
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
 | Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
 | Alertas de contraindicação (Fase 2/2.8) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem `restricted = true` (só nível, via `is_restricted_plan_viewer`/`is_restricted_health_viewer`) ou `hidden = true` (nada) — nunca condição/grupo/nota fora do nível completo |
-| Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` + `can_view_student_health` + consentimento registrado; chaves validadas contra `private.red_flag_keys()`; auditadas |
+| Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` (owner ou responsável; **não** exige consentimento — base legal art. 11, II, "e"/"d", a validar); chaves validadas contra `private.red_flag_keys()`; auditadas |
 | Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
@@ -346,6 +353,8 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - **Importação do MFIT** (alunos e treinos via CSV/planilha) — etapa obrigatória **antes do uso com
   alunos reais**, depois da Fase 3 mínima. Deve respeitar limite do plano, matrícula, consentimento de saúde (importar grupos só
   como "declarado") e auditoria; relatório de linhas rejeitadas.
+- **Exercício personalizado × regra global:** a cópia congela as regras globais. Mostrar o aviso "regra global
+  atualizada — revise sua cópia" quando uma regra global do exercício de origem mudar depois da personalização.
 - **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
   `npm run bootstrap:owner` e trainers de teste existem só no seed. O item "Equipe" segue "Em breve".
 

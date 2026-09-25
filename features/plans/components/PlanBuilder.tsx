@@ -54,7 +54,7 @@ import type { PlanStatus, StudentRule, TrainingListOption } from "../queries";
 import { MAX_ITEMS, MAX_WORKOUTS, PLAN_LEVELS, type PlanLevel } from "../schemas";
 import { RedFlagBanner } from "@/features/knowledge/components/RedFlagBanner";
 import { StudentConditionsPanel } from "@/features/knowledge/components/StudentConditionsPanel";
-import { isPendingRedFlag } from "@/features/knowledge/red-flags";
+import { isPendingRedFlag, type RedFlagCheck } from "@/features/knowledge/red-flags";
 import type { StudentHealthGuides } from "@/features/knowledge/queries";
 import { ExercisePicker } from "./ExercisePicker";
 import { ImportItemsDialog } from "./ImportItemsDialog";
@@ -74,6 +74,8 @@ export interface PlanBuilderProps {
   rules: { hidden: boolean; rules: StudentRule[] };
   /** Condições e Guias do aluno — só no nível completo de saúde (null nos demais). */
   health?: StudentHealthGuides | null;
+  /** Última triagem de sinais de alerta — owner e professor responsável (independe do consentimento). */
+  redFlag?: RedFlagCheck | null;
   canEdit: boolean;
   otherActive: { id: string; name: string } | null;
   backHref: string;
@@ -81,7 +83,7 @@ export interface PlanBuilderProps {
 
 const NO_LISTS = { methods: [], objectives: [] };
 
-export function PlanBuilder({ initial, status, student, trainers = [], lists = NO_LISTS, rules, health = null, canEdit, otherActive, backHref }: PlanBuilderProps) {
+export function PlanBuilder({ initial, status, student, trainers = [], lists = NO_LISTS, rules, health = null, redFlag = null, canEdit, otherActive, backHref }: PlanBuilderProps) {
   const router = useRouter();
   const [draft, setDraft] = useState<PlanDraft>(initial);
   const [dirty, setDirty] = useState(false);
@@ -464,7 +466,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
 
       {/* Alertas (só plano de aluno) */}
       {student && <AlertsPanel hidden={rules.hidden} restricted={rules.rules.some((r) => r.restricted)} counts={alertCounts} />}
-      {student && health?.redFlag && isPendingRedFlag(health.redFlag) && <RedFlagBanner studentId={student.id} check={health.redFlag} />}
+      {student && redFlag && isPendingRedFlag(redFlag) && <RedFlagBanner studentId={student.id} check={redFlag} />}
       {student && health && <StudentConditionsPanel health={health} />}
 
       {/* Divisões */}

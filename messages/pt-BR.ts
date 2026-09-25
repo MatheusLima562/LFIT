@@ -639,7 +639,7 @@ export const messages = {
   },
   redFlags: {
     title: "Triagem de sinais de alerta",
-    hint: "Sinais relatados pelo aluno ou observados no treino. Não é diagnóstico: marca o que precisa de avaliação antes de seguir.",
+    hint: "Sinais relatados pelo aluno ou observados no treino. Não é diagnóstico: marca o que precisa de avaliação antes de seguir. Registrada mesmo sem consentimento de saúde (proteção da vida), só com o mínimo: sinais, encaminhamento e liberação. Visível ao professor responsável e ao administrador.",
     none: "Nenhuma triagem registrada.",
     lastNone: (date: string) => `Última triagem em ${date}: nenhum destes sinais relatado ou observado.`,
     lastWith: (date: string) => `Última triagem em ${date}: sinais relatados/observados`,
@@ -651,7 +651,11 @@ export const messages = {
     noneObserved: "Nenhum destes sinais relatado ou observado",
     chooseOne: "Marque os sinais relatados/observados ou “Nenhum destes sinais”.",
     note: "Observação (opcional)",
-    notePlaceholder: "Ex.: relatou na conversa de hoje; orientado a procurar o médico.",
+    notePlaceholder: "Ex.: relatado antes do treino; orientado a procurar o médico.",
+    noteHint: "Só o necessário para o encaminhamento — sem outros dados de saúde.",
+    referred: "Aluno encaminhado a médico/fisioterapeuta",
+    referredDone: "Aluno encaminhado a médico/fisioterapeuta.",
+    referredNeedsItems: "Encaminhamento só com sinais marcados.",
     noteTooLong: "Observação: até 300 caracteres.",
     tone: { emergency: "Emergência — SAMU 192", sameDay: "Avaliação no mesmo dia", refer: "Encaminhar antes de treinar" },
     save: "Salvar triagem",
@@ -676,7 +680,6 @@ export const messages = {
     builderText: (date: string) =>
       `Triagem de ${date}. Encaminhe o aluno a médico/fisioterapeuta e registre a liberação no cadastro. O aviso não bloqueia o treino.`,
     builderLink: "Abrir o cadastro",
-    consentFirst: "Registre o consentimento de saúde para usar a triagem.",
   },
   guides: {
     disclaimer: "Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.",
