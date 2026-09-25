@@ -2106,6 +2106,7 @@ export type Database = {
           substitute: boolean
         }[]
       }
+      plan_red_flag_pending: { Args: { p_plan_id: string }; Returns: boolean }
       preview_plan_alerts_for_students: {
         Args: { p_source: string; p_students: string[] }
         Returns: {

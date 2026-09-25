@@ -5,7 +5,7 @@ import { requireStaff } from "@/lib/auth/session";
 import { fromSaved } from "@/features/plans/builder";
 import { PlanBuilder } from "@/features/plans/components/PlanBuilder";
 import { getPlanForBuilder, getStudentRules, listTrainingLists } from "@/features/plans/queries";
-import { getStudentHealthGuides, getStudentRedFlag } from "@/features/knowledge/queries";
+import { getPlanRedFlagPending, getStudentHealthGuides, getStudentRedFlag } from "@/features/knowledge/queries";
 import { messages } from "@/messages/pt-BR";
 
 export const metadata: Metadata = { title: messages.plans.editTitle };
@@ -22,6 +22,8 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
     data.student ? getStudentHealthGuides(data.student.id) : Promise.resolve(null),
     data.student ? getStudentRedFlag(data.student.id) : Promise.resolve(null),
   ]);
+  // Sem acesso à triagem pelo RLS (professor do plano): só o booleano de pendência.
+  const redFlagRestrictedPending = data.student && !redFlag ? await getPlanRedFlagPending(planId) : false;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pt-5 sm:px-6 lg:px-8 lg:pt-6">
@@ -35,6 +37,7 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
         rules={rules}
         health={health}
         redFlag={redFlag}
+        redFlagRestrictedPending={redFlagRestrictedPending}
         canEdit={data.canEdit}
         otherActive={data.otherActive}
         backHref={data.student ? `/alunos/${data.student.id}/treinos` : "/treinos/modelos"}

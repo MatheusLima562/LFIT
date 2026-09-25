@@ -681,6 +681,7 @@ export const messages = {
     builderText: (date: string) =>
       `Triagem de ${date}. Encaminhe o aluno a médico/fisioterapeuta e registre a liberação no cadastro. O aviso não bloqueia o treino.`,
     builderLink: "Abrir o cadastro",
+    builderRestricted: "Aluno com pendência de liberação — alinhe com o professor responsável antes de prescrever",
   },
   guides: {
     disclaimer: "Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.",

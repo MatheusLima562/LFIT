@@ -95,6 +95,53 @@ describe.runIf(dbTestsEnabled)("Etapa 2.10 (Fase B): triagem de sinais de alerta
     expect(count).toBe(1);
   });
 
+  it("professor do plano: só o booleano de pendência — nenhum dado da triagem vaza", async () => {
+    const s3 = (await rpc<{ id: string }>(owner.client, "create_student", { p_data: studentData() })).id;
+    await fx.db.from("students").update({ trainer_id: trainer.id }).eq("id", s3);
+    const secret = "Relatou dor no peito na academia";
+    const check = await rpc<string>(trainer.client, "record_red_flag_check", {
+      p_student_id: s3,
+      p_items: ["chest_pain_exertion", "calf_swelling"],
+      p_referred: true,
+      p_note: secret,
+    });
+    const planId = await rpc<string>(trainer.client, "save_training_plan", {
+      p_plan: { student_id: s3, name: "Plano do professor 2", trainer_id: trainer2.id, workouts: [{ label: "A", items: [] }] },
+    });
+
+    // Pendente: exatamente `true` (booleano puro, sem objeto/linha).
+    const { data: pending, error } = await trainer2.client.rpc("plan_red_flag_pending", { p_plan_id: planId });
+    expect(error).toBeNull();
+    expect(pending).toBe(true);
+    expect(JSON.stringify(pending)).toBe("true");
+    // Nenhuma linha da tabela, por nenhum caminho de leitura direta.
+    expect((await trainer2.client.from("student_red_flag_checks").select("*")).data).toHaveLength(0);
+    expect((await trainer2.client.from("student_red_flag_checks").select("id").eq("id", check)).data).toHaveLength(0);
+    // Nem o cadastro do aluno (onde fica o bloco de triagem).
+    expect((await trainer2.client.from("students").select("id").eq("id", s3)).data).toHaveLength(0);
+    // As RPCs de escrita também recusam (não servem de oráculo).
+    await expect(rpc(trainer2.client, "record_red_flag_check", { p_student_id: s3, p_items: [] })).rejects.toThrow("STUDENT_NOT_FOUND");
+    await expect(
+      rpc(trainer2.client, "record_red_flag_clearance", { p_check_id: check, p_kind: "medico", p_name: "X Y", p_on: spDateDaysAgo(0) }),
+    ).rejects.toThrow("STUDENT_NOT_FOUND");
+
+    // Liberada → false. Nova triagem sem sinais depois → continua false.
+    await rpc(trainer.client, "record_red_flag_clearance", { p_check_id: check, p_kind: "medico", p_name: "Dra. Exemplo", p_on: spDateDaysAgo(0) });
+    expect(await rpc(trainer2.client, "plan_red_flag_pending", { p_plan_id: planId })).toBe(false);
+    await rpc(trainer.client, "record_red_flag_check", { p_student_id: s3, p_items: [] });
+    expect(await rpc(trainer2.client, "plan_red_flag_pending", { p_plan_id: planId })).toBe(false);
+    // Nova triagem com sinal → volta a true.
+    await rpc(trainer.client, "record_red_flag_check", { p_student_id: s3, p_items: ["recent_trauma"] });
+    expect(await rpc(trainer2.client, "plan_red_flag_pending", { p_plan_id: planId })).toBe(true);
+
+    // Modelo (sem aluno) → false; plano de outra org, aluno e anônimo → recusados.
+    const template = await rpc<string>(trainer2.client, "save_training_plan", { p_plan: { student_id: null, name: "Modelo rf", workouts: [{ label: "A", items: [] }] } });
+    expect(await rpc(trainer2.client, "plan_red_flag_pending", { p_plan_id: template })).toBe(false);
+    await expect(rpc(ownerB.client, "plan_red_flag_pending", { p_plan_id: planId })).rejects.toThrow("PLAN_NOT_FOUND");
+    await expect(rpc(student.client, "plan_red_flag_pending", { p_plan_id: planId })).rejects.toThrow("FORBIDDEN");
+    expect((await anon().rpc("plan_red_flag_pending", { p_plan_id: planId })).error).not.toBeNull();
+  });
+
   it("aluno e anônimo não leem a triagem", async () => {
     expect((await student.client.from("student_red_flag_checks").select("id")).data ?? []).toHaveLength(0);
     expect((await anon().from("student_red_flag_checks").select("id")).data ?? []).toHaveLength(0);

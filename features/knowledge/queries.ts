@@ -83,6 +83,16 @@ export async function getStudentHealthGuides(studentId: string): Promise<Student
   return { conditions, guides };
 }
 
+/**
+ * Aviso restrito para quem acessa o plano mas não o aluno (professor do plano): só "há pendência de liberação?".
+ * A RPC devolve um booleano — nenhum sinal, observação ou dado da liberação.
+ */
+export async function getPlanRedFlagPending(planId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("plan_red_flag_pending", { p_plan_id: planId });
+  return data === true;
+}
+
 /** Triagem para o aviso do montador (null para quem não é owner nem responsável). */
 export async function getStudentRedFlag(studentId: string): Promise<RedFlagCheck | null> {
   return getLatestRedFlagCheck(await createClient(), studentId);

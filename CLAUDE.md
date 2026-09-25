@@ -284,6 +284,9 @@ effective_status =
     consentimento de saúde**: acesso = professor responsável e owner (`can_access_student`), mesmo quando os grupos estão
     ocultos para o owner; professor do plano e demais staff não veem. **Recusa do consentimento apaga grupos e demais
     dados de saúde, mas mantém triagem e liberação** (`20261008120300`).
+  - **Professor do plano** (sem acesso ao aluno/saúde): no montador, só o aviso restrito "Aluno com pendência de
+    liberação — alinhe com o professor responsável antes de prescrever", via `plan_red_flag_pending` (booleano).
+  - Observações (triagem e liberação): até 300 caracteres (CHECK, RPC, Zod e contador na UI).
   - Na Fase 3, as respostas da anamnese alimentam a mesma lista (`source = 'anamnesis'`).
 - "Personalizar" um exercício global copia também as regras globais dele para a camada da org (ficam congeladas: uma
   mudança futura na regra global não chega à cópia).
@@ -327,6 +330,7 @@ sem efeitos colaterais).
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
 | Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
 | Alertas de contraindicação (Fase 2/2.8) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem `restricted = true` (só nível, via `is_restricted_plan_viewer`/`is_restricted_health_viewer`) ou `hidden = true` (nada) — nunca condição/grupo/nota fora do nível completo |
+| Triagem — aviso restrito (2.10) | `plan_red_flag_pending` (só um booleano: última triagem do aluno do plano tem sinais sem liberação) | `require_staff` + `get_readable_plan`; nenhum sinal, observação ou liberação na resposta (teste de não vazamento) |
 | Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` (owner ou responsável; **não** exige consentimento — base legal art. 11, II, "e"/"d", a validar); chaves validadas contra `private.red_flag_keys()`; auditadas |
 | Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |

@@ -26,3 +26,13 @@ export function RedFlagBanner({ studentId, check }: { studentId: string; check: 
     </div>
   );
 }
+
+/** Aviso restrito (professor do plano sem acesso à saúde): sem sinais, sem observação, sem link para o cadastro. */
+export function RestrictedRedFlagBanner() {
+  return (
+    <p role="status" className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+      <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
+      <span className="font-semibold">{t.builderRestricted}</span>
+    </p>
+  );
+}
