@@ -44,7 +44,7 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    2.4 mantida, "Evitar" vazio confirmado, seção 3 revisada (sem alerta automático; itens direcionais nas condições por
    padrão). `hernia-discal-lombar-flexao.md` revisado; `estenose-lombar-extensao.md` e `espondilolistese-extensao.md` revisados (tabela única de alertas de extensão).
    **Pendência registrada:** espondilólise/espondilolistese ístmica em jovens atletas (não pesquisar por ora).
-   Em andamento: cervicalgia e ombro; depois os demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
+   `cervicalgia.md` e `ombro-manguito.md` — **aguardando sua revisão**; depois joelho (patelofemoral, osteoartrite) e os demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
    aprovado: quadril, hipertensão, osteoporose, gestação). Fase B (app) só após sua aprovação clínica.
 5. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
