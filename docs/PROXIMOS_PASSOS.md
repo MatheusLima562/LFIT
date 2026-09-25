@@ -34,10 +34,19 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    na linha principal — migration `20261007120000`; Subida/Descida — `20261007120100`/`…120200`). 291 testes.
    **Limpeza futura:** remover `intensity_type`/`intensity_value` (sem uso) junto com as próximas colunas legadas.
    **Aguardando o seu novo teste**; ajustes que surgirem entram aqui.
-4. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
+4. **2.10** Base de conhecimento dor × exercício — **Fase A em andamento** (só documentos em `docs/conhecimento/`).
+   Decisões: condição por **diagnóstico com padrão direcional no nome**, ligada à região — "Hérnia discal lombar
+   (intolerância à flexão)", "Estenose lombar (intolerância à extensão)", "Espondilolistese (intolerância à extensão)" —
+   e condições só de padrão para quem não tem laudo: "Dor lombar — intolerância à flexão" / "— intolerância à
+   extensão". Guias registram que achados de imagem são comuns em assintomáticos e que o comportamento dos sintomas
+   orienta a adaptação. `contraindicacoes-v2.csv` substitui o CSV antigo (marcar o antigo como substituído, sem apagar).
+   **Feito:** `lombalgia-inespecifica.md` (modelo de formato). **Parado para você validar formato e referências**
+   antes dos demais (hérnia, estenose, espondilolistese, cervicalgia, ombro, joelho patelofemoral/OA; depois, se
+   aprovado: quadril, hipertensão, osteoporose, gestação). Fase B (app) só após sua aprovação clínica.
+5. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
-5. **C1** Contas com múltiplos vínculos (sem cobrança).
-6. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
+6. **C1** Contas com múltiplos vínculos (sem cobrança).
+7. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
 
 ## Requisitos registrados para a Fase 3 (não implementar antes)
 - **Alertas de contraindicação NUNCA aparecem ao aluno**: nem o nível ("Evitar"/"Cautela"), nem a condição, nem a
