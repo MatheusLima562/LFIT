@@ -5,11 +5,13 @@ import { isAvailableRoute } from "@/data/navigation";
 import { messages } from "@/messages/pt-BR";
 
 interface DashboardBannerProps {
-  banner: Banner;
+  /** null = recurso ainda não existe: nada é exibido. */
+  banner: Banner | null;
   onDismiss: () => void;
 }
 
 export function DashboardBanner({ banner, onDismiss }: DashboardBannerProps) {
+  if (!banner) return null;
   return (
     <aside
       aria-label="Oferta"
