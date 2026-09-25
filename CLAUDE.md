@@ -376,7 +376,8 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.9** página do aluno
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B: plano em
+  `docs/planos/etapa-2.10-fase-b.md`); **2.11** ampliação da biblioteca global; **2.9** página do aluno
   `/alunos/[id]`, planejar antes) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
   registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →

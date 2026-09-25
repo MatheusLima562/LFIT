@@ -34,28 +34,26 @@ Subida/Descida, sem faixa de RIR/RPE) aplicados.
    na linha principal — migration `20261007120000`; Subida/Descida — `20261007120100`/`…120200`). 291 testes.
    **Limpeza futura:** remover `intensity_type`/`intensity_value` (sem uso) junto com as próximas colunas legadas.
    **Aguardando o seu novo teste**; ajustes que surgirem entram aqui.
-4. **2.10** Base de conhecimento dor × exercício — **Fase A em andamento** (só documentos em `docs/conhecimento/`).
-   Decisões: condição por **diagnóstico com padrão direcional no nome**, ligada à região — "Hérnia discal lombar
-   (intolerância à flexão)", "Estenose lombar (intolerância à extensão)", "Espondilolistese (intolerância à extensão)" —
-   e condições só de padrão para quem não tem laudo: "Dor lombar — intolerância à flexão" / "— intolerância à
-   extensão". Guias registram que achados de imagem são comuns em assintomáticos e que o comportamento dos sintomas
-   orienta a adaptação. `contraindicacoes-v2.csv` substitui o CSV antigo (marcar o antigo como substituído, sem apagar).
-   **Feito:** `lombalgia-inespecifica.md` — formato aprovado como modelo (com "Resumo prático" no topo), regra de dor
-   2.4 mantida, "Evitar" vazio confirmado, seção 3 revisada (sem alerta automático; itens direcionais nas condições por
-   padrão). `hernia-discal-lombar-flexao.md` revisado; `estenose-lombar-extensao.md` e `espondilolistese-extensao.md` revisados (tabela única de alertas de extensão).
-   **Pendência registrada:** espondilólise/espondilolistese ístmica em jovens atletas (não pesquisar por ora).
-   `cervicalgia.md` revisado (sem alerta; regra do braço; sinais vasculares = SAMU 192) e `ombro-manguito.md` revisado
-   ("Dor no ombro relacionada ao manguito rotador"; cautela só no tríceps no banco; dor cardíaca referida pela NICE CG95).
-   `joelho-patelofemoral.md` e `joelho-artrose.md` — **aguardando sua revisão**. **`docs/revisao/contraindicacoes-v2.csv`
-   gerado** (21 linhas: 19 já aprovadas nas revisões com "S"; 2 de patelofemoral em branco, para sua decisão); o CSV
-   antigo ficou marcado como substituído. Depois, se aprovado: quadril, hipertensão, osteoporose, gestação.
-   **Fase B (app), só após sua aprovação clínica:** migration com as linhas "S" do CSV v2 (cria as condições novas),
-   exercícios globais "Rotação externa com elástico/polia" e "Elevação no plano da escápula", botão "Guia" por
-   condição, checklist de sinais de alerta na anamnese, aviso fixo de apoio à decisão.
-5. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
+4. **2.10** Base de conhecimento dor × exercício — **Fase A encerrada** (25/09/2026); **Fase B: plano em
+   `docs/planos/etapa-2.10-fase-b.md`, aguardando sua aprovação** antes de implementar.
+   Documentos revisados em `docs/conhecimento/`: lombalgia inespecífica, hérnia (flexão), estenose e espondilolistese
+   (extensão), cervicalgia, ombro (manguito), joelho patelofemoral e artrose. Sem alerta automático: lombalgia
+   inespecífica, cervicalgia, dor patelofemoral e artrose de joelho (só Guia). `docs/revisao/contraindicacoes-v2.csv`:
+   19 linhas "S" (flexão, extensão, tríceps no banco) e 2 "N" (patelofemoral); o CSV antigo ficou marcado como
+   substituído. Condições por **diagnóstico com padrão direcional no nome**, ligadas à região, + condições só de padrão
+   ("Dor lombar — intolerância à flexão/extensão"). "Condromalácia" só como sinônimo de busca.
+   **Pendências registradas:** espondilólise/espondilolistese ístmica em jovens atletas; depois, se aprovado: quadril,
+   hipertensão, osteoporose, gestação.
+5. **2.11** Ampliação da biblioteca global (+80 exercícios, mínimo 50; sinônimos; equipamentos novos; campo novo
+   "padrão de movimento" também nos 52 atuais) — **depois da Fase B; mostrar o plano antes**. Contraindicações só
+   sugeridas em `docs/revisao/biblioteca-v2.csv` (colunas `exercicio;sinonimos;padrao;equipamento;grupos;
+   padrao_series;condicao_sugerida;nivel_sugerido;como_adaptar;base_na_documentacao;aprovar;ajuste`), derivadas
+   apenas de `docs/conhecimento/` (arquivo + seção), sem pesquisa nova; balísticos/impacto só no Guia (fase de crise).
+   Migration só com as linhas "S". **Parar após o CSV.** Não duplicar os 2 exercícios criados na Fase B.
+6. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
    Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
-6. **C1** Contas com múltiplos vínculos (sem cobrança).
-7. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
+7. **C1** Contas com múltiplos vínculos (sem cobrança).
+8. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
 
 ## Requisitos registrados para a Fase 3 (não implementar antes)
 - **Alertas de contraindicação NUNCA aparecem ao aluno**: nem o nível ("Evitar"/"Cautela"), nem a condição, nem a
@@ -82,8 +80,8 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 `app/(app)/alunos/[id]/treinos`, migrations `20260929*` a `20261002*`.
 
 ## Decisões pendentes com você
-- **CSV de contraindicações v2** (`docs/revisao/contraindicacoes-v2.csv`, substitui o `contraindicacoes-sugeridas.csv`):
-  conferir as linhas e decidir as 2 de patelofemoral; só as linhas "S" viram regras globais, numa migration própria.
+- **Plano da Fase B da 2.10** (`docs/planos/etapa-2.10-fase-b.md`): aprovar e responder as 4 decisões. O CSV v2 já foi
+  conferido (19 "S", 2 "N").
 - **Gateway** da C2: Asaas (decidido); confirmar no contrato: subconta aceita CPF? tarifa de subconta é por conta
   ativa ou criada? (ver seções C2 e C8 de `docs/planos/fase-c.md`).
 - **Resultado do seu teste do montador** — ajustes que surgirem entram na 2.8.
