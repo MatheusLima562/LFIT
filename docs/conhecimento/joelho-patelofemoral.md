@@ -1,7 +1,7 @@
 # Dor patelofemoral (dor na frente do joelho) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -10,8 +10,8 @@
 - **Exercício é o tratamento de escolha:** fortaleça **quadril e joelho juntos** (melhor que só joelho).
 - **Dose a carga, não pare:** reduza amplitude e volume do que dói (agachar fundo, escada, saltos, corrida) e volte
   a progredir; ajustar a atividade faz parte do tratamento.
-- **Amplitudes mais confortáveis:** agachamento e leg press de 0° a ~45° de flexão; cadeira extensora de 90° a ~45°
-  (sem a extensão final) — progrida a amplitude conforme a dor permite.
+- **Fase mais sensível:** agachamento e leg press de 0° a ~45° de flexão; cadeira extensora de 90° a ~45° (sem a
+  extensão final) — progrida a amplitude conforme a dor permite (evidência fraca).
 - **Monitore a dor:** até 5/10 durante e de volta ao habitual até o dia seguinte → siga; acima disso → reduza.
 - **Sinais de alerta:** trauma com inchaço rápido, joelho quente e inchado, travamento, sensação de a patela "sair",
   panturrilha inchada e dolorida → pare e encaminhe.
@@ -23,9 +23,11 @@ Mesma escala de evidência e método do documento-base [`lombalgia-inespecifica.
 **forte / moderada / fraca / consenso**; referências `[P1]`, `[P2]`… conferidas por DOI (Crossref), resumo ou texto
 indexado (Europe PMC) ou página oficial; o que não pude confirmar está em "Fontes NÃO VERIFICADAS".
 
-**Nome da condição (proposta):** "Dor patelofemoral" (sinônimos: condromalácia patelar, dor anterior no joelho,
-"joelho de corredor"), ligada à região "Joelho". O consenso internacional prefere "dor patelofemoral" a
-"condromalácia" [P1].
+**Nome da condição (aprovado):** "Dor patelofemoral", ligada à região "Joelho". "Condromalácia patelar", "dor anterior
+no joelho" e "joelho de corredor" são **só sinônimos de busca** — o consenso internacional prefere "dor
+patelofemoral" a "condromalácia" [P1].
+
+**Sem alerta automático** (aprovado): toda a seção 3 é conteúdo do Guia.
 
 **Escopo.** Dor ao redor ou atrás da patela que piora com pelo menos uma atividade que carrega o joelho dobrado
 com o peso do corpo — agachar, subir/descer escada, correr, saltar [P1]. Ficam fora: luxação ou sensação de a patela
@@ -76,14 +78,16 @@ com o peso do corpo — agachar, subir/descer escada, correr, saltar [P1]. Ficam
 
 **Princípio:** adaptar em vez de proibir; o objetivo é **carregar** quadril e joelho de forma progressiva.
 
-**Cautela — candidatos ao CSV v2** (para sua decisão):
+> **Dor patelofemoral NÃO gera alerta automático** (aprovado). As duas linhas avaliadas para o CSV v2 ficaram "N".
 
-| Exercício | Por que cautela | Como adaptar | Nível | Referência |
+**Orientação para a fase mais sensível** (Guia; amplitudes de menor carga na articulação patelofemoral):
+
+| Exercício | Por quê | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
 | Cadeira extensora | Estresse patelofemoral maior perto da extensão completa (0–30°) | Amplitude de 90° a 45° de flexão (sem estender por completo) enquanto houver dor; ampliar com a melhora | fraca | [P8] |
 | Agachamento livre com barra | Estresse patelofemoral maior no fundo (60–90°) com carga alta | Amplitude de 0° a ~45°, ou até onde não reproduzir dor; goblet ou leg press com a mesma amplitude | fraca | [P8] |
 
-**Só no Guia — sem alerta** (adaptar se reproduzir sintomas):
+**Adaptar se reproduzir sintomas** (Guia):
 
 | Exercício | Quando adaptar | Como adaptar | Nível | Referência |
 |---|---|---|---|---|
@@ -184,8 +188,8 @@ As palavras usadas podem ajudar ou prejudicar o resultado [P12] **[consenso]**.
   conferida; o resumo não traz as recomendações e o texto completo não estava acessível. **NÃO VERIFICADO**
   (conteúdo).
 
-## Pontos para a sua revisão
-1. **Cautela (CSV v2):** entram cadeira extensora (90°–45°) e agachamento livre com barra (0°–45° ou sem dor)?
-   A base é um estudo pequeno em pessoas saudáveis [P8] (fraca).
-2. **Nome da condição:** "Dor patelofemoral" (sinônimos: condromalácia patelar, dor anterior no joelho)?
-3. **Tabela do Guia** (seção 3): ok?
+## Revisão
+- ✔ Sem alerta automático; as 2 linhas do CSV v2 ficaram "N".
+- ✔ Amplitudes de menor carga (agachamento 0–45°, extensora 90–45°) no Guia, para a fase mais sensível, nível fraca.
+- ✔ Nome "Dor patelofemoral"; "condromalácia" só como sinônimo de busca.
+- ✔ Tabelas do Guia aprovadas no formato.

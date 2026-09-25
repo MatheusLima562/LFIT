@@ -1,7 +1,7 @@
 # Artrose de joelho (osteoartrite) — base de conhecimento
 
 > **Status: RASCUNHO para revisão clínica** (etapa 2.10, Fase A). Nada deste documento está no app.
-> Versão 1 · 25/09/2026 · referências conferidas em 25/09/2026.
+> Versão 2 · 25/09/2026 · referências conferidas em 25/09/2026.
 >
 > **Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.**
 
@@ -24,15 +24,15 @@ Mesma escala de evidência e método do documento-base [`lombalgia-inespecifica.
 **forte / moderada / fraca / consenso**; referências `[A1]`, `[A2]`… conferidas por DOI (Crossref), resumo ou texto
 indexado (Europe PMC) ou página oficial; o que não pude confirmar está em "Fontes NÃO VERIFICADAS".
 
-**Nome da condição (proposta):** "Artrose de joelho" (sinônimos: osteoartrite, gonartrose), ligada à região
+**Nome da condição (aprovado):** "Artrose de joelho" (sinônimos de busca: osteoartrite, gonartrose), ligada à região
 "Joelho".
 
 **Escopo.** Dor no joelho relacionada à atividade, em geral a partir dos 45 anos, sem rigidez matinal ou com rigidez
 de até 30 minutos — critério da diretriz para diagnóstico clínico, sem imagem [A1 — rec. 1.1.1]. Inclui quem já tem
 laudo de artrose. Ficam fora: prótese recente (pós-operatório) e os sinais atípicos da seção 5.
 
-**Proposta: sem alerta automático** (como a lombalgia inespecífica): o exercício é o tratamento central, e todas as
-adaptações da seção 3 são conteúdo do Guia (ponto para sua revisão).
+**Sem alerta automático** (aprovado, como a lombalgia inespecífica): o exercício é o tratamento central, e todas as
+adaptações da seção 3 são conteúdo do Guia.
 
 ---
 
@@ -87,7 +87,7 @@ adaptações da seção 3 são conteúdo do Guia (ponto para sua revisão).
 
 ## 3. Adaptar quando o exercício reproduzir sintomas (conteúdo do Guia)
 
-> **Proposta: artrose de joelho NÃO gera alerta automático.** A tabela é orientação do Guia: *"se o exercício
+> **Artrose de joelho NÃO gera alerta automático** (aprovado). A tabela é orientação do Guia: *"se o exercício
 > reproduzir sintomas, adapte assim"*.
 
 | Exercício | Quando adaptar | Como adaptar | Nível | Referência |
@@ -190,8 +190,7 @@ desgasta mais".
 ### Fontes NÃO VERIFICADAS (não sustentam nenhuma afirmação acima)
 - Nenhuma nesta versão.
 
-## Pontos para a sua revisão
-1. **Sem alerta automático** para artrose de joelho (exercício é o tratamento central)? Todas as adaptações ficariam
-   só no Guia.
-2. **Nome da condição:** "Artrose de joelho" (sinônimos: osteoartrite, gonartrose)?
-3. **Tabela do Guia** (seção 3): ok?
+## Revisão
+- ✔ Sem alerta automático.
+- ✔ Nome "Artrose de joelho" (osteoartrite, gonartrose como sinônimos de busca).
+- ✔ Tabela do Guia aprovada no formato.
