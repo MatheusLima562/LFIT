@@ -11,7 +11,7 @@ export function StudentTrackingCard({ tabs }: { tabs: StatTab[] }) {
         id="card-tracking"
         title="Acompanhamento de alunos"
         icon={<CardIcon><UserCheck /></CardIcon>}
-        action={<InfoHint content="Treinos a vencer nos próximos 7 dias, vencidos, alunos sem programa e ausentes há mais de 14 dias." />}
+        action={<InfoHint content="Entre os alunos ativos: treino ativo que vence nos próximos 7 dias, treino vencido e sem treino ativo (mesmos filtros de Meus alunos)." />}
       />
       <StatTabs tabs={tabs} label="Situação dos alunos" emptyIcon={<CalendarClock />} maxItems={4} />
       <CardFooter>

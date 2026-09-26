@@ -370,9 +370,13 @@ Checklist para toda função `SECURITY DEFINER` nova:
   personais, avaliar vínculo N:N usuário↔organização (ex.: `memberships`) e seleção de organização.
 
 ## Estado atual (set/2026)
-- Dashboard "Início" ainda com **dados mockados** (`data/dashboard.ts`). **Regra: nunca exibir número de exemplo como se
-  fosse real.** "Retenção" e "Engajamento semanal" ficam escondidos até a 1.6 (`EXAMPLE_ONLY_METRICS` em
-  `lib/dashboard.ts`; ao ligar a fonte real, remova o id). O banner de oferta só aparece quando `/vendas/planos` existir.
+- Dashboard "Início": **regra — nunca exibir número de exemplo como se fosse real.** Só cards com dados reais
+  (`features/dashboard/queries.ts`, RLS do usuário): Alunos ativos, Plano, **Acompanhamento** (a vencer/vencidos/sem
+  treino — mesmos filtros de Meus alunos `?treino=`), **Novos alunos** (`students.created_at`: hoje em SP, 7 e 30 dias) e
+  **Acesso expirando** (7 dias). Escondidos até ter dados: Treinos registrados, Treinos concluídos, Treinos da semana,
+  Top 5 e Satisfação (Fase 3); Retenção e Engajamento (1.6; `EXAMPLE_ONLY_METRICS`); Avaliação física (módulo); Vendas
+  (C8). Cards ausentes também somem de "Personalizar". Banner de oferta só quando `/vendas/planos` existir.
+  `data/dashboard.ts` segue só como mock desses cards escondidos.
 - Schema da Fase 1 em `supabase/migrations/` (tabelas, RLS, status efetivo, RPCs de alunos, cadastro
   público, links de acesso, storage). Regras de negócio vivem nas RPCs (`security definer`).
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados

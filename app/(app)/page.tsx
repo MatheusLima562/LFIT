@@ -3,27 +3,33 @@ import { banner } from "@/data/dashboard";
 import { isAvailableRoute } from "@/data/navigation";
 import { getDashboardSummary, visibleMetrics, withRealPlan } from "@/lib/dashboard";
 import { requireStaff } from "@/lib/auth/session";
+import { getExpiringAccess, getNewStudentTabs, getTrackingTabs } from "@/features/dashboard/queries";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
-import { CompletedWorkoutsCard } from "@/components/dashboard/CompletedWorkoutsCard";
 import { DashboardView } from "@/components/dashboard/DashboardView";
 import { ExpiringAccessCard } from "@/components/dashboard/ExpiringAccessCard";
 import { OverviewMetrics } from "@/components/dashboard/OverviewMetrics";
-import { PhysicalAssessmentCard } from "@/components/dashboard/PhysicalAssessmentCard";
 import { PlanCard } from "@/components/dashboard/PlanCard";
-import { SalesCard } from "@/components/dashboard/SalesCard";
-import { SatisfactionCard } from "@/components/dashboard/SatisfactionCard";
 import { StudentTrackingCard } from "@/components/dashboard/StudentTrackingCard";
 import { SubscribersCard } from "@/components/dashboard/SubscribersCard";
-import { TopStudentsCard } from "@/components/dashboard/TopStudentsCard";
-import { WeeklyWorkoutsCard } from "@/components/dashboard/WeeklyWorkoutsCard";
 
 export const metadata: Metadata = {
   title: "Início",
 };
 
+/**
+ * Regra: nunca exibir número de exemplo como se fosse real. Só entram cards com dados reais:
+ * Alunos ativos, Plano, Acompanhamento, Novos alunos e Acesso expirando.
+ * Voltam com a Fase 3 (registro de treinos/feedback): Treinos registrados, Treinos concluídos, Treinos da semana,
+ * Top 5 e Satisfação. Retenção/Engajamento: 1.6. Avaliação física: quando o módulo existir. Vendas: C8.
+ */
 export default async function DashboardPage() {
-  const [session, plan] = await Promise.all([requireStaff(), getOrganizationPlanUsage()]);
-  // Cards ainda com dados mockados até a etapa 1.6 (exceto plano/alunos ativos).
+  const session = await requireStaff();
+  const [plan, tracking, newStudents, expiring] = await Promise.all([
+    getOrganizationPlanUsage(),
+    getTrackingTabs(),
+    getNewStudentTabs(),
+    getExpiringAccess(),
+  ]);
   const summary = withRealPlan(getDashboardSummary(), plan);
 
   return (
@@ -32,18 +38,11 @@ export default async function DashboardPage() {
       // Oferta "Conteúdos Prontos + Limite em Dobro": só aparece quando o destino existir (nada de promessa sem recurso).
       banner={isAvailableRoute(banner.href) ? banner : null}
       cards={{
-        // Retenção e engajamento só voltam com dados reais (1.6): nada de número de exemplo como se fosse real.
         overview: <OverviewMetrics metrics={visibleMetrics(summary.metrics)} />,
-        tracking: <StudentTrackingCard tabs={summary.tracking} />,
-        satisfaction: <SatisfactionCard data={summary.satisfaction} referenceDate={summary.referenceDate} />,
-        completed: <CompletedWorkoutsCard items={summary.completedToday} />,
+        tracking: <StudentTrackingCard tabs={tracking} />,
         plan: <PlanCard plan={summary.plan} />,
-        subscribers: <SubscribersCard tabs={summary.subscribers} />,
-        topStudents: <TopStudentsCard students={summary.topStudents} />,
-        assessment: <PhysicalAssessmentCard tabs={summary.assessment} />,
-        expiringAccess: <ExpiringAccessCard students={summary.expiringAccess} />,
-        weeklyWorkouts: <WeeklyWorkoutsCard data={summary.weeklyWorkouts} />,
-        sales: <SalesCard sales={summary.sales} />,
+        subscribers: <SubscribersCard tabs={newStudents} />,
+        expiringAccess: <ExpiringAccessCard students={expiring.items} count={expiring.count} />,
       }}
     />
   );

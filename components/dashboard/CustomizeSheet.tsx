@@ -12,7 +12,7 @@ export const cardLabels: Record<DashboardCardId, string> = {
   satisfaction: "Satisfação dos alunos",
   completed: "Treinos concluídos",
   plan: "Plano",
-  subscribers: "Novos assinantes",
+  subscribers: "Novos alunos",
   topStudents: "Top 5 alunos",
   assessment: "Avaliação física",
   expiringAccess: "Acesso expirando",
@@ -21,6 +21,8 @@ export const cardLabels: Record<DashboardCardId, string> = {
 };
 
 interface CustomizeSheetProps {
+  /** Só os cards disponíveis (os escondidos até a 1.6/Fase 3 não aparecem aqui). */
+  ids: DashboardCardId[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hidden: Set<DashboardCardId>;
@@ -28,8 +30,7 @@ interface CustomizeSheetProps {
   onReset: () => void;
 }
 
-export function CustomizeSheet({ open, onOpenChange, hidden, onToggle, onReset }: CustomizeSheetProps) {
-  const ids = Object.keys(cardLabels) as DashboardCardId[];
+export function CustomizeSheet({ ids, open, onOpenChange, hidden, onToggle, onReset }: CustomizeSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="gap-0 sm:max-w-sm">

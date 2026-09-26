@@ -47,6 +47,7 @@ describe("Início: indicadores só com dados reais", () => {
     const ids = visibleMetrics(getDashboardSummary().metrics).map((m) => m.id);
     expect(ids).not.toContain("retencao");
     expect(ids).not.toContain("engajamento");
-    expect(ids).toContain("ativos");
+    expect(ids).not.toContain("treinos-30");
+    expect(ids).toEqual(["ativos"]);
   });
 });

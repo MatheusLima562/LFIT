@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Tabs as TabsPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 import type { StatTab } from "@/types/dashboard";
@@ -33,7 +34,7 @@ export function StatTabs({ tabs, label, emptyIcon, maxItems = 3, defaultTabId }:
         style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
       >
         {tabs.map((tab) => {
-          const count = tab.items.length;
+          const count = tab.count ?? tab.items.length;
           return (
             <TabsPrimitive.Trigger
               key={tab.id}
@@ -62,7 +63,7 @@ export function StatTabs({ tabs, label, emptyIcon, maxItems = 3, defaultTabId }:
 
       {tabs.map((tab) => {
         const visible = tab.items.slice(0, maxItems);
-        const hidden = tab.items.length - visible.length;
+        const hidden = (tab.count ?? tab.items.length) - visible.length;
         return (
           <TabsPrimitive.Content key={tab.id} value={tab.id} className="flex flex-1 flex-col outline-none">
             {tab.items.length === 0 ? (
@@ -76,7 +77,17 @@ export function StatTabs({ tabs, label, emptyIcon, maxItems = 3, defaultTabId }:
                     {item.meta && <span className="shrink-0 text-xs text-ink-3">{item.meta}</span>}
                   </li>
                 ))}
-                {hidden > 0 && <li className="pt-2 text-xs font-medium text-ink-3">+ {plural(hidden, "aluno")} nesta lista</li>}
+                {hidden > 0 && (
+                  <li className="pt-2 text-xs font-medium text-ink-3">
+                    {tab.href ? (
+                      <Link href={tab.href} className="rounded text-brand-700 hover:underline">
+                        + {plural(hidden, "aluno")} nesta lista
+                      </Link>
+                    ) : (
+                      <>+ {plural(hidden, "aluno")} nesta lista</>
+                    )}
+                  </li>
+                )}
               </ul>
             )}
           </TabsPrimitive.Content>

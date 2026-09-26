@@ -4,7 +4,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Card, CardFooter, CardHeader, CardIcon, CardLink } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-export function ExpiringAccessCard({ students }: { students: StudentRef[] }) {
+export function ExpiringAccessCard({ students, count = students.length }: { students: StudentRef[]; count?: number }) {
   return (
     <Card labelledBy="card-access" className="h-full">
       <CardHeader
@@ -12,9 +12,9 @@ export function ExpiringAccessCard({ students }: { students: StudentRef[] }) {
         title="Acesso expirando"
         icon={<CardIcon><KeyRound /></CardIcon>}
         action={
-          students.length > 0 ? (
+          count > 0 ? (
             <span className="tabular rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
-              {students.length}
+              {count}
             </span>
           ) : undefined
         }

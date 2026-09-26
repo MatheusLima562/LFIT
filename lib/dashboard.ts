@@ -230,10 +230,11 @@ export function getPlanUsage(): PlanUsage {
 }
 
 /**
- * Indicadores calculados só sobre os dados de exemplo: ficam ESCONDIDOS até a etapa 1.6 (dados reais).
+ * Indicadores calculados só sobre os dados de exemplo: ficam ESCONDIDOS até existirem dados reais
+ * (retenção/engajamento: 1.6; treinos registrados: Fase 3).
  * Regra: nunca exibir número de exemplo como se fosse real. Ao ligar a fonte real, remova o id daqui.
  */
-export const EXAMPLE_ONLY_METRICS: ReadonlySet<string> = new Set(["engajamento", "retencao"]);
+export const EXAMPLE_ONLY_METRICS: ReadonlySet<string> = new Set(["engajamento", "retencao", "treinos-30"]);
 
 export function visibleMetrics(metrics: OverviewMetric[]): OverviewMetric[] {
   return metrics.filter((m) => !EXAMPLE_ONLY_METRICS.has(m.id));

@@ -93,6 +93,10 @@ export interface StatTab {
   id: string;
   label: string;
   items: StudentRef[];
+  /** Total real quando `items` é só uma amostra (padrão: items.length). */
+  count?: number;
+  /** Lista completa (ex.: Meus alunos já filtrado). */
+  href?: string;
   emptyMessage: string;
   tone?: "neutral" | "warning" | "danger";
 }

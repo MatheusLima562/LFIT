@@ -33,7 +33,8 @@ interface DashboardViewProps {
   firstName: string;
   /** null = sem banner (recurso ainda não existe). */
   banner: Banner | null;
-  cards: Record<DashboardCardId, ReactNode>;
+  /** Só os cards com dados reais; os ausentes não aparecem nem em "Personalizar". */
+  cards: Partial<Record<DashboardCardId, ReactNode>>;
 }
 
 export function DashboardView({ firstName, banner, cards }: DashboardViewProps) {
@@ -50,7 +51,8 @@ export function DashboardView({ firstName, banner, cards }: DashboardViewProps) 
     });
   }, []);
 
-  const visibleCards = gridOrder.filter((id) => !hidden.has(id));
+  const available = gridOrder.filter((id) => cards[id] !== undefined);
+  const visibleCards = available.filter((id) => !hidden.has(id));
 
   return (
     <>
@@ -62,7 +64,7 @@ export function DashboardView({ firstName, banner, cards }: DashboardViewProps) 
         {/* Só ações disponíveis aparecem (nada de botões mortos). */}
         <QuickActions />
 
-        {!hidden.has("overview") && cards.overview}
+        {cards.overview !== undefined && !hidden.has("overview") && cards.overview}
 
         {visibleCards.length > 0 ? (
           <div className="grid grid-flow-row-dense grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
@@ -83,6 +85,7 @@ export function DashboardView({ firstName, banner, cards }: DashboardViewProps) 
       </div>
 
       <CustomizeSheet
+        ids={[...(cards.overview !== undefined ? (["overview"] as const) : []), ...available]}
         open={customizing}
         onOpenChange={setCustomizing}
         hidden={hidden}
