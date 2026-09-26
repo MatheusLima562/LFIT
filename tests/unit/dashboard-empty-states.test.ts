@@ -40,3 +40,13 @@ describe("Início: banner de oferta", () => {
     expect(isAvailableRoute(banner.href)).toBe(false);
   });
 });
+
+describe("Início: indicadores só com dados reais", () => {
+  it("Retenção e Engajamento (calculados sobre dados de exemplo) ficam fora até a 1.6", async () => {
+    const { getDashboardSummary, visibleMetrics } = await import("@/lib/dashboard");
+    const ids = visibleMetrics(getDashboardSummary().metrics).map((m) => m.id);
+    expect(ids).not.toContain("retencao");
+    expect(ids).not.toContain("engajamento");
+    expect(ids).toContain("ativos");
+  });
+});

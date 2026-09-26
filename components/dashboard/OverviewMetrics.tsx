@@ -17,9 +17,20 @@ const icons: Record<string, typeof Users> = {
   retencao: HeartHandshake,
 };
 
+/** Colunas no desktop conforme a quantidade de indicadores visíveis (sem buraco no grid). */
+const desktopCols: Record<number, string> = { 1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4" };
+
 export function OverviewMetrics({ metrics }: { metrics: OverviewMetric[] }) {
+  if (!metrics.length) return null;
   return (
-    <section aria-label="Visão geral" className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line shadow-card lg:grid-cols-4">
+    <section
+      aria-label="Visão geral"
+      className={cn(
+        "grid gap-px overflow-hidden rounded-2xl border border-line bg-line shadow-card",
+        metrics.length === 1 ? "grid-cols-1" : "grid-cols-2",
+        desktopCols[Math.min(metrics.length, 4)],
+      )}
+    >
       {metrics.map((metric) => {
         const Icon = icons[metric.id] ?? Activity;
         return (

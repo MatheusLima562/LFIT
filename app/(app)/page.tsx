@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { banner } from "@/data/dashboard";
 import { isAvailableRoute } from "@/data/navigation";
-import { getDashboardSummary, withRealPlan } from "@/lib/dashboard";
+import { getDashboardSummary, visibleMetrics, withRealPlan } from "@/lib/dashboard";
 import { requireStaff } from "@/lib/auth/session";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
 import { CompletedWorkoutsCard } from "@/components/dashboard/CompletedWorkoutsCard";
@@ -32,7 +32,8 @@ export default async function DashboardPage() {
       // Oferta "Conteúdos Prontos + Limite em Dobro": só aparece quando o destino existir (nada de promessa sem recurso).
       banner={isAvailableRoute(banner.href) ? banner : null}
       cards={{
-        overview: <OverviewMetrics metrics={summary.metrics} />,
+        // Retenção e engajamento só voltam com dados reais (1.6): nada de número de exemplo como se fosse real.
+        overview: <OverviewMetrics metrics={visibleMetrics(summary.metrics)} />,
         tracking: <StudentTrackingCard tabs={summary.tracking} />,
         satisfaction: <SatisfactionCard data={summary.satisfaction} referenceDate={summary.referenceDate} />,
         completed: <CompletedWorkoutsCard items={summary.completedToday} />,

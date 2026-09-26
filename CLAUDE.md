@@ -293,7 +293,8 @@ effective_status =
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
-  últimos 7 dias. A fórmula deve aparecer na UI.
+  últimos 7 dias. A fórmula deve aparecer na UI (tooltip no card). **Escondido até a 1.6** (hoje seria calculado sobre
+  dados de exemplo).
 
 ## Segurança e LGPD (obrigatório)
 - Grupos especiais (ex.: "Dor na Coluna"), anamnese e escala de dor são **dados de saúde**
@@ -369,7 +370,9 @@ Checklist para toda função `SECURITY DEFINER` nova:
   personais, avaliar vínculo N:N usuário↔organização (ex.: `memberships`) e seleção de organização.
 
 ## Estado atual (set/2026)
-- Dashboard "Início" ainda com **dados mockados** (`data/dashboard.ts`).
+- Dashboard "Início" ainda com **dados mockados** (`data/dashboard.ts`). **Regra: nunca exibir número de exemplo como se
+  fosse real.** "Retenção" e "Engajamento semanal" ficam escondidos até a 1.6 (`EXAMPLE_ONLY_METRICS` em
+  `lib/dashboard.ts`; ao ligar a fonte real, remova o id). O banner de oferta só aparece quando `/vendas/planos` existir.
 - Schema da Fase 1 em `supabase/migrations/` (tabelas, RLS, status efetivo, RPCs de alunos, cadastro
   público, links de acesso, storage). Regras de negócio vivem nas RPCs (`security definer`).
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados

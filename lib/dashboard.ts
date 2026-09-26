@@ -9,6 +9,7 @@ import {
 } from "@/data/dashboard";
 import type {
   DashboardSummary,
+  OverviewMetric,
   PlanUsage,
   SatisfactionSummary,
   SearchableStudent,
@@ -226,6 +227,16 @@ export function getPlanUsage(): PlanUsage {
     remaining: Math.max(plan.studentLimit - used, 0),
     inactive: students.length - used,
   };
+}
+
+/**
+ * Indicadores calculados só sobre os dados de exemplo: ficam ESCONDIDOS até a etapa 1.6 (dados reais).
+ * Regra: nunca exibir número de exemplo como se fosse real. Ao ligar a fonte real, remova o id daqui.
+ */
+export const EXAMPLE_ONLY_METRICS: ReadonlySet<string> = new Set(["engajamento", "retencao"]);
+
+export function visibleMetrics(metrics: OverviewMetric[]): OverviewMetric[] {
+  return metrics.filter((m) => !EXAMPLE_ONLY_METRICS.has(m.id));
 }
 
 /**
