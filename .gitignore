@@ -43,3 +43,6 @@ next-env.d.ts
 
 # capturas de checkpoint (locais)
 .screenshots/
+
+# Capturas dos roteiros e2e
+e2e/.output/

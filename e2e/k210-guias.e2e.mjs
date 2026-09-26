@@ -1,0 +1,60 @@
+import "./_guard.mjs";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { chromium } = require("@playwright/test");
+const BASE = process.env.BASE ?? "http://localhost:3000", OUT = process.env.OUT, PW = process.env.SEED_USER_PASSWORD;
+const browser = await chromium.launch({ channel: "chrome" });
+let fails = 0;
+const ok = (n, c, e = "") => { console.log(`${c ? "✓" : "✗"} ${n}${e ? " — " + e : ""}`); if (!c) fails++; };
+const settle = (p) => p.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
+async function login(email, viewport = { width: 1440, height: 900 }, scheme = "light") {
+  const page = await (await browser.newContext({ viewport, colorScheme: scheme })).newPage();
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message)); page.errors = errors;
+  await page.goto(`${BASE}/entrar`);
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha", { exact: true }).fill(PW);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.waitForURL(`${BASE}/`, { timeout: 30000 });
+  return page;
+}
+const { createClient } = require("@supabase/supabase-js");
+const adb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
+const ANA = (await adb.from("students").select("id").eq("first_name", "Ana").eq("last_name", "Duarte").single()).data.id;
+const page = await login("owner.seed@example.com");
+await page.goto(`${BASE}/treinos/condicoes`); await settle(page);
+const guideLinks = page.getByRole("link", { name: /^Abrir o Guia:/ });
+ok("catálogo: links de Guia", (await guideLinks.count()) >= 10, String(await guideLinks.count()));
+await page.getByLabel("Buscar condição").fill("condromalacia");
+ok("busca por sinônimo", (await page.getByText("Dor patelofemoral", { exact: true }).count()) === 1 && (await page.getByText("Artrose de joelho", { exact: true }).count()) === 0);
+await page.getByLabel("Buscar condição").fill("");
+await page.getByRole("link", { name: "Abrir o Guia: Hérnia discal lombar (intolerância à flexão)" }).click();
+await page.waitForURL(/guia\/hernia_lombar_flexao/); await settle(page);
+ok("aviso fixo", (await page.getByText("Conteúdo de apoio à decisão profissional; não substitui avaliação médica ou fisioterapêutica.").count()) === 1);
+ok("tabela de alerta", (await page.getByRole("heading", { name: "Gera alerta de cautela no montador" }).count()) === 1);
+ok("sinais de alerta", (await page.getByRole("heading", { name: "Sinais de alerta" }).count()) === 1);
+await page.screenshot({ path: `${OUT}/guide-desktop.png`, fullPage: false });
+// mobile sem rolagem horizontal
+const m = await login("owner.seed@example.com", { width: 390, height: 844 }, "dark");
+await m.goto(`${BASE}/treinos/condicoes/guia/ombro_manguito`); await settle(m);
+const sw = await m.evaluate(() => document.documentElement.scrollWidth);
+ok("mobile sem rolagem horizontal", sw <= 390, String(sw));
+await m.screenshot({ path: `${OUT}/guide-mobile-dark.png`, fullPage: false });
+// montador: aluna do grupo Dor na Coluna (owner é responsável)
+await page.goto(`${BASE}/treinos/novo?aluno=${ANA}`); await settle(page);
+const panel = page.getByRole("region", { name: "Condições do aluno" });
+ok("painel de condições", (await panel.count()) === 1);
+ok("hérnia listada", (await panel.getByText("Hérnia discal lombar (intolerância à flexão)").count()) === 1);
+await panel.getByRole("button", { name: "Abrir o Guia: Hérnia discal lombar (intolerância à flexão)" }).click();
+const sheet = page.getByRole("dialog");
+await sheet.waitFor();
+ok("Guia na aba lateral", (await sheet.getByRole("heading", { name: /Guia — Hérnia discal lombar/ }).count()) === 1);
+await page.screenshot({ path: `${OUT}/guide-sheet.png` });
+await page.keyboard.press("Escape");
+// professor sem acesso ao aluno: não abre o montador do aluno
+const tr = await login("trainer1.seed@example.com");
+await tr.goto(`${BASE}/treinos/novo?aluno=${ANA}`); await settle(tr);
+ok("sem acesso: sem painel", (await tr.getByRole("region", { name: "Condições do aluno" }).count()) === 0);
+ok("sem erros de página", [page, m, tr].every((p) => p.errors.length === 0), [page, m, tr].flatMap((p) => p.errors).join(" | "));
+await browser.close();
+console.log(fails ? `${fails} falha(s)` : "tudo ok");
+process.exit(fails ? 1 : 0);

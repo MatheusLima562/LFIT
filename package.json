@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:db": "vitest run tests/db",
+    "test:e2e": "node --env-file=.env.local e2e/run.mjs",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > lib/db/types.ts",
     "db:seed": "node --env-file=.env.local scripts/seed.mts",

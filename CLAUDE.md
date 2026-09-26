@@ -64,7 +64,25 @@ npm run bootstrap:owner   # cria organização + owner e imprime link de convite
 > engano o slug `studio-exemplo`: o script recusa com uma mensagem em vez de apagar. Testado manualmente
 > (flip do `is_seed` para `false` → `--reset` recusa e não apaga; `true` → apaga normalmente).
 
-[planejado]: `npm run test:e2e` (Playwright).
+Roteiros de navegador **[existe]** (`e2e/*.e2e.mjs`, Playwright com o Chrome instalado; só no lfit-dev):
+
+```bash
+npm run build && npx next start -p 3100    # de preferência no build de produção (o dev fica lento com muitos logins)
+npm run db:seed -- --reset                 # dados fictícios esperados pelos roteiros
+BASE=http://localhost:3100 npm run test:e2e             # todos, em série
+BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com os filtros
+```
+
+- Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
+- `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
+  `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
+  `trainer1/2.seed@example.com`) e a senha de `SEED_USER_PASSWORD` do `.env.local` — **nunca credenciais reais no
+  repositório**. Senhas de contas de aluno criadas no roteiro são geradas a cada execução.
+- O executor (`e2e/run.mjs`) limpa `public.rate_limits` antes de cada roteiro e falha se houver qualquer linha "✗".
+- Cadastro público: o `next start` precisa das chaves de TESTE do Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+  1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
+- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`), idempotentes (limpam o que
+  criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
 ## Estrutura de pastas
 
@@ -417,7 +435,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
   cargas por exercício e volume de treino (séries × reps × carga) por sessão/semana.
 - 2.7 Verificação: roteiros Playwright das Fases 1 e 2 rodados no build de produção (`next start`); o cadastro
   público precisa das chaves de TESTE do Turnstile nas variáveis de ambiente do `next start` (fail-closed sem elas).
-  Os roteiros ainda vivem fora do repositório; viram suíte formal na 1.7.
+  Os roteiros estão em `e2e/` (ver "Comandos"); viram suíte formal na 1.7.
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
