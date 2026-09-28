@@ -39,7 +39,13 @@ for (const email of ["owner.seed@example.com", "trainer1.seed@example.com"]) {
   await p.getByRole("button", { name: "Personalizar" }).click();
   const sh = p.getByRole("dialog");
   await sh.waitFor();
-  ok(`${email}: Personalizar só com os cards reais`, (await sh.getByRole("switch").count()) === 5 && (await sh.getByText("Satisfação dos alunos").count()) === 0, String(await sh.getByRole("switch").count()));
+  // Só os 5 cards reais têm switch; "Satisfação" aparece na lista "Em breve" (desabilitada, sem switch).
+  ok(
+    `${email}: Personalizar só com os cards reais`,
+    (await sh.getByRole("switch").count()) === 5 && (await sh.getByRole("switch", { name: "Satisfação dos alunos" }).count()) === 0,
+    String(await sh.getByRole("switch").count()),
+  );
+  ok(`${email}: Satisfação aparece como 'Em breve'`, (await sh.getByText("Satisfação dos alunos").count()) === 1);
   await p.keyboard.press("Escape");
   if (email.startsWith("owner")) await p.screenshot({ path: `${OUT}/inicio-real.png`, fullPage: true });
   ok(`${email}: sem erros`, p.errors.length === 0, p.errors.join(" | "));
