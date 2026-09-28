@@ -71,7 +71,7 @@ export function VideoField({ hasCurrent, quotaBytes, usedBytes, state, onChange,
       onClick={() => setTab(id)}
       className={cn(
         "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
-        tab === id ? "bg-brand-50 text-brand-700" : "text-ink-2 hover:text-ink",
+        tab === id ? "bg-selected-soft text-ink" : "text-ink-2 hover:text-ink",
       )}
     >
       {icon}

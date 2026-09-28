@@ -147,7 +147,7 @@ export function StudentFormDialog({
         ) : (
           <form id="student-form" onSubmit={onSubmit} noValidate className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
             {serverError && (
-              <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-[13px] text-red-700">
+              <p role="alert" className="mb-4 rounded-xl border border-danger-line bg-danger-soft px-3.5 py-3 text-[13px] text-danger-ink">
                 {serverError}
               </p>
             )}
@@ -163,7 +163,7 @@ export function StudentFormDialog({
                   onChange={setPhoto}
                   onError={setPhotoError}
                 />
-                {photoError && <p role="alert" className="text-[13px] text-red-700">{photoError}</p>}
+                {photoError && <p role="alert" className="text-[13px] text-danger-ink">{photoError}</p>}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field data-invalid={!!errors.firstName}>
                     <FieldLabel htmlFor="firstName">{t.firstName} *</FieldLabel>
@@ -433,9 +433,9 @@ export function StudentFormDialog({
         )}
 
         {limitReached !== null && (
-          <div role="alert" className="mx-5 mb-1 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:mx-6">
-            <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-amber-800" />
-            <div className="text-[13px] text-amber-800">
+          <div role="alert" className="mx-5 mb-1 flex gap-3 rounded-xl border border-warning-line bg-warning-soft px-4 py-3 sm:mx-6">
+            <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning-ink" />
+            <div className="text-[13px] text-warning-ink">
               <p className="font-semibold">{t.limitTitle}</p>
               <p className="mt-0.5">{t.limitText(limitReached)}</p>
               <div className="mt-2 flex flex-wrap gap-2">

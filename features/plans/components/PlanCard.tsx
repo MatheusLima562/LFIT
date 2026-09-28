@@ -9,7 +9,7 @@ import type { Option } from "./ApplyTemplateDialog";
 const t = messages.plans;
 
 export function PlanStatusBadge({ status }: { status: PlanSummary["status"] }) {
-  const style = { draft: "bg-zinc-100 text-zinc-700", active: "bg-emerald-50 text-emerald-700", scheduled: "bg-sky-50 text-sky-700", archived: "bg-zinc-100 text-zinc-600" }[status];
+  const style = { draft: "bg-zinc-100 text-zinc-700", active: "bg-success-soft text-success-ink", scheduled: "bg-info-soft text-info-ink", archived: "bg-zinc-100 text-zinc-600" }[status];
   return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", style)}>{t.status[status]}</span>;
 }
 
@@ -36,7 +36,7 @@ export function PlanCard({
         <p className="mt-0.5 text-[13px] text-ink-2">
           {isTemplate ? (plan.goal ?? t.manage.workouts(plan.workoutLabels)) : planPeriod(plan.startsOn, plan.endsOn, plan.noEnd)}
           {situation && (
-            <span className={cn("ml-2 font-medium", situation.kind === "expired" ? "text-red-700" : situation.kind === "soon" ? "text-amber-800" : "text-ink-3")}>
+            <span className={cn("ml-2 font-medium", situation.kind === "expired" ? "text-danger-ink" : situation.kind === "soon" ? "text-warning-ink" : "text-ink-3")}>
               · {situation.label}
             </span>
           )}

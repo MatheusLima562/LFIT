@@ -4,8 +4,8 @@ import { messages } from "@/messages/pt-BR";
 import type { ContraindicationLevel } from "../constants";
 
 const styles: Record<ContraindicationLevel, string> = {
-  avoid: "bg-red-50 text-red-700 ring-red-200",
-  caution: "bg-amber-50 text-amber-800 ring-amber-200",
+  avoid: "bg-danger-soft text-danger-ink ring-danger-line",
+  caution: "bg-warning-soft text-warning-ink ring-warning-line",
 };
 
 /** Nível de contraindicação: sempre ícone + texto (nunca só cor). */

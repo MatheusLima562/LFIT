@@ -20,21 +20,21 @@ const stats: SalesStat[] = [
     label: "A receber",
     hint: "Pagamentos aprovados aguardando liberação.",
     icon: Clock3,
-    iconClass: "bg-amber-50 text-amber-700",
+    iconClass: "bg-canvas text-ink-2",
   },
   {
     key: "available",
     label: "Disponível",
     hint: "Saldo liberado para saque.",
     icon: Wallet,
-    iconClass: "bg-emerald-50 text-emerald-700",
+    iconClass: "bg-canvas text-ink-2",
   },
   {
     key: "transactions",
     label: "Transações",
     hint: "Volume total transacionado nos últimos 30 dias.",
     icon: ArrowLeftRight,
-    iconClass: "bg-violet-50 text-violet-700",
+    iconClass: "bg-canvas text-ink-2",
   },
 ];
 

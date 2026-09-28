@@ -146,7 +146,7 @@ export function StudentsToolbar({ params, view, classes, groups }: StudentsToolb
                   onClick={() => startTransition(() => setStudentsView(v))}
                   className={cn(
                     "grid size-8 place-items-center rounded-lg outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
-                    view === v ? "bg-brand-50 text-brand-700" : "text-ink-3 hover:text-ink",
+                    view === v ? "bg-selected-soft text-ink" : "text-ink-3 hover:text-ink",
                   )}
                 >
                   <Icon aria-hidden className="size-4" />

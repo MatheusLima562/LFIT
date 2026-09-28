@@ -130,7 +130,7 @@ export function ImportItemsDialog({ planId, studentId, workouts, targetKey, onCl
                         <label className="flex items-center gap-2 text-[13px] text-ink">
                           <Checkbox checked={selected.has(it.key)} onCheckedChange={(v) => toggle([it.key], v === true)} />
                           {it.exerciseName}
-                          {b.groupKey && i === 0 && <span className="rounded-full bg-brand-100 px-1.5 text-[10px] font-semibold text-brand-800">{groupLabel(b.items.length)}</span>}
+                          {b.groupKey && i === 0 && <span className="rounded-full bg-selected-soft px-1.5 text-[10px] font-semibold text-ink">{groupLabel(b.items.length)}</span>}
                           {it.setsDetail.length > 0 && <span className="text-[11px] text-ink-3">{messages.plans.sets.show(it.setsDetail.length)}</span>}
                         </label>
                       </li>

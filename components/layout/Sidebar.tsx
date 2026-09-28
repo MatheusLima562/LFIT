@@ -54,7 +54,7 @@ function CountBadge({ count, collapsed }: { count: number; collapsed?: boolean }
     <span
       aria-label={`${count} não lidas`}
       className={cn(
-        "grid place-items-center rounded-full bg-primary px-1 font-semibold text-primary-foreground",
+        "grid place-items-center rounded-full bg-ink px-1 font-semibold text-surface",
         collapsed ? "absolute top-0.5 right-0.5 h-4 min-w-4 text-[9px]" : "ml-auto h-[18px] min-w-[18px] text-[10px]",
       )}
     >
@@ -238,7 +238,7 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
           <div className="mb-3 rounded-xl border border-line bg-linear-to-b from-canvas to-surface p-3">
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-                <Sparkles aria-hidden className="size-3.5 text-brand-500" />
+                <Sparkles aria-hidden className="size-3.5 text-ink-3" />
                 Plano {plan.planName}
               </span>
               <span className="tabular text-xs font-medium text-ink-2">

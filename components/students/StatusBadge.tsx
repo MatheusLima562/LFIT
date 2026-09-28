@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
 
 const styles: Record<EffectiveStatus, { className: string; icon: typeof Clock }> = {
-  active: { className: "bg-emerald-50 text-emerald-700 ring-emerald-200", icon: CircleCheck },
-  blocked: { className: "bg-red-50 text-red-700 ring-red-200", icon: Ban },
+  active: { className: "bg-success-soft text-success-ink ring-success-line", icon: CircleCheck },
+  blocked: { className: "bg-danger-soft text-danger-ink ring-danger-line", icon: Ban },
   inactive: { className: "bg-canvas text-ink-2 ring-line", icon: CircleMinus },
-  expired: { className: "bg-amber-50 text-amber-800 ring-amber-200", icon: Clock },
+  expired: { className: "bg-warning-soft text-warning-ink ring-warning-line", icon: Clock },
 };
 
 /** Status efetivo do aluno. Sempre ícone + texto (nunca só cor). */

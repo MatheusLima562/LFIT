@@ -13,7 +13,7 @@ export function PlanCard({ plan }: { plan: PlanUsage }) {
         title="Plano"
         icon={<CardIcon><Gauge /></CardIcon>}
         action={
-          <span className="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-100">
+          <span className="rounded-md bg-canvas px-2 py-0.5 text-[11px] font-semibold text-ink-2 ring-1 ring-line">
             {plan.planName}
           </span>
         }

@@ -2,12 +2,11 @@ import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const palettes = [
-  "bg-brand-100 text-brand-700",
+  // Decorativas: nunca a marca nem cores semânticas (danger/warning/success).
   "bg-violet-100 text-violet-700",
   "bg-teal-100 text-teal-700",
   "bg-sky-100 text-sky-700",
-  "bg-amber-100 text-amber-800",
-  "bg-rose-100 text-rose-700",
+  "bg-zinc-100 text-zinc-700",
 ];
 
 function paletteFor(name: string) {

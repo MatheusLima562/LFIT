@@ -13,7 +13,7 @@ export function ExpiringAccessCard({ students, count = students.length }: { stud
         icon={<CardIcon><KeyRound /></CardIcon>}
         action={
           count > 0 ? (
-            <span className="tabular rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
+            <span className="tabular rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning-ink ring-1 ring-warning-line">
               {count}
             </span>
           ) : undefined
@@ -27,7 +27,7 @@ export function ExpiringAccessCard({ students, count = students.length }: { stud
             <li key={s.id} className="flex items-center gap-2.5 py-2 first:pt-0">
               <Avatar name={s.name} size="sm" />
               <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{s.name}</span>
-              {s.meta && <span className="shrink-0 text-xs font-medium text-amber-700">{s.meta}</span>}
+              {s.meta && <span className="shrink-0 text-xs font-medium text-warning-ink">{s.meta}</span>}
             </li>
           ))}
         </ul>

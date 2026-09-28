@@ -9,7 +9,7 @@ const t = messages.redFlags;
 /** Aviso no montador (nível completo de saúde): sinais na última triagem e nenhuma liberação. Não bloqueia. */
 export function RedFlagBanner({ studentId, check }: { studentId: string; check: RedFlagCheck }) {
   return (
-    <div role="status" className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+    <div role="status" className="flex items-start gap-2 rounded-2xl border border-warning-line bg-warning-soft px-4 py-3 text-[13px] text-warning-ink">
       <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
       <div>
         <p className="font-semibold">{t.builderTitle}</p>
@@ -19,7 +19,7 @@ export function RedFlagBanner({ studentId, check }: { studentId: string; check: 
           ))}
         </ul>
         <p className="mt-1">{t.builderText(isoToBR(timestampToISODate(check.recordedAt)))}</p>
-        <Link href={`/alunos?editar=${studentId}`} className="mt-1 inline-block rounded font-medium text-brand-700 underline-offset-2 hover:underline">
+        <Link href={`/alunos?editar=${studentId}`} className="mt-1 inline-block rounded link">
           {t.builderLink}
         </Link>
       </div>
@@ -30,7 +30,7 @@ export function RedFlagBanner({ studentId, check }: { studentId: string; check: 
 /** Aviso restrito (professor do plano sem acesso à saúde): sem sinais, sem observação, sem link para o cadastro. */
 export function RestrictedRedFlagBanner() {
   return (
-    <p role="status" className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+    <p role="status" className="flex items-start gap-2 rounded-2xl border border-warning-line bg-warning-soft px-4 py-3 text-[13px] text-warning-ink">
       <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
       <span className="font-semibold">{t.builderRestricted}</span>
     </p>

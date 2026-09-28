@@ -58,7 +58,7 @@ export function ClassesManager({ classes, trainers, isOwner }: Props) {
           {classes.map((c) => (
             <li key={c.id} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-card">
               <div className="flex items-start gap-3">
-                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl bg-canvas text-ink-2">
                   <UsersRound className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ export function ClassesManager({ classes, trainers, isOwner }: Props) {
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
-                <Link href={`/alunos?turma=${c.id}`} className="inline-flex items-center gap-1 rounded text-[13px] text-brand-700 hover:underline">
+                <Link href={`/alunos?turma=${c.id}`} className="inline-flex items-center gap-1 rounded text-[13px] link">
                   <Users aria-hidden className="size-3.5" />
                   {messages.groups.students(c.students)}
                 </Link>

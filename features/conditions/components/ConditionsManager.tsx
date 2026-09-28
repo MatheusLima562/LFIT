@@ -53,7 +53,7 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
           <Link
             href={`/treinos/exercicios?condicao=${c.id}`}
             title={t.exercisesHint}
-            className="inline-flex items-center gap-1 rounded text-brand-700 hover:underline"
+            className="inline-flex items-center gap-1 rounded link"
           >
             <Dumbbell aria-hidden className="size-3.5" />
             {t.exercises(c.exercises)}
@@ -63,7 +63,7 @@ export function ConditionsManager({ conditions, isOwner }: { conditions: Conditi
             <Link
               href={`/treinos/condicoes/guia/${c.guideKey}`}
               aria-label={messages.guides.openFor(c.name)}
-              className="inline-flex items-center gap-1 rounded text-brand-700 hover:underline"
+              className="inline-flex items-center gap-1 rounded link"
             >
               <BookOpen aria-hidden className="size-3.5" />
               {messages.guides.open}

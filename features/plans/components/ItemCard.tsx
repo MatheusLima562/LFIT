@@ -83,8 +83,8 @@ export function ItemCard(props: ItemCardProps) {
     <div
       className={cn(
         "flex flex-col gap-3 rounded-xl border bg-surface p-3",
-        rules.some((r) => r.level === "avoid") ? "border-red-300" : rules.length ? "border-amber-300" : "border-line",
-        selected && "ring-2 ring-brand-300",
+        rules.some((r) => r.level === "avoid") ? "border-danger" : rules.length ? "border-warning" : "border-line",
+        selected && "ring-2 ring-selected-line",
       )}
     >
       <div className="flex items-start gap-2">
@@ -257,7 +257,7 @@ export function ItemCard(props: ItemCardProps) {
             onClick={() => setExpanded(!expanded)}
             className={cn(
               "inline-flex w-fit items-center gap-1 rounded text-[13px] font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/50",
-              setErrors ? "text-destructive" : "text-brand-700",
+              setErrors ? "text-destructive" : "link",
             )}
           >
             <ChevronDown aria-hidden className={cn("size-4 transition-transform", expanded && "rotate-180")} />

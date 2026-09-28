@@ -151,10 +151,21 @@ tests/unit/                # testes de lógica pura (sem banco)
   Mostre um botão e consuma no POST (ver `/acesso/[token]`).
 - Ações sensíveis com a secret key (Auth admin): primeiro uma RPC com a sessão do usuário autoriza e
   audita (ex.: `record_student_access_email`); só depois o `createAdminClient()`.
-- Contraste AA: texto pequeno usa `ink`/`ink-2`/`ink-3`; links em `brand-700`; botão primário usa
-  `bg-primary` (não `brand-500`, que só passa 3:1 — ok para ícones, barras e gráficos).
-- Tema escuro: use os tokens (`surface`, `canvas`, `line`, `ink*`, `brand-*`). Os tons 50–200 e 700–800
-  de emerald/amber/violet/red/teal/sky/rose/orange/zinc já são remapeados no `.dark` do globals.css.
+- **Cores — marca × semântica (nunca misturar; regras no topo do `app/globals.css`):**
+  - **Marca (laranja, `brand-*`/`primary`)** só em: botão primário (`bg-primary`), item ativo do menu, foco (`ring`) e
+    logo. É a cor personalizável do white label.
+  - **Semânticos:** `danger` (evitar/erro, carmim), `warning` (cautela, ocre), `success`, `info` — cada um com `-soft`
+    (fundo), `-line` (borda) e `-ink` (texto AA). **Vermelho e âmbar nunca como marca nem decoração**; alerta = ícone +
+    rótulo + cor semântica (`LevelBadge`; card com "Evitar" usa `border-danger`).
+  - **Neutros para o resto:** links usam o utilitário `link` (tinta + sublinhado, nunca só cor); seleção de chips/abas/
+    filtros usa `selected-soft`/`selected-line`; controles marcados (checkbox, rádio, switch, data) usam `control`;
+    barras de progresso, ícones de card e destaques usam `ink*`/`canvas`/`line`. Avatares: paleta decorativa sem
+    marca nem semânticos.
+  - Contraste AA (texto ≥ 4.5:1) nos dois temas, travado em `tests/unit/color-tokens.test.ts` (tokens) e conferido
+    nas páginas renderizadas por varredura de DOM. Matiz da marca a ≥ 20° (OKLCH) de danger/warning: `lib/color.ts` e
+    `lib/brand-color.ts` (`validateBrandColor`, base da validação do white label).
+- Tema escuro: use os tokens (`surface`, `canvas`, `line`, `ink*`, semânticos). Os tons 50–200 e 700–800
+  de emerald/amber/violet/red/teal/sky/rose/orange/zinc seguem remapeados no `.dark` do globals.css (legado/decoração).
 - Commits pequenos em conventional commits (`feat:`, `fix:`, `chore:`...).
 - Não instalar dependência sem justificar.
 - Spec ambígua ou em conflito com o código → **parar e perguntar**.

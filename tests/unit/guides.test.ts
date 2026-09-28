@@ -50,6 +50,8 @@ describe("Guias (2.10 Fase B)", () => {
       for (const id of cited) expect(refs.has(id), `${g.key}: ${id}`).toBe(true);
       expect(body).not.toMatch(/CSV|aprovad|documento-base|Fase B/);
       for (const tb of g.tables) for (const r of tb.rows) expect(r).toHaveLength(tb.columns.length);
+      // Grupo de emergência sempre com o tom de emergência (cor danger), mesmo quando o título fala em "mesmo dia".
+      for (const rf of g.redFlags) if (rf.title.startsWith("Emergência")) expect(rf.tone, `${g.key}: ${rf.title}`).toBe("emergency");
     }
   });
 

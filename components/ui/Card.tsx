@@ -82,7 +82,7 @@ export function CardLink({ href, children }: { href: string; children: ReactNode
   return (
     <Link
       href={href}
-      className="group inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-brand-700 outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
+      className="group inline-flex items-center gap-1 rounded-md text-[13px] font-medium link outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
     >
       {children}
       <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-0.5" />

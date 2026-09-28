@@ -12,10 +12,10 @@ interface SatisfactionCardProps {
 }
 
 function verdict(score: number) {
-  if (score >= 4.5) return { label: "Excelente!", className: "bg-emerald-50 text-emerald-700 ring-emerald-200" };
-  if (score >= 4) return { label: "Muito bom", className: "bg-emerald-50 text-emerald-700 ring-emerald-200" };
-  if (score >= 3) return { label: "Bom", className: "bg-amber-50 text-amber-800 ring-amber-200" };
-  return { label: "Precisa de atenção", className: "bg-red-50 text-red-700 ring-red-200" };
+  if (score >= 4.5) return { label: "Excelente!", className: "bg-success-soft text-success-ink ring-success-line" };
+  if (score >= 4) return { label: "Muito bom", className: "bg-success-soft text-success-ink ring-success-line" };
+  if (score >= 3) return { label: "Bom", className: "bg-warning-soft text-warning-ink ring-warning-line" };
+  return { label: "Precisa de atenção", className: "bg-danger-soft text-danger-ink ring-danger-line" };
 }
 
 export function SatisfactionCard({ data, referenceDate }: SatisfactionCardProps) {
@@ -26,13 +26,12 @@ export function SatisfactionCard({ data, referenceDate }: SatisfactionCardProps)
   return (
     <Card
       labelledBy="card-satisfaction"
-      className="relative h-full overflow-hidden border-brand-100 bg-linear-to-br from-brand-50 via-surface to-surface"
+      className="relative h-full overflow-hidden"
     >
-      <span aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-56 rounded-full bg-brand-100/50 blur-2xl" />
 
       <header className="relative mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 id="card-satisfaction" className="flex min-w-0 items-center gap-2 text-xs font-semibold tracking-[0.06em] whitespace-nowrap text-ink uppercase">
-          <span aria-hidden className="grid size-7 place-items-center rounded-lg bg-brand-500 text-white shadow-[0_1px_2px_rgb(219_79_25/0.35)]">
+          <span aria-hidden className="grid size-7 place-items-center rounded-lg bg-canvas text-ink-2 ring-1 ring-line">
             <Star className="size-3.5 fill-current" />
           </span>
           Satisfação dos alunos

@@ -77,7 +77,7 @@ export function DashboardView({ firstName, banner, cards }: DashboardViewProps) 
         ) : (
           <div className="rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center">
             <p className="text-sm text-ink-2">Todos os indicadores estão ocultos.</p>
-            <Button variant="link" onClick={() => setHidden(new Set())} className="mt-1 text-brand-700">
+            <Button variant="link" onClick={() => setHidden(new Set())} className="mt-1 link">
               Mostrar tudo novamente
             </Button>
           </div>

@@ -54,7 +54,7 @@ export function SignInForm({ next }: { next?: string }) {
             <FieldLabel htmlFor="password">{t.password}</FieldLabel>
             <Link
               href="/esqueci-senha"
-              className="rounded text-[13px] font-medium text-brand-700 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="rounded text-[13px] link outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
               {t.forgot}
             </Link>

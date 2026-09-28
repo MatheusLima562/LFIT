@@ -85,7 +85,7 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
                 <span className="hidden sm:inline">{t.publicSignups}</span>
                 <span className="sr-only sm:hidden">{t.publicSignups}</span>
                 {pendingSignups > 0 && (
-                  <span className="tabular rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+                  <span className="tabular rounded-full bg-ink px-1.5 text-[11px] font-semibold text-surface">
                     {pendingSignups}
                     <span className="sr-only"> pendentes</span>
                   </span>

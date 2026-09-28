@@ -20,8 +20,8 @@ interface StatTabsProps {
 
 const toneDot: Record<NonNullable<StatTab["tone"]>, string> = {
   neutral: "bg-ink-3",
-  warning: "bg-amber-400",
-  danger: "bg-red-500",
+  warning: "bg-warning",
+  danger: "bg-danger",
 };
 
 /** Abas com contador (Radix Tabs: setas, Home/End e ARIA prontos). */
@@ -80,7 +80,7 @@ export function StatTabs({ tabs, label, emptyIcon, maxItems = 3, defaultTabId }:
                 {hidden > 0 && (
                   <li className="pt-2 text-xs font-medium text-ink-3">
                     {tab.href ? (
-                      <Link href={tab.href} className="rounded text-brand-700 hover:underline">
+                      <Link href={tab.href} className="rounded link">
                         + {plural(hidden, "aluno")} nesta lista
                       </Link>
                     ) : (

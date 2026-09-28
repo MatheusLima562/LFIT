@@ -131,7 +131,7 @@ export function PendingSignups({ signups, trainers, groups: initialGroups }: Pro
               </div>
               <div className="flex shrink-0 items-center gap-2 pl-7 sm:pl-0">
                 {s.healthDescription && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 ring-1 ring-brand-100">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-0.5 text-xs font-medium text-ink ring-1 ring-line">
                     <HeartPulse aria-hidden className="size-3" />
                     {a.healthInformed}
                   </span>
@@ -213,7 +213,7 @@ function ApproveDialog({
         {signup.healthDescription ? (
           <div className="flex flex-col gap-2">
             <p className="text-[13px] font-medium text-ink">{a.healthText}</p>
-            <blockquote className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] whitespace-pre-wrap text-ink">
+            <blockquote className="rounded-xl border border-line bg-canvas px-4 py-3 text-[13px] whitespace-pre-wrap text-ink">
               {signup.healthDescription}
             </blockquote>
             {signup.consentAt && <p className="text-xs text-ink-3">{a.healthConsentAt(formatDate(signup.consentAt))}</p>}
@@ -235,7 +235,7 @@ function ApproveDialog({
           )}
         </div>
 
-        {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">{error}</p>}
+        {error && <p role="alert" className="rounded-xl border border-danger-line bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger-ink">{error}</p>}
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={pending}>{messages.students.confirm.cancel}</Button>

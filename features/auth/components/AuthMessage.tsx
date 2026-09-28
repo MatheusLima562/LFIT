@@ -9,7 +9,7 @@ export function AuthMessage({ tone, children }: { tone: "error" | "success"; chi
       role={tone === "error" ? "alert" : "status"}
       className={cn(
         "flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] leading-snug",
-        tone === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-800",
+        tone === "error" ? "border-danger-line bg-danger-soft text-danger-ink" : "border-success-line bg-success-soft text-success-ink",
       )}
     >
       <Icon aria-hidden className="mt-px size-4 shrink-0" />

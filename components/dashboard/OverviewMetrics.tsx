@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 import { InfoHint } from "@/components/ui/InfoHint";
 
 const tones: Record<OverviewMetric["tone"], string> = {
-  brand: "bg-brand-50 text-brand-600",
+  brand: "bg-canvas text-ink-2",
   violet: "bg-violet-50 text-violet-600",
   neutral: "bg-canvas text-ink-2",
-  positive: "bg-emerald-50 text-emerald-600",
+  positive: "bg-success-soft text-success-ink",
 };
 
 const icons: Record<string, typeof Users> = {

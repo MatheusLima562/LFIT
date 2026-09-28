@@ -92,7 +92,7 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
       <Tooltip>
         <TooltipTrigger asChild>
           {wa ? (
-            <Button asChild variant="ghost" size="icon-sm" className="text-ink-3 hover:text-emerald-700">
+            <Button asChild variant="ghost" size="icon-sm" className="text-ink-3 hover:text-success-ink">
               <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`${t.menu.whatsapp}: ${student.fullName}`}>
                 <MessageCircle aria-hidden />
               </a>

@@ -6,10 +6,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 function LiveBadge() {
   return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-emerald-700 uppercase ring-1 ring-emerald-200">
+    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-success-ink uppercase ring-1 ring-success-line">
       <span aria-hidden className="relative flex size-1.5">
-        <span className="absolute inset-0 animate-live rounded-full bg-emerald-500" />
-        <span className="relative size-1.5 rounded-full bg-emerald-500" />
+        <span className="absolute inset-0 animate-live rounded-full bg-success" />
+        <span className="relative size-1.5 rounded-full bg-success" />
       </span>
       Ao vivo
     </span>

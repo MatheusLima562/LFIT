@@ -22,7 +22,7 @@ export default async function GuidePage({ params }: PageProps<"/treinos/condicoe
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
-      <Link href="/treinos/condicoes" className="inline-flex w-fit items-center gap-1 rounded text-[13px] text-brand-700 hover:underline">
+      <Link href="/treinos/condicoes" className="inline-flex w-fit items-center gap-1 rounded text-[13px] link">
         <ChevronLeft aria-hidden className="size-3.5" />
         {t.back}
       </Link>

@@ -162,6 +162,10 @@ Personalização da marca do personal, em níveis. **Limites de customização v
   - Logo da organização (upload no Storage, com limites de tipo/tamanho).
   - 1–2 cores de marca, com **validação de contraste AA** (texto e botões) e **variante para o modo escuro**; cor que
     não passar é recusada ou ajustada, nunca aplicada sem contraste.
+  - Validação da cor (já implementada em `lib/brand-color.ts`, `validateBrandColor`): matiz a ≥ 20° (OKLCH) de
+    `danger` e `warning` nos dois temas, e AA — deriva o fundo do botão primário (texto branco ≥ 4.5:1) e o tom para
+    texto no escuro; recusa a cor se o ajuste necessário for grande demais. A cor do personal só substitui a marca
+    (botão primário, item ativo, foco, logo): nunca os semânticos.
   - Nome e ícone do app do aluno: **manifest PWA dinâmico por organização**.
   - Logo na impressão/PDF do treino.
   - Nome do personal como **remetente** dos e-mails (o endereço técnico continua o da plataforma).

@@ -50,7 +50,7 @@ export const GUIDES: Record<string, Guide> = {
       "**Extensão lombar: fortalecer os extensores é útil.** Treino resistido de extensão lombar trouxe melhora de dor e incapacidade na lombalgia crônica, em revisão não sistemática [R28] **[fraca]**; treino resistido está entre as modalidades mais eficazes em meta-análise em rede (qualidade baixa) [R8] **[fraca]**. Por isso a extensão lombar **não** tem cautela na lombalgia inespecífica — só em quem tem **intolerância à extensão** (condição por padrão).",
     ],
     redFlags: [
-      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia (suspeita de síndrome da cauda equina) [R19]", tone: "sameDay", items: [
+      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia (suspeita de síndrome da cauda equina) [R19]", tone: "emergency", items: [
         "Alteração na função da **bexiga ou do intestino** (ex.: dificuldade para urinar, perda de controle).",
         "**Dormência ou formigamento na região da \"sela\"** (nádegas, parte interna das coxas, região genital) (baixo).",
         "Dor irradiada para **uma ou as duas pernas** com perda de sensibilidade ou **fraqueza** que está **piorando**.",
@@ -189,7 +189,7 @@ export const GUIDES: Record<string, Guide> = {
       "**Horário:** evitar concentrar exercícios de flexão lombar logo após acordar [H15]. **[fraca]** (extrapolado)",
     ],
     redFlags: [
-      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia [H17]", tone: "sameDay", items: [
+      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia [H17]", tone: "emergency", items: [
         "Alteração na função da **bexiga ou do intestino** (ex.: dificuldade para urinar, perda de controle).",
         "**Dormência ou formigamento na região da \"sela\"** (nádegas, parte interna das coxas, região genital) (baixo).",
         "Dor, dormência ou **fraqueza** nas pernas que está **piorando**, especialmente **nas duas pernas**.",
@@ -259,7 +259,7 @@ export const GUIDES: Record<string, Guide> = {
       "**Costumam ser bem tolerados** (sem alerta; confirmar pelos sintomas): bicicleta ergométrica [E9, E10], exercícios em flexão [E10], leg press 45°, exercícios sentados ou apoiados, remadas sentadas, caminhada em intervalos. **[consenso]** (as referências indicam uso nos programas testados, não superioridade).",
     ],
     redFlags: [
-      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia [E11]", tone: "sameDay", items: [
+      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia [E11]", tone: "emergency", items: [
         "Alteração na função da **bexiga ou do intestino**.",
         "**Dormência ou formigamento na região da \"sela\"** (nádegas, parte interna das coxas, região genital) (baixo).",
         "**Fraqueza** nas pernas que piora rapidamente, ou sintomas novos nas **duas pernas**.",
@@ -330,7 +330,7 @@ export const GUIDES: Record<string, Guide> = {
       "**Costumam ser bem tolerados** (sem alerta; confirmar pelos sintomas): exercícios de estabilização (dead bug, bird dog, prancha lateral, Pallof press) [S3], exercícios em flexão [S4], bicicleta ergométrica, exercícios sentados ou apoiados. **[consenso]** (as referências indicam uso nos programas testados, não superioridade).",
     ],
     redFlags: [
-      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia [S9]", tone: "sameDay", items: [
+      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia [S9]", tone: "emergency", items: [
         "Alteração na função da **bexiga ou do intestino**.",
         "**Dormência ou formigamento na região da \"sela\"** (baixo).",
         "**Fraqueza** nas pernas que piora rapidamente, ou sintomas novos nas **duas pernas**.",
@@ -403,7 +403,7 @@ export const GUIDES: Record<string, Guide> = {
       { title: "Emergência imediata — interromper o treino e acionar o SAMU (192) / pronto-socorro [O12] [consenso] (diretriz de dor torácica)", tone: "emergency", items: [
         "**Dor no ombro ou no braço que aparece com o esforço** acompanhada de **falta de ar, sudorese ou dor/aperto no peito**. A diretriz descreve a dor anginosa como desconforto no peito **ou no pescoço, ombros, mandíbula ou braços**, desencadeado pelo esforço e aliviado pelo repouso; dor no peito e/ou em outras áreas (ex.: braços, costas, mandíbula) por mais de 15 minutos, ou dor no peito com náusea/vômito, sudorese intensa ou falta de ar, pode indicar síndrome coronariana aguda, e a suspeita com dor atual leva a **encaminhamento de emergência** ao hospital [O12 — rec. 1.2.1.3, 1.2.1.7 e 1.3.3.1].",
       ] },
-      { title: "Emergência — encaminhar no mesmo dia [O9]", tone: "sameDay", items: [
+      { title: "Emergência — encaminhar no mesmo dia [O9]", tone: "emergency", items: [
         "**Suspeita de infecção articular.**",
         "**Luxação não reduzida.**",
       ] },
@@ -616,7 +616,7 @@ export const GUIDES: Record<string, Guide> = {
       "**Horário:** evitar concentrar exercícios de flexão lombar logo após acordar [H15]. **[fraca]** (extrapolado)",
     ],
     redFlags: [
-      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia (suspeita de síndrome da cauda equina) [R19]", tone: "sameDay", items: [
+      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia (suspeita de síndrome da cauda equina) [R19]", tone: "emergency", items: [
         "Alteração na função da **bexiga ou do intestino** (ex.: dificuldade para urinar, perda de controle).",
         "**Dormência ou formigamento na região da \"sela\"** (nádegas, parte interna das coxas, região genital) (baixo).",
         "Dor irradiada para **uma ou as duas pernas** com perda de sensibilidade ou **fraqueza** que está **piorando**.",
@@ -704,7 +704,7 @@ export const GUIDES: Record<string, Guide> = {
       "**Costumam ser bem tolerados** (sem alerta; confirmar pelos sintomas): bicicleta ergométrica [E9, E10], exercícios em flexão [E10], leg press 45°, exercícios sentados ou apoiados, remadas sentadas, caminhada em intervalos. **[consenso]** (as referências indicam uso nos programas testados, não superioridade).",
     ],
     redFlags: [
-      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia (suspeita de síndrome da cauda equina) [R19]", tone: "sameDay", items: [
+      { title: "Emergência — encaminhar a serviço de urgência no mesmo dia (suspeita de síndrome da cauda equina) [R19]", tone: "emergency", items: [
         "Alteração na função da **bexiga ou do intestino** (ex.: dificuldade para urinar, perda de controle).",
         "**Dormência ou formigamento na região da \"sela\"** (nádegas, parte interna das coxas, região genital) (baixo).",
         "Dor irradiada para **uma ou as duas pernas** com perda de sensibilidade ou **fraqueza** que está **piorando**.",

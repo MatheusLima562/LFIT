@@ -14,9 +14,9 @@ export function QuickActions() {
             <li key={action.id}>
               <Link
                 href={action.href!}
-                className="group inline-flex h-9 items-center gap-2 rounded-xl border border-line bg-surface pr-3.5 pl-1.5 text-[13px] font-medium text-ink-2 shadow-card outline-none transition-colors hover:border-brand-200 hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="group inline-flex h-9 items-center gap-2 rounded-xl border border-line bg-surface pr-3.5 pl-1.5 text-[13px] font-medium text-ink-2 shadow-card outline-none transition-colors hover:border-line-strong hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/50"
               >
-                <span aria-hidden className="grid size-6 place-items-center rounded-lg bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-500 group-hover:text-white">
+                <span aria-hidden className="grid size-6 place-items-center rounded-lg bg-canvas text-ink-2 transition-colors group-hover:bg-selected-soft group-hover:text-ink">
                   <Icon className="size-3.5" />
                 </span>
                 {action.label}

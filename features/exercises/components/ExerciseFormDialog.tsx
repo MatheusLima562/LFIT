@@ -161,7 +161,7 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref,
                             onClick={() => field.onChange(on ? field.value.filter((x) => x !== g) : [...field.value, g])}
                             className={cn(
                               "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
-                              on ? "border-brand-300 bg-brand-50 font-medium text-brand-700" : "border-line bg-surface text-ink-2 hover:text-ink",
+                              on ? "border-selected-line bg-selected-soft font-medium text-ink" : "border-line bg-surface text-ink-2 hover:text-ink",
                             )}
                           >
                             {on && <Check aria-hidden className="size-3.5" />}
@@ -304,7 +304,7 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref,
           </section>
 
           {serverError && (
-            <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger-ink">
               {serverError}
             </p>
           )}

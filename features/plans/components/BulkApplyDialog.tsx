@@ -108,7 +108,7 @@ export function BulkApplyDialog({ source, students, onClose }: { source: { id: s
                 <legend className="mb-1 text-sm font-medium text-ink">{t.mode}</legend>
                 {(["draft", "activate"] as const).map((m) => (
                   <label key={m} className="flex items-center gap-2 text-[13px] text-ink">
-                    <input type="radio" name="bulk-mode" checked={activate === (m === "activate")} onChange={() => setActivate(m === "activate")} className="accent-brand-600" />
+                    <input type="radio" name="bulk-mode" checked={activate === (m === "activate")} onChange={() => setActivate(m === "activate")} className="accent-ink" />
                     {t.modes[m]}
                   </label>
                 ))}
@@ -159,13 +159,13 @@ export function BulkApplyDialog({ source, students, onClose }: { source: { id: s
                   ) : (
                     <>
                       {r.avoid > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-danger-soft px-2 py-0.5 text-[11px] font-semibold text-danger-ink">
                           <OctagonAlert aria-hidden className="size-3" />
                           {t.avoid(r.avoid)}
                         </span>
                       )}
                       {r.caution > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning-ink">
                           <TriangleAlert aria-hidden className="size-3" />
                           {t.caution(r.caution)}
                         </span>
@@ -184,8 +184,8 @@ export function BulkApplyDialog({ source, students, onClose }: { source: { id: s
                   <span className="min-w-0 flex-1 font-medium text-ink">{names.get(r.studentId) ?? r.studentId}</span>
                   {r.planId ? (
                     <>
-                      <span className="text-emerald-700">{t.resultOk(messages.plans.status[r.status as keyof typeof messages.plans.status] ?? "")}</span>
-                      <Link href={`/alunos/${r.studentId}/treinos`} className="rounded text-brand-700 hover:underline">
+                      <span className="text-success-ink">{t.resultOk(messages.plans.status[r.status as keyof typeof messages.plans.status] ?? "")}</span>
+                      <Link href={`/alunos/${r.studentId}/treinos`} className="rounded link">
                         {t.open}
                       </Link>
                     </>

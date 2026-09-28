@@ -16,7 +16,7 @@ function OriginBadge({ row }: { row: ExerciseRow }) {
       <span
         className={cn(
           "inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
-          row.isGlobal ? "bg-canvas text-ink-2 ring-line" : "bg-brand-50 text-brand-700 ring-brand-200",
+          row.isGlobal ? "bg-canvas text-ink-2 ring-line" : "bg-selected-soft text-ink ring-selected-line",
         )}
       >
         {row.isGlobal ? t.globalBadge : t.ownBadge}
@@ -42,7 +42,7 @@ export function ExercisesList({ rows, params }: { rows: ExerciseRow[]; params: E
   const detailHref = (id: string) => exerciseListHref(params, { ver: id });
   const name = (row: ExerciseRow) => (
     <span className="inline-flex items-center gap-1.5">
-      <Link href={detailHref(row.id)} scroll={false} className="rounded font-semibold text-ink hover:text-brand-700 hover:underline">
+      <Link href={detailHref(row.id)} scroll={false} className="rounded font-semibold text-ink hover:link">
         {row.name}
       </Link>
       {row.hasVideo && (

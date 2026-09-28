@@ -259,7 +259,7 @@ export function MoreToggle({ open, count, controls, label, onToggle }: { open: b
       aria-controls={controls}
       aria-label={label}
       onClick={onToggle}
-      className="inline-flex w-fit items-center gap-1 rounded text-[12px] font-medium text-brand-700 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
+      className="inline-flex w-fit items-center gap-1 rounded text-[12px] link outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
     >
       <ChevronDown aria-hidden className={cn("size-3.5 transition-transform", open && "rotate-180")} />
       {messages.plans.more.label}

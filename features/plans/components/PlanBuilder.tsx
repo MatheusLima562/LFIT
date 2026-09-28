@@ -492,7 +492,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
                   onClick={() => switchWorkout(w.key)}
                   className={cn(
                     "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
-                    w.key === workout?.key ? "bg-brand-50 text-brand-700" : "text-ink-2 hover:text-ink",
+                    w.key === workout?.key ? "bg-selected-soft text-ink" : "text-ink-2 hover:text-ink",
                     hasError && "text-destructive",
                   )}
                 >
@@ -730,7 +730,7 @@ function LabeledField({ id, label, error, className, children }: { id: string; l
 }
 
 function StatusBadge({ status }: { status: PlanStatus }) {
-  const style = { draft: "bg-zinc-100 text-zinc-700", active: "bg-emerald-50 text-emerald-700", scheduled: "bg-sky-50 text-sky-700", archived: "bg-zinc-100 text-zinc-600" }[status];
+  const style = { draft: "bg-zinc-100 text-zinc-700", active: "bg-success-soft text-success-ink", scheduled: "bg-info-soft text-info-ink", archived: "bg-zinc-100 text-zinc-600" }[status];
   return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", style)}>{t.status[status]}</span>;
 }
 
@@ -749,7 +749,7 @@ function AlertsPanel({ hidden, restricted, counts }: { hidden: boolean; restrict
       role="status"
       className={cn(
         "flex items-start gap-2 rounded-2xl border px-4 py-3 text-[13px]",
-        counts.avoid ? "border-red-200 bg-red-50 text-red-800" : counts.caution ? "border-amber-200 bg-amber-50 text-amber-900" : "border-line bg-surface text-ink-2",
+        counts.avoid ? "border-danger-line bg-danger-soft text-danger-ink" : counts.caution ? "border-warning-line bg-warning-soft text-warning-ink" : "border-line bg-surface text-ink-2",
       )}
     >
       <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -835,10 +835,10 @@ function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpd
               <SortableBlock key={block.id} id={block.id} disabled={readOnly}>
                 {(handle) =>
                   block.groupKey ? (
-                    <div className="flex flex-col gap-2 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-2">
+                    <div className="flex flex-col gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-canvas/60 p-2">
                       <div className="flex flex-wrap items-center gap-2 px-1">
                         {!readOnly && <DragHandle label={`${t.groups.dragGroup}: ${blockName(block)}`} {...handle} />}
-                        <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-800">{groupLabel(block.items.length)}</span>
+                        <span className="rounded-full bg-selected-soft px-2 py-0.5 text-[11px] font-semibold text-ink">{groupLabel(block.items.length)}</span>
                         {!readOnly && (
                           <div className="ml-auto flex items-center">
                             <Button type="button" variant="ghost" size="icon-sm" aria-label={t.groups.moveGroupUp} disabled={bi === 0} onClick={() => onItems((its) => moveBlock(its, block.id, -1))}>

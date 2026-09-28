@@ -25,8 +25,8 @@ function Text({ text }: { text: string }) {
 }
 
 const TONE: Record<GuideTone, { icon: typeof PhoneCall; box: string; label: string }> = {
-  emergency: { icon: PhoneCall, box: "border-red-200 bg-red-50 text-red-900", label: t.tone.emergency },
-  sameDay: { icon: AlertTriangle, box: "border-amber-200 bg-amber-50 text-amber-900", label: t.tone.sameDay },
+  emergency: { icon: PhoneCall, box: "border-danger-line bg-danger-soft text-danger-ink", label: t.tone.emergency },
+  sameDay: { icon: AlertTriangle, box: "border-warning-line bg-warning-soft text-warning-ink", label: t.tone.sameDay },
   refer: { icon: Stethoscope, box: "border-line bg-canvas text-ink-2", label: t.tone.refer },
 };
 
@@ -164,7 +164,7 @@ export function GuideView({ guide, idPrefix = "guide" }: { guide: Guide; idPrefi
             <li key={r.id}>
               <span className="font-semibold text-ink">[{r.id}]</span> {r.text}{" "}
               {r.url && (
-                <a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 rounded text-brand-700 hover:underline">
+                <a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 rounded link">
                   {t.openSource}
                   <ArrowUpRight aria-hidden className="size-3" />
                   <span className="sr-only">{t.newTab}</span>

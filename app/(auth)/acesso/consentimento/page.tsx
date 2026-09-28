@@ -18,7 +18,7 @@ export default async function HealthConsentPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-brand-50 text-brand-600 ring-1 ring-brand-100">
+      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-canvas text-ink-2 ring-1 ring-line">
         <HeartPulse className="size-5" />
       </span>
       <div>

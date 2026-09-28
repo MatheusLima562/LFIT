@@ -74,11 +74,11 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
               scroll={false}
               className={cn(
                 "relative inline-flex h-10 shrink-0 items-center gap-2 rounded-t-lg px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
-                current ? "text-ink after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-brand-500" : "text-ink-2 hover:text-ink",
+                current ? "text-ink after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-ink" : "text-ink-2 hover:text-ink",
               )}
             >
               {t.tabs[k]}
-              <span className={cn("tabular rounded-full px-1.5 py-px text-xs", current ? "bg-brand-50 text-brand-700" : "bg-canvas text-ink-3")}>
+              <span className={cn("tabular rounded-full px-1.5 py-px text-xs", current ? "bg-selected-soft text-ink" : "bg-canvas text-ink-3")}>
                 {lists[k].length}
               </span>
             </Link>

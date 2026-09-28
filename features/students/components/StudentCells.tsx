@@ -69,9 +69,9 @@ export function StudentPlan({ student }: { student: StudentRow }) {
     <span
       className={
         state === "expired"
-          ? "text-[13px] font-medium whitespace-nowrap text-red-700"
+          ? "text-[13px] font-medium whitespace-nowrap text-danger-ink"
           : state === "soon"
-            ? "text-[13px] font-medium whitespace-nowrap text-amber-800"
+            ? "text-[13px] font-medium whitespace-nowrap text-warning-ink"
             : "text-[13px] whitespace-nowrap text-ink-2"
       }
     >

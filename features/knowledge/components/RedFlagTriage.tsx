@@ -45,7 +45,7 @@ export function RedFlagTriage({ studentId, check }: { studentId: string; check: 
       ) : check.items.length === 0 ? (
         <p className="text-[13px] text-ink-2">{t.lastNone(isoToBR(timestampToISODate(check.recordedAt)))}</p>
       ) : (
-        <div className={cn("rounded-lg border px-3 py-2 text-[13px]", pending ? "border-amber-200 bg-amber-50 text-amber-900" : "border-line bg-surface text-ink-2")}>
+        <div className={cn("rounded-lg border px-3 py-2 text-[13px]", pending ? "border-warning-line bg-warning-soft text-warning-ink" : "border-line bg-surface text-ink-2")}>
           <p className="font-medium">{t.lastWith(isoToBR(timestampToISODate(check.recordedAt)))}:</p>
           <ul className="mt-1 list-disc pl-5">
             {check.items.map((k) => (
@@ -55,7 +55,7 @@ export function RedFlagTriage({ studentId, check }: { studentId: string; check: 
           {check.referred && <p className="mt-1 text-xs font-medium">{t.referredDone}</p>}
           {check.note && <p className="mt-1 text-xs">{check.note}</p>}
           {check.clearance ? (
-            <p className="mt-2 flex items-start gap-1.5 text-emerald-700">
+            <p className="mt-2 flex items-start gap-1.5 text-success-ink">
               <CheckCircle2 aria-hidden className="mt-0.5 size-4 shrink-0" />
               <span>
                 {t.cleared(t.kinds[check.clearance.kind], check.clearance.name, isoToBR(check.clearance.on))}
@@ -136,7 +136,7 @@ function CheckDialog({ studentId, onClose }: { studentId: string; onClose: () =>
             return (
               <fieldset key={tone} className="flex flex-col gap-2">
                 <legend className="mb-1 flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-                  <Icon aria-hidden className={cn("size-4", tone === "emergency" ? "text-red-700" : tone === "sameDay" ? "text-amber-700" : "text-ink-3")} />
+                  <Icon aria-hidden className={cn("size-4", tone === "emergency" ? "text-danger-ink" : tone === "sameDay" ? "text-warning-ink" : "text-ink-3")} />
                   {t.tone[tone]}
                 </legend>
                 {RED_FLAGS.filter((f) => f.tone === tone).map((f) => (

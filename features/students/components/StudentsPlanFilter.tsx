@@ -18,7 +18,7 @@ export function StudentsPlanFilter({ params, counts }: { params: StudentListPara
         scroll={false}
         className={cn(
           "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
-          current ? "border-brand-300 bg-brand-50 font-medium text-brand-700" : "border-line bg-surface text-ink-2 hover:text-ink",
+          current ? "border-selected-line bg-selected-soft font-medium text-ink" : "border-line bg-surface text-ink-2 hover:text-ink",
         )}
       >
         {label}

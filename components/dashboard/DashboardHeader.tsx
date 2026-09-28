@@ -103,7 +103,7 @@ export function DashboardHeader({ firstName, onCustomize }: DashboardHeaderProps
                     onSelect={() => available && action.href && router.push(action.href)}
                     className="gap-3 py-2"
                   >
-                    <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                    <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-canvas text-ink-2">
                       <Icon className="size-4" />
                     </span>
                     <span className="min-w-0 flex-1">

@@ -18,7 +18,7 @@ function Situation({ row }: { row: ActivePlanRow }) {
   const s = planSituation(row.endsOn);
   if (!s) return <span className="text-[13px] text-ink-3">{t.noEnd}</span>;
   return (
-    <span className={cn("text-[13px] whitespace-nowrap", s.kind === "expired" ? "font-medium text-red-700" : s.kind === "soon" ? "font-medium text-amber-800" : "text-ink-2")}>
+    <span className={cn("text-[13px] whitespace-nowrap", s.kind === "expired" ? "font-medium text-danger-ink" : s.kind === "soon" ? "font-medium text-warning-ink" : "text-ink-2")}>
       {s.label}
     </span>
   );
@@ -29,7 +29,7 @@ const columns: DataTableColumn<ActivePlanRow>[] = [
     id: "student",
     header: t.columns.student,
     cell: (r) => (
-      <Link href={`/alunos/${r.student.id}/treinos`} className="rounded font-semibold text-ink hover:text-brand-700 hover:underline">
+      <Link href={`/alunos/${r.student.id}/treinos`} className="rounded font-semibold text-ink hover:link">
         {r.student.name}
       </Link>
     ),
@@ -39,7 +39,7 @@ const columns: DataTableColumn<ActivePlanRow>[] = [
     id: "plan",
     header: t.columns.plan,
     cell: (r) => (
-      <Link href={`/treinos/${r.id}/editar`} className="rounded text-[13px] text-brand-700 hover:underline">
+      <Link href={`/treinos/${r.id}/editar`} className="rounded text-[13px] link">
         {r.name}
       </Link>
     ),
@@ -58,7 +58,7 @@ export default async function PlansOverviewPage() {
           <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-[22px]">{t.title}</h1>
           <p className="mt-0.5 text-[13px] text-ink-2">{t.subtitle}</p>
         </div>
-        <Link href="/alunos?treino=sem_treino" className="rounded text-[13px] text-brand-700 hover:underline">
+        <Link href="/alunos?treino=sem_treino" className="rounded text-[13px] link">
           {t.seeStudents}
         </Link>
       </header>

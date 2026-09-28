@@ -21,7 +21,7 @@ export function ProgressBar({ value, max, label, className, barClassName }: Prog
     >
       <div
         className={cn(
-          "h-full rounded-full bg-linear-to-r from-brand-400 to-brand-500 transition-[width] duration-500",
+          "h-full rounded-full bg-ink-2 transition-[width] duration-500",
           barClassName,
         )}
         style={{ width: `${pct}%` }}

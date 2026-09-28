@@ -8,11 +8,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 const RANK_SLOTS = 5;
 
-const rankStyles = [
-  "bg-amber-100 text-amber-800 ring-amber-200",
-  "bg-zinc-100 text-zinc-700 ring-zinc-200",
-  "bg-orange-100 text-orange-800 ring-orange-200",
-];
+// Pódio neutro: nada de marca (laranja) nem cores semânticas (âmbar = cautela) em decoração.
+const rankStyles = ["bg-ink text-surface ring-ink", "bg-zinc-200 text-zinc-700 ring-zinc-200", "bg-zinc-100 text-zinc-700 ring-zinc-200"];
 
 function RankBadge({ position, muted }: { position: number; muted?: boolean }) {
   return (
@@ -45,12 +42,12 @@ export function TopStudentsCard({ students }: { students: TopStudent[] }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium text-ink">{student.name}</p>
                 <div aria-hidden className="mt-1 h-1 overflow-hidden rounded-full bg-canvas">
-                  <div className="h-full rounded-full bg-brand-400" style={{ width: `${(student.workouts / best) * 100}%` }} />
+                  <div className="h-full rounded-full bg-ink-3" style={{ width: `${(student.workouts / best) * 100}%` }} />
                 </div>
               </div>
               <span
                 aria-label={plural(student.workouts, "treino")}
-                className="tabular min-w-7 shrink-0 rounded-md bg-brand-50 px-1.5 py-0.5 text-center text-xs font-semibold text-brand-700"
+                className="tabular min-w-7 shrink-0 rounded-md bg-canvas px-1.5 py-0.5 text-center text-xs font-semibold text-ink"
               >
                 {formatNumber(student.workouts)}
               </span>

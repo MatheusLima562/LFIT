@@ -7,8 +7,14 @@
 /* =============================================================================
  * Tokens do LFit
  * Valores brutos por tema em :root / .dark; utilitários via @theme inline.
- * Contraste AA verificado para texto: ink-3 ≥ 4.9:1, links (brand-700) ≥ 5.7:1,
- * texto branco no botão primário 4.7:1.
+ *
+ * MARCA × SEMÂNTICA (nunca misturar):
+ * - Marca (laranja, --brand-*; personalizável no white label): SÓ botão primário, item ativo do menu, foco e logo.
+ * - Semânticos: --danger (evitar/erro, carmim), --warning (cautela, ocre), --success, --info. Vermelho e âmbar
+ *   nunca são marca. Matiz (OKLCH) da marca a ≥ 20° de danger/warning (lib/color.ts, validação do white label).
+ * - Seleção, links, ícones de card, barras de progresso e destaques: neutros (--selected-*, link, ink/line).
+ * Contraste AA (texto ≥ 4.5:1), verificado nos dois temas: ink-3 ≥ 4.9:1 (claro) / 5.2:1 (escuro); *-ink sobre
+ * *-soft ≥ 5.2:1; branco no botão primário 4.7:1. Ver tests/unit/color-tokens.test.ts.
  * ========================================================================== */
 :root {
   --canvas: #f7f7f5;
@@ -27,7 +33,28 @@
   /* Fundo do botão primário (texto branco precisa de 4.5:1) */
   --primary-bg: #c94a18;
   --primary-bg-hover: #b53e13;
-  --danger: #d92d20;
+
+  /* Semânticos (claro) */
+  --danger: #be123c;
+  --danger-soft: #fff1f2;
+  --danger-line: #fecdd3;
+  --danger-ink: #9f1239;
+  --warning: #ca8a04;
+  --warning-soft: #fefce8;
+  --warning-line: #fde68a;
+  --warning-ink: #854d0e;
+  --success: #059669;
+  --success-soft: #ecfdf5;
+  --success-line: #a7f3d0;
+  --success-ink: #047857;
+  --info: #0284c7;
+  --info-soft: #f0f9ff;
+  --info-line: #bae6fd;
+  --info-ink: #0369a1;
+
+  /* Seleção neutra (chips, abas, filtros ativos) */
+  --selected-soft: #efeee9;
+  --selected-line: #8f8b83;
 
   /* Séries de gráfico — validadas (CVD + contraste) contra a superfície clara */
   --series-1: #f0642d;
@@ -54,7 +81,27 @@
   --brand-200: color-mix(in oklab, #f0642d 32%, var(--surface));
   --brand-600: #ff8a55;
   --brand-700: #ffa27a;
-  --danger: #f97066;
+
+  /* Semânticos (escuro): fundos como tinta sobre a superfície; textos claros */
+  --danger: #fb7185;
+  --danger-soft: #382426;
+  --danger-line: color-mix(in oklab, #fb7185 34%, var(--surface));
+  --danger-ink: #fda4af;
+  --warning: #facc15;
+  --warning-soft: #332e16;
+  --warning-line: color-mix(in oklab, #facc15 30%, var(--surface));
+  --warning-ink: #fde047;
+  --success: #34d399;
+  --success-soft: #1c3228;
+  --success-line: color-mix(in oklab, #34d399 30%, var(--surface));
+  --success-ink: #6ee7b7;
+  --info: #38bdf8;
+  --info-soft: #1c2f36;
+  --info-line: color-mix(in oklab, #38bdf8 30%, var(--surface));
+  --info-ink: #7dd3fc;
+
+  --selected-soft: #24231f;
+  --selected-line: #8f8b83;
 
   /* Séries — validadas contra a superfície escura (#181816) */
   --series-1: #e8622d;
@@ -143,6 +190,26 @@
   --color-brand-700: var(--brand-700);
   --color-primary-hover: var(--primary-bg-hover);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-danger-ink: var(--danger-ink);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-line: var(--warning-line);
+  --color-warning-ink: var(--warning-ink);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-line: var(--success-line);
+  --color-success-ink: var(--success-ink);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+  --color-info-ink: var(--info-ink);
+  --color-selected-soft: var(--selected-soft);
+  --color-selected-line: var(--selected-line);
+  /* Controles marcados (caixa de seleção, rádio, interruptor, data escolhida): neutros, não a marca */
+  --color-control: var(--ink);
+  --color-control-foreground: var(--surface);
   --color-series-1: var(--series-1);
   --color-series-2: var(--series-2);
   --color-series-3: var(--series-3);
@@ -202,6 +269,19 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Link neutro (a marca não é usada em links): sempre sublinhado, para não depender só de cor. */
+@utility link {
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration-line: underline;
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  &:hover {
+    text-decoration-color: var(--ink);
   }
 }
 

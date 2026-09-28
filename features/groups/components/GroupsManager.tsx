@@ -52,7 +52,7 @@ export function GroupsManager({ groups, canDelete, conditions }: { groups: Group
                 <p className="truncate text-[14px] font-semibold text-ink">{g.name}</p>
                 <Link
                   href={`/alunos?grupo=${g.id}`}
-                  className="inline-flex items-center gap-1 rounded text-[13px] text-brand-700 hover:underline"
+                  className="inline-flex items-center gap-1 rounded text-[13px] link"
                   title={t.studentsHint}
                 >
                   <Users aria-hidden className="size-3.5" />
@@ -182,7 +182,7 @@ function GroupDialog({ group, conditions, onClose }: { group: GroupRow | null; c
                     onClick={() => setConditionIds(on ? conditionIds.filter((x) => x !== c.id) : [...conditionIds, c.id])}
                     className={cn(
                       "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
-                      on ? "border-brand-300 bg-brand-50 font-medium text-brand-700" : "border-line bg-surface text-ink-2 hover:text-ink",
+                      on ? "border-selected-line bg-selected-soft font-medium text-ink" : "border-line bg-surface text-ink-2 hover:text-ink",
                     )}
                   >
                     {on && <Check aria-hidden className="size-3.5" />}
@@ -191,7 +191,7 @@ function GroupDialog({ group, conditions, onClose }: { group: GroupRow | null; c
                 );
               })}
             </div>
-            <Link href="/treinos/condicoes" className="w-fit rounded text-xs text-brand-700 hover:underline">
+            <Link href="/treinos/condicoes" className="w-fit rounded text-xs link">
               {t.manageConditions}
             </Link>
           </fieldset>
