@@ -1,14 +1,21 @@
 # Próximos passos (retomada)
 
-_Atualizado em 24/09/2026 (fim da 2.8 — aguardando seu teste)._
+_Atualizado em 28/09/2026 (ajuste de cores concluído — aguardando sua revisão)._
 
 ## Etapa atual
-**Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. **2.8.0 (banco) aprovada** + ajustes pedidos:
-alerta **restrito** (nível + texto genérico, sem condição/grupo/nota) para o professor do plano sem acesso ao aluno e
-para o owner com consentimento só declarado; trava `organizations.is_seed` no `seed --reset`. 2.8.1 (plano), 2.8.2 (exercício no plano), 2.8.3 (prescrição da série) e **2.8.4 (produtividade) ✔**. Colunas legadas removidas.
-Ajustes do 1º teste (adicionar exercício, dica, densidade do item) e do reteste (intensidade em texto livre, unidades
-Subida/Descida, sem faixa de RIR/RPE) aplicados.
-**Parado para o seu novo teste da 2.8.** Nada em andamento no código.
+**Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. 2.8 completa (aguardando seu novo teste). **2.10 Fase B
+pronta** (aguardando seu teste). Dashboard "Início" com dados reais nos cards possíveis hoje. Suíte de roteiros de
+navegador movida para `e2e/` (24 roteiros, `npm run test:e2e`). **Ajuste de cores concluído** (marca × semântica,
+contraste AA, validação para o white label) — commit `6ab389e`, **parado para sua revisão** com screenshots
+antes/depois. Nada em andamento no código.
+
+## Pendências de segurança registradas (não urgente; fazer antes da 2.11)
+1. Teste automático: listar todas as funções `SECURITY DEFINER` do schema `public` (via `pg_proc`) e falhar se
+   alguma não estiver na tabela documentada do CLAUDE.md (nome + checagem interna). Ainda não implementado —
+   `tests/db/security-definer.test.ts` testa comportamento de funções específicas, mas não faz essa checagem de
+   cobertura.
+2. Auditoria: levantar quais funções `SECURITY DEFINER` poderiam virar `SECURITY INVOKER` (confiando só em RLS) sem
+   perder segurança nem performance. Propor a lista antes de mudar qualquer uma. Ainda não iniciada.
 
 ## Concluído (branch `feat/fase-2-treinos`)
 - 2.1 Banco: biblioteca global (52 exercícios), 11 condições, planos/divisões/itens/séries, RPCs e alertas.
@@ -97,7 +104,9 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 `app/(app)/alunos/[id]/treinos`, migrations `20260929*` a `20261002*`.
 
 ## Decisões pendentes com você
-- **Teste da Fase B da 2.10** (roteiro no item 4 acima). Depois: plano da 2.11.
+- **Revisão do ajuste de cores** (marca × semântica, laranja reduzido, contraste AA) — screenshots antes/depois
+  no scratchpad da sessão; commit `6ab389e`.
+- **Teste da Fase B da 2.10** (roteiro no item 4 acima). Depois: auditoria de segurança (item acima) → plano da 2.11.
 - **Gateway** da C2: Asaas (decidido); confirmar no contrato: subconta aceita CPF? tarifa de subconta é por conta
   ativa ou criada? (ver seções C2 e C8 de `docs/planos/fase-c.md`).
 - **Resultado do seu teste do montador** — ajustes que surgirem entram na 2.8.
