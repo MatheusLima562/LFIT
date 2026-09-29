@@ -924,6 +924,9 @@ export const messages = {
       item: (level: string, note: string | null, condition: string, group: string) =>
         `${level}${note ? ` — ${note}` : ""} · ${condition} (${group})`,
       locate: "Clique para abrir a divisão e ir até o exercício.",
+      howToAdapt: "Como adaptar:",
+      // A condição tem regra nas duas camadas: a mais branda vira um detalhe recolhido.
+      otherRuleSummary: (isGlobal: boolean, levelLabel: string) => `Regra ${isGlobal ? "global" : "da equipe"}: ${levelLabel.toLowerCase()}`,
     },
     actions: {
       save: "Salvar rascunho",

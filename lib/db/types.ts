@@ -2099,9 +2099,13 @@ export type Database = {
           exercise_id: string
           group_name: string
           hidden: boolean
+          is_global: boolean
           item_id: string
           level: Database["public"]["Enums"]["contraindication_level"]
           note: string
+          other_is_global: boolean
+          other_level: Database["public"]["Enums"]["contraindication_level"]
+          other_note: string
           restricted: boolean
           substitute: boolean
         }[]
@@ -2230,8 +2234,12 @@ export type Database = {
           exercise_id: string
           group_name: string
           hidden: boolean
+          is_global: boolean
           level: Database["public"]["Enums"]["contraindication_level"]
           note: string
+          other_is_global: boolean
+          other_level: Database["public"]["Enums"]["contraindication_level"]
+          other_note: string
           restricted: boolean
         }[]
       }

@@ -298,7 +298,21 @@ describe.runIf(dbTestsEnabled)("Fase 2: biblioteca, condições, planos e alerta
     it("sem consentimento do titular, owner não responsável só vê 'oculto'", async () => {
       const alerts = await rpc<Alert[]>(owner.client, "plan_contraindication_alerts", { p_plan_id: planId });
       expect(alerts).toEqual([
-        { item_id: null, exercise_id: null, substitute: null, level: null, note: null, condition_name: null, group_name: null, hidden: true, restricted: false },
+        {
+          item_id: null,
+          exercise_id: null,
+          substitute: null,
+          level: null,
+          note: null,
+          condition_name: null,
+          group_name: null,
+          hidden: true,
+          restricted: false,
+          is_global: null,
+          other_level: null,
+          other_note: null,
+          other_is_global: null,
+        },
       ]);
       const rules = await rpc<Alert[]>(owner.client, "student_contraindication_rules", { p_student_id: s1 });
       expect(rules).toHaveLength(1);

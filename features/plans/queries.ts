@@ -201,6 +201,14 @@ export async function getStudentName(studentId: string) {
   return data ? { id: data.id, name: `${data.first_name} ${data.last_name}` } : null;
 }
 
+/** Alerta da outra camada (global × equipe) para a MESMA condição+exercício, além do nível já mostrado. */
+export interface StudentRuleOtherLayer {
+  level: ContraindicationLevel;
+  note: string | null;
+  /** true = catálogo LFit; false = regra própria da equipe. */
+  isGlobal: boolean;
+}
+
 export interface StudentRule {
   exerciseId: string;
   level: ContraindicationLevel;
@@ -209,6 +217,13 @@ export interface StudentRule {
   conditionName: string | null;
   groupName: string | null;
   restricted: boolean;
+  /** null no modo restrito/oculto. true = este alerta (o pior nível) veio do catálogo global. */
+  isGlobal: boolean | null;
+  /**
+   * Quando a mesma condição tem regra nas duas camadas (global e da equipe) para este exercício,
+   * só a de pior nível vira `level`/`note` acima; a outra fica aqui, como detalhe.
+   */
+  other: StudentRuleOtherLayer | null;
 }
 
 /**
@@ -229,6 +244,8 @@ export async function getStudentRules(studentId: string): Promise<{ hidden: bool
       conditionName: r.condition_name,
       groupName: r.group_name,
       restricted: Boolean(r.restricted),
+      isGlobal: r.is_global,
+      other: r.other_level ? { level: r.other_level, note: r.other_note, isGlobal: Boolean(r.other_is_global) } : null,
     })),
   };
 }

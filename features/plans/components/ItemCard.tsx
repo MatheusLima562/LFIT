@@ -110,18 +110,30 @@ export function ItemCard(props: ItemCardProps) {
           {rules.length > 0 && (
             <ul className="mt-1.5 flex flex-col gap-1" aria-label={t.alerts.title}>
               {rules.map((r, i) => (
-                <li key={i} className="flex flex-wrap items-center gap-1.5 text-[12px] text-ink-2">
-                  <LevelBadge level={r.level} />
-                  <span>
-                    {r.restricted ? (
-                      t.alerts.restricted
-                    ) : (
-                      <>
-                        {r.note ? `${r.note} · ` : ""}
-                        {r.conditionName} ({r.groupName})
-                      </>
-                    )}
+                <li key={i} className="flex flex-col gap-0.5 text-[12px] text-ink-2">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <LevelBadge level={r.level} />
+                    <span>
+                      {r.restricted ? (
+                        t.alerts.restricted
+                      ) : (
+                        <>
+                          {r.note ? `${t.alerts.howToAdapt} ${r.note} · ` : ""}
+                          {r.conditionName} ({r.groupName})
+                        </>
+                      )}
+                    </span>
                   </span>
+                  {r.other && (
+                    <details className="ml-1">
+                      <summary className="w-fit cursor-pointer text-[11px] text-ink-3 hover:text-ink-2">
+                        {t.alerts.otherRuleSummary(r.other.isGlobal, messages.exercises.levels[r.other.level])}
+                      </summary>
+                      <p className="mt-0.5 pl-3 text-[11px] text-ink-3">
+                        {r.other.note ? `${t.alerts.howToAdapt} ${r.other.note}` : messages.exercises.levels[r.other.level]}
+                      </p>
+                    </details>
+                  )}
                 </li>
               ))}
             </ul>

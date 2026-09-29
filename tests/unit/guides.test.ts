@@ -65,9 +65,13 @@ describe("Guias (2.10 Fase B)", () => {
     );
   });
 
-  it("condição sem Guia próprio usa o da região; sem nenhum → null", () => {
+  it("condição global sem Guia próprio usa o da região; condição própria da org nunca herda; sem nenhum → null", () => {
     expect(guideKeyFor({ key: "joelho_artrose", parentKey: "joelho" })).toBe("joelho_artrose");
-    expect(guideKeyFor({ key: null, parentKey: "lombar" })).toBe("lombar");
+    // Global sem Guia dedicado (hipotético), mas com pai que tem Guia → herda do pai.
+    expect(guideKeyFor({ key: "lombar_sem_guia", parentKey: "lombar" })).toBe("lombar");
+    // Condição própria da org (sem chave global) nunca herda o Guia da região do pai — bug 2.10 Fase B:
+    // "Estenose foraminal (exemplo)" (parentKey "lombar") não deve abrir o Guia de lombalgia inespecífica.
+    expect(guideKeyFor({ key: null, parentKey: "lombar" })).toBeNull();
     expect(guideKeyFor({ key: "hipertensao", parentKey: null })).toBeNull();
     expect(getGuide("toString")).toBeNull();
   });
