@@ -19,7 +19,7 @@ export function RedFlagBanner({ studentId, check }: { studentId: string; check: 
           ))}
         </ul>
         <p className="mt-1">{t.builderText(isoToBR(timestampToISODate(check.recordedAt)))}</p>
-        <Link href={`/alunos?editar=${studentId}`} className="mt-1 inline-block rounded link">
+        <Link href={`/alunos?editar=${studentId}&foco=triagem`} className="mt-1 inline-block rounded link">
           {t.builderLink}
         </Link>
       </div>

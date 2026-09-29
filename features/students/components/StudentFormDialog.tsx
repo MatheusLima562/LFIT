@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CircleAlert } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { createClient } from "@/lib/db/client";
@@ -78,6 +78,8 @@ export function StudentFormDialog({
   closeHref,
 }: StudentFormDialogProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const focus = searchParams.get("foco");
   const [pending, startTransition] = useTransition();
   const [groups, setGroups] = useState<GroupOption[]>(options.groups);
   const [photo, setPhoto] = useState<PhotoValue>({ file: null, removed: false });
@@ -133,6 +135,17 @@ export function StudentFormDialog({
   });
 
   const notFound = mode === "edit" && !student;
+
+  // Atalho "Triagem de saúde" (menu ⋯ da lista): rola até a seção dentro do modal já aberto. Espera a
+  // animação de abertura do Dialog (duration-100) terminar — antes disso o layout ainda está em
+  // transform/escala e o cálculo de posição do scrollIntoView sai errado.
+  useEffect(() => {
+    if (focus !== "triagem" || !student) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("red-flags")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [focus, student]);
 
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && close()}>

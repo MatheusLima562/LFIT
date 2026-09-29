@@ -136,6 +136,8 @@ export const messages = {
       whatsappMissing: "Sem WhatsApp cadastrado",
       whatsappGreeting: (name: string) => `Olá, ${name}! Tudo bem?`,
       edit: "Editar",
+      editCadastro: "Editar cadastro",
+      redFlagMenu: "Triagem de saúde",
       copyLink: "Copiar link de acesso",
       resendInvite: "Reenviar convite",
       deactivate: "Desativar",
@@ -708,6 +710,7 @@ export const messages = {
     panelTitle: "Condições do aluno",
     panelHint: "Vindas dos grupos especiais. Abra o Guia para adaptar o treino.",
     noGuide: "Sem Guia",
+    noConditions: "Nenhuma condição especial registrada.",
   },
   plans: {
     newTitle: "Novo treino",

@@ -17,6 +17,8 @@ export interface PlanForBuilder {
   canEdit: boolean;
   /** Outro plano ativo do mesmo aluno (será arquivado ao ativar este). */
   otherActive: { id: string; name: string } | null;
+  /** Owner ou professor responsável pelo aluno (independe do consentimento) — pode registrar triagem. */
+  canRegisterRedFlag: boolean;
 }
 
 type PrescriptionRow = {
@@ -183,6 +185,9 @@ export async function getPlanForBuilder(planId: string, session: { userId: strin
     trainers,
     canEdit,
     otherActive: row.student_id ? await getActivePlan(row.student_id, row.id) : null,
+    // O embed `student` (RLS de `students`) só vem preenchido para quem acessa o aluno (owner ou
+    // professor responsável) — o professor do plano sem esse acesso cai no fallback de get_plan_header.
+    canRegisterRedFlag: row.student !== null,
   };
 }
 

@@ -4,6 +4,7 @@ import {
   Ban,
   CalendarX2,
   CircleCheck,
+  ClipboardCheck,
   Dumbbell,
   Link2,
   MailPlus,
@@ -67,6 +68,9 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
   editParams.delete("novo");
   editParams.set("editar", student.id);
   const editHref = `${pathname}?${editParams}`;
+  const redFlagParams = new URLSearchParams(editParams);
+  redFlagParams.set("foco", "triagem");
+  const redFlagHref = `${pathname}?${redFlagParams}`;
 
   const report = (result: StudentActionResult) => {
     if (result.ok) toast.success(result.message);
@@ -125,9 +129,21 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem asChild>
+            <Link href={editHref} scroll={false}>
+              <Pencil aria-hidden />
+              {t.menu.editCadastro}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Link href={`/alunos/${student.id}/treinos`}>
               <Dumbbell aria-hidden />
               {t.menu.plans}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={redFlagHref} scroll={false}>
+              <ClipboardCheck aria-hidden />
+              {t.menu.redFlagMenu}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

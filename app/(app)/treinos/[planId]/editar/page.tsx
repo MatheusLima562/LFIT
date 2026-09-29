@@ -38,6 +38,7 @@ export default async function EditPlanPage({ params }: PageProps<"/treinos/[plan
         health={health}
         redFlag={redFlag}
         redFlagRestrictedPending={redFlagRestrictedPending}
+        canRegisterRedFlag={data.canRegisterRedFlag}
         canEdit={data.canEdit}
         otherActive={data.otherActive}
         backHref={data.student ? `/alunos/${data.student.id}/treinos` : "/treinos/modelos"}

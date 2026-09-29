@@ -58,6 +58,7 @@ export default async function NewPlanPage({ searchParams }: PageProps<"/treinos/
         rules={rules}
         health={health}
         redFlag={redFlag}
+        canRegisterRedFlag={Boolean(student)}
         canEdit
         otherActive={otherActive}
         backHref={student ? `/alunos/${student.id}/treinos` : "/treinos/modelos"}

@@ -33,7 +33,7 @@ export function RedFlagTriage({ studentId, check }: { studentId: string; check: 
   const pending = !!check && check.items.length > 0 && !check.clearance;
 
   return (
-    <section aria-labelledby="red-flags-title" className="flex flex-col gap-2 rounded-xl border border-line bg-canvas px-3.5 py-3">
+    <section id="red-flags" aria-labelledby="red-flags-title" className="flex flex-col gap-2 rounded-xl border border-line bg-canvas px-3.5 py-3 scroll-mt-4">
       <h3 id="red-flags-title" className="flex items-center gap-2 text-[13px] font-semibold text-ink">
         <ClipboardCheck aria-hidden className="size-4 text-ink-3" />
         {t.title}
@@ -79,7 +79,7 @@ export function RedFlagTriage({ studentId, check }: { studentId: string; check: 
         )}
       </div>
 
-      {dialog === "check" && <CheckDialog studentId={studentId} onClose={() => setDialog(null)} />}
+      {dialog === "check" && <RedFlagCheckDialog studentId={studentId} onClose={() => setDialog(null)} />}
       {dialog === "clear" && check && <ClearanceDialog check={check} onClose={() => setDialog(null)} />}
     </section>
   );
@@ -90,7 +90,8 @@ function NoteCount({ value }: { value: string }) {
   return <span className="shrink-0 tabular-nums">{t.noteCount(value.length, RED_FLAG_NOTE_MAX)}</span>;
 }
 
-function CheckDialog({ studentId, onClose }: { studentId: string; onClose: () => void }) {
+/** Extraído para reuso no atalho do montador (painel "Condições do aluno"), sem o histórico da triagem. */
+export function RedFlagCheckDialog({ studentId, onClose }: { studentId: string; onClose: () => void }) {
   const router = useRouter();
   const [items, setItems] = useState<RedFlagKey[]>([]);
   const [noneObserved, setNoneObserved] = useState(false);

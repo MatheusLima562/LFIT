@@ -80,6 +80,8 @@ export interface PlanBuilderProps {
   redFlag?: RedFlagCheck | null;
   /** Professor do plano sem acesso à saúde: só "há pendência de liberação" (sem nenhum dado da triagem). */
   redFlagRestrictedPending?: boolean;
+  /** Owner ou professor responsável pelo aluno: pode registrar triagem direto no painel "Condições do aluno". */
+  canRegisterRedFlag?: boolean;
   canEdit: boolean;
   otherActive: { id: string; name: string } | null;
   backHref: string;
@@ -87,7 +89,7 @@ export interface PlanBuilderProps {
 
 const NO_LISTS = { methods: [], objectives: [] };
 
-export function PlanBuilder({ initial, status, student, trainers = [], lists = NO_LISTS, rules, health = null, redFlag = null, redFlagRestrictedPending = false, canEdit, otherActive, backHref }: PlanBuilderProps) {
+export function PlanBuilder({ initial, status, student, trainers = [], lists = NO_LISTS, rules, health = null, redFlag = null, redFlagRestrictedPending = false, canRegisterRedFlag = false, canEdit, otherActive, backHref }: PlanBuilderProps) {
   const router = useRouter();
   const [draft, setDraft] = useState<PlanDraft>(initial);
   const [dirty, setDirty] = useState(false);
@@ -541,7 +543,9 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
       )}
       {student && redFlag && isPendingRedFlag(redFlag) && <RedFlagBanner studentId={student.id} check={redFlag} />}
       {student && !redFlag && redFlagRestrictedPending && <RestrictedRedFlagBanner />}
-      {student && health && <StudentConditionsPanel health={health} />}
+      {student && (health || canRegisterRedFlag) && (
+        <StudentConditionsPanel health={health} studentId={student.id} canRegisterRedFlag={canRegisterRedFlag} />
+      )}
 
       {/* Divisões */}
       <section aria-label={t.workouts.label} className="flex flex-col gap-3">
