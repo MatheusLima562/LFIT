@@ -751,6 +751,8 @@ export const messages = {
       moveRight: "Mover divisão para a direita",
       empty: "Nenhum exercício nesta divisão.",
       max: "Limite de 12 divisões.",
+      alertsBadge: (n: number, level: "avoid" | "caution") =>
+        `${n} ${n === 1 ? "exercício" : "exercícios"} ${level === "avoid" ? "para evitar" : "com cautela"} nesta divisão.`,
     },
     items: {
       add: "Adicionar exercício",
@@ -921,6 +923,7 @@ export const messages = {
       notBlocking: "Os alertas não bloqueiam o treino: a decisão é sua.",
       item: (level: string, note: string | null, condition: string, group: string) =>
         `${level}${note ? ` — ${note}` : ""} · ${condition} (${group})`,
+      locate: "Clique para abrir a divisão e ir até o exercício.",
     },
     actions: {
       save: "Salvar rascunho",

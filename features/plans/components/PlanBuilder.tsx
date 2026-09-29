@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, ChevronLeft, ChevronsDownUp, ChevronsUpDown, CircleCheck, Import, EyeOff, Link2, Link2Off, Lock, Plus, Printer, ShieldAlert, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, ChevronLeft, ChevronsDownUp, ChevronsUpDown, CircleCheck, Import, EyeOff, Link2, Link2Off, Lock, OctagonAlert, Plus, Printer, ShieldAlert, Trash2, TriangleAlert } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { parseBRDate, todayISO } from "@/lib/dates";
+import type { ContraindicationLevel } from "@/features/exercises/constants";
+import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import { DateField } from "@/features/students/components/form/DateField";
 import { activatePlan, savePlan, type PickerExercise } from "../actions";
 import {
@@ -99,6 +101,12 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
   const [picker, setPicker] = useState<{ mode: "add" | "swap" | "substitute"; itemKey?: string } | null>(null);
   const [confirm, setConfirm] = useState<"activate" | "leave" | { removeWorkout: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  // Item para onde rolar após localizar um alerta (troca de divisão + expandir acontecem no mesmo commit).
+  // `token` garante que clicar duas vezes seguidas no mesmo item role/destaque de novo.
+  const [pendingScroll, setPendingScroll] = useState<{ key: string; token: number } | null>(null);
+  const scrollTokenRef = useRef(0);
+  // Destaque temporário do item alvo, para diferenciá-lo dos demais depois da rolagem.
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
 
   const isTemplate = draft.studentId === null;
   const readOnly = !canEdit;
@@ -145,22 +153,77 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
   };
 
   const rulesFor = (exerciseId: string) => rules.rules.filter((r) => r.exerciseId === exerciseId);
-  const alertCounts = useMemo(() => {
-    let avoid = 0;
-    let caution = 0;
+
+  // Um item por linha (pior nível), na ordem em que aparecem; evitar primeiro (mais grave).
+  const alertedItems = useMemo(() => {
+    const list: { key: string; name: string; workoutKey: string; workoutLabel: string; level: ContraindicationLevel }[] = [];
     for (const w of draft.workouts)
       for (const it of w.items) {
         const r = rules.rules.filter((x) => x.exerciseId === it.exerciseId);
-        if (r.some((x) => x.level === "avoid")) avoid++;
-        else if (r.length) caution++;
+        if (!r.length) continue;
+        list.push({
+          key: it.key,
+          name: it.exerciseName,
+          workoutKey: w.key,
+          workoutLabel: w.label || "?",
+          level: r.some((x) => x.level === "avoid") ? "avoid" : "caution",
+        });
       }
-    return { avoid, caution };
+    const rank: Record<ContraindicationLevel, number> = { avoid: 0, caution: 1 };
+    return list.sort((a, b) => rank[a.level] - rank[b.level]);
   }, [draft.workouts, rules.rules]);
+
+  const alertCounts = useMemo(
+    () => ({
+      avoid: alertedItems.filter((i) => i.level === "avoid").length,
+      caution: alertedItems.filter((i) => i.level === "caution").length,
+    }),
+    [alertedItems],
+  );
+
+  // Pior nível + contagem por divisão, para o marcador nas abas.
+  const workoutAlerts = useMemo(() => {
+    const map = new Map<string, { count: number; level: ContraindicationLevel }>();
+    for (const it of alertedItems) {
+      const cur = map.get(it.workoutKey);
+      map.set(it.workoutKey, cur ? { count: cur.count + 1, level: cur.level === "avoid" || it.level === "avoid" ? "avoid" : "caution" } : { count: 1, level: it.level });
+    }
+    return map;
+  }, [alertedItems]);
 
   const switchWorkout = (key: string) => {
     setActiveKey(key);
     setSelected(new Set());
   };
+
+  /** Abre a divisão do exercício, expande o item se estiver recolhido e rola/destaca até ele. */
+  const goToAlert = (workoutKey: string, itemKey: string) => {
+    switchWorkout(workoutKey);
+    setCollapsed((c) => {
+      if (!c.has(itemKey)) return c;
+      const next = new Set(c);
+      next.delete(itemKey);
+      return next;
+    });
+    // Token novo mesmo clicando no mesmo item duas vezes seguidas, para o efeito rodar de novo.
+    scrollTokenRef.current += 1;
+    setPendingScroll({ key: itemKey, token: scrollTokenRef.current });
+  };
+
+  // Roda depois que a troca de divisão/expansão já foi renderizada, para o item já estar no DOM.
+  useEffect(() => {
+    if (!pendingScroll) return;
+    const { key } = pendingScroll;
+    const raf = requestAnimationFrame(() => {
+      const el = document.getElementById(`item-${key}`);
+      if (!el) return;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.focus();
+      setHighlightKey(key);
+      window.setTimeout(() => setHighlightKey((h) => (h === key ? null : h)), 1600);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [pendingScroll]);
 
   // ---------------------------------------------------------------------------
   // Salvar / ativar
@@ -467,7 +530,15 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
       </section>
 
       {/* Alertas (só plano de aluno) */}
-      {student && <AlertsPanel hidden={rules.hidden} restricted={rules.rules.some((r) => r.restricted)} counts={alertCounts} />}
+      {student && (
+        <AlertsPanel
+          hidden={rules.hidden}
+          restricted={rules.rules.some((r) => r.restricted)}
+          counts={alertCounts}
+          items={alertedItems}
+          onGoTo={goToAlert}
+        />
+      )}
       {student && redFlag && isPendingRedFlag(redFlag) && <RedFlagBanner studentId={student.id} check={redFlag} />}
       {student && !redFlag && redFlagRestrictedPending && <RestrictedRedFlagBanner />}
       {student && health && <StudentConditionsPanel health={health} />}
@@ -481,6 +552,8 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
                 const owner = k.split(".")[0];
                 return owner === w.key || w.items.some((it) => it.key === owner || it.setsDetail.some((s) => s.key === owner));
               });
+              const alert = workoutAlerts.get(w.key);
+              const AlertIcon = alert?.level === "avoid" ? OctagonAlert : TriangleAlert;
               return (
                 <button
                   key={w.key}
@@ -499,6 +572,15 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
                   <span className="font-semibold">{w.label || "?"}</span>
                   {w.name && <span className="hidden max-w-32 truncate sm:inline">{w.name}</span>}
                   <span className="tabular text-[11px] text-ink-3">{w.items.length}</span>
+                  {alert && (
+                    <span
+                      className={cn("inline-flex items-center gap-0.5 text-[11px] font-bold", alert.level === "avoid" ? "text-danger" : "text-warning")}
+                      aria-label={t.workouts.alertsBadge(alert.count, alert.level)}
+                    >
+                      <AlertIcon aria-hidden className="size-3" />
+                      <span aria-hidden>{alert.count}</span>
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -608,6 +690,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
                 lists={lists}
                 collapsed={collapsed}
                 onToggleCollapse={toggleCollapse}
+                highlightKey={highlightKey}
               />
             )}
 
@@ -734,7 +817,27 @@ function StatusBadge({ status }: { status: PlanStatus }) {
   return <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", style)}>{t.status[status]}</span>;
 }
 
-function AlertsPanel({ hidden, restricted, counts }: { hidden: boolean; restricted: boolean; counts: { avoid: number; caution: number } }) {
+interface AlertedItem {
+  key: string;
+  name: string;
+  workoutKey: string;
+  workoutLabel: string;
+  level: ContraindicationLevel;
+}
+
+function AlertsPanel({
+  hidden,
+  restricted,
+  counts,
+  items,
+  onGoTo,
+}: {
+  hidden: boolean;
+  restricted: boolean;
+  counts: { avoid: number; caution: number };
+  items: AlertedItem[];
+  onGoTo: (workoutKey: string, itemKey: string) => void;
+}) {
   if (hidden) {
     return (
       <p className="flex items-start gap-2 rounded-2xl border border-line bg-canvas px-4 py-3 text-[13px] text-ink-2">
@@ -753,10 +856,30 @@ function AlertsPanel({ hidden, restricted, counts }: { hidden: boolean; restrict
       )}
     >
       <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-      <div>
+      <div className="min-w-0 flex-1">
         <p className="font-semibold">{t.alerts.title}</p>
         <p>{any ? `${t.alerts.summary(counts.avoid, counts.caution)}. ${t.alerts.notBlocking}` : t.alerts.none}</p>
         {restricted && <p className="mt-1 text-xs opacity-90">{t.alerts.restrictedPanel}</p>}
+        {items.length > 0 && (
+          <>
+            <p className="mt-2 text-xs opacity-90">{t.alerts.locate}</p>
+            <ul className="mt-1 flex flex-col gap-0.5">
+              {items.map((it) => (
+                <li key={it.key}>
+                  <button
+                    type="button"
+                    onClick={() => onGoTo(it.workoutKey, it.key)}
+                    className="group inline-flex w-full items-center gap-1.5 rounded-lg px-1.5 py-1 text-left outline-none hover:bg-surface/70 focus-visible:ring-2 focus-visible:ring-ring/50"
+                  >
+                    <LevelBadge level={it.level} />
+                    <span className="min-w-0 flex-1 truncate font-medium text-ink underline-offset-2 group-hover:underline">{it.name}</span>
+                    <span className="shrink-0 text-xs text-ink-3">{it.workoutLabel}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </div>
   );
@@ -780,6 +903,8 @@ interface ItemsListProps {
   lists: { methods: TrainingListOption[]; objectives: TrainingListOption[] };
   collapsed: Set<string>;
   onToggleCollapse: (key: string) => void;
+  /** Item para onde o professor acabou de navegar a partir do resumo de alertas. */
+  highlightKey: string | null;
 }
 
 function blockName(block: Block) {
@@ -788,7 +913,7 @@ function blockName(block: Block) {
     : (block.items[0]?.exerciseName ?? "");
 }
 
-function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpdateItem, onSelect, onSwap, onAddSubstitute, lists, collapsed, onToggleCollapse }: ItemsListProps) {
+function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpdateItem, onSelect, onSwap, onAddSubstitute, lists, collapsed, onToggleCollapse, highlightKey }: ItemsListProps) {
   const blocks = toBlocks(items);
   // id estável: sem ele o aria-describedby gerado pelo dnd-kit difere entre servidor e cliente (hidratação).
   const dndId = useId();
@@ -876,6 +1001,7 @@ function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpd
                           lists={lists}
                           collapsed={collapsed.has(item.key)}
                           onToggleCollapse={() => onToggleCollapse(item.key)}
+                          highlighted={highlightKey === item.key}
                         />
                       ))}
                     </div>
@@ -901,6 +1027,7 @@ function ItemsList({ items, errors, readOnly, selected, rulesFor, onItems, onUpd
                       lists={lists}
                       collapsed={collapsed.has(block.items[0].key)}
                       onToggleCollapse={() => onToggleCollapse(block.items[0].key)}
+                      highlighted={highlightKey === block.items[0].key}
                     />
                   )
                 }

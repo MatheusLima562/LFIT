@@ -41,6 +41,8 @@ export interface ItemCardProps {
   /** Recolhido: só o cabeçalho e um resumo em uma linha. */
   collapsed: boolean;
   onToggleCollapse: () => void;
+  /** Item para onde o professor acabou de navegar a partir do resumo de alertas: destaque temporário. */
+  highlighted?: boolean;
 }
 
 export function ItemCard(props: ItemCardProps) {
@@ -81,10 +83,13 @@ export function ItemCard(props: ItemCardProps) {
 
   return (
     <div
+      id={`item-${item.key}`}
+      tabIndex={-1}
       className={cn(
-        "flex flex-col gap-3 rounded-xl border bg-surface p-3",
+        "flex scroll-mt-4 flex-col gap-3 rounded-xl border bg-surface p-3 outline-none transition-shadow duration-300",
         rules.some((r) => r.level === "avoid") ? "border-danger" : rules.length ? "border-warning" : "border-line",
         selected && "ring-2 ring-selected-line",
+        props.highlighted && "ring-2 ring-info",
       )}
     >
       <div className="flex items-start gap-2">
