@@ -852,6 +852,7 @@ export type Database = {
       }
       plan_workout_items: {
         Row: {
+          care_note: string | null
           exercise_id: string
           group_key: string | null
           id: string
@@ -878,6 +879,7 @@ export type Database = {
           workout_id: string
         }
         Insert: {
+          care_note?: string | null
           exercise_id: string
           group_key?: string | null
           id?: string
@@ -904,6 +906,7 @@ export type Database = {
           workout_id: string
         }
         Update: {
+          care_note?: string | null
           exercise_id?: string
           group_key?: string | null
           id?: string
@@ -1101,6 +1104,135 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      session_item_logs: {
+        Row: {
+          care_note_required: boolean
+          completed_at: string | null
+          created_at: string
+          exercise_id: string | null
+          exercise_name: string
+          id: string
+          item_id: string | null
+          organization_id: string
+          pain_score: number | null
+          session_id: string
+          substitute: boolean
+        }
+        Insert: {
+          care_note_required?: boolean
+          completed_at?: string | null
+          created_at?: string
+          exercise_id?: string | null
+          exercise_name: string
+          id?: string
+          item_id?: string | null
+          organization_id: string
+          pain_score?: number | null
+          session_id: string
+          substitute?: boolean
+        }
+        Update: {
+          care_note_required?: boolean
+          completed_at?: string | null
+          created_at?: string
+          exercise_id?: string | null
+          exercise_name?: string
+          id?: string
+          item_id?: string | null
+          organization_id?: string
+          pain_score?: number | null
+          session_id?: string
+          substitute?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_item_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_item_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_item_logs_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_item_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_item_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_set_logs: {
+        Row: {
+          id: string
+          item_log_id: string
+          load_text: string | null
+          load_unit: Database["public"]["Enums"]["load_unit"] | null
+          load_value: number | null
+          logged_at: string
+          organization_id: string
+          quantity_value: number | null
+          set_index: number
+        }
+        Insert: {
+          id?: string
+          item_log_id: string
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          logged_at?: string
+          organization_id: string
+          quantity_value?: number | null
+          set_index: number
+        }
+        Update: {
+          id?: string
+          item_log_id?: string
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          logged_at?: string
+          organization_id?: string
+          quantity_value?: number | null
+          set_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_set_logs_item_log_id_fkey"
+            columns: ["item_log_id"]
+            isOneToOne: false
+            referencedRelation: "session_item_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_set_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       special_group_conditions: {
         Row: {
@@ -1553,6 +1685,116 @@ export type Database = {
           },
         ]
       }
+      workout_sessions: {
+        Row: {
+          created_at: string
+          feedback_note: string | null
+          finished_at: string | null
+          id: string
+          organization_id: string
+          pain_checkin: string | null
+          plan_id: string | null
+          recorded_by: string | null
+          rpe: number | null
+          started_at: string
+          status: string
+          student_id: string
+          trainer_reviewed_at: string | null
+          trainer_reviewed_by: string | null
+          workout_id: string | null
+          workout_label: string
+          workout_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          feedback_note?: string | null
+          finished_at?: string | null
+          id?: string
+          organization_id: string
+          pain_checkin?: string | null
+          plan_id?: string | null
+          recorded_by?: string | null
+          rpe?: number | null
+          started_at?: string
+          status?: string
+          student_id: string
+          trainer_reviewed_at?: string | null
+          trainer_reviewed_by?: string | null
+          workout_id?: string | null
+          workout_label: string
+          workout_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          feedback_note?: string | null
+          finished_at?: string | null
+          id?: string
+          organization_id?: string
+          pain_checkin?: string | null
+          plan_id?: string | null
+          recorded_by?: string | null
+          rpe?: number | null
+          started_at?: string
+          status?: string
+          student_id?: string
+          trainer_reviewed_at?: string | null
+          trainer_reviewed_by?: string | null
+          workout_id?: string | null
+          workout_label?: string
+          workout_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_trainer_reviewed_by_fkey"
+            columns: ["trainer_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       exercise_library: {
@@ -1746,6 +1988,10 @@ export type Database = {
       }
     }
     Functions: {
+      acknowledge_session_alert: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       activate_plan: {
         Args: { p_plan_id: string }
         Returns: Database["public"]["Enums"]["plan_status"]
@@ -1892,6 +2138,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      complete_session_item: {
+        Args: {
+          p_item_id: string
+          p_pain_score: number
+          p_session_id: string
+          p_substitute_exercise_id?: string
+        }
+        Returns: undefined
+      }
       consume_access_link: {
         Args: { p_token: string }
         Returns: {
@@ -2034,6 +2289,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      finish_workout_session: {
+        Args: { p_feedback?: string; p_rpe?: number; p_session_id: string }
+        Returns: undefined
+      }
+      get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_health_consent_request: {
         Args: never
         Returns: {
@@ -2042,6 +2302,34 @@ export type Database = {
           organization_name: string
           student_id: string
           trainer_name: string
+        }[]
+      }
+      get_my_student_profile: {
+        Args: never
+        Returns: {
+          effective_status: Database["public"]["Enums"]["effective_status"]
+          first_name: string
+          last_name: string
+          organization_name: string
+          photo_path: string
+          student_id: string
+          trainer_name: string
+        }[]
+      }
+      get_my_workout_history: {
+        Args: { p_student_id?: string }
+        Returns: {
+          by_trainer: boolean
+          exercises_done: number
+          finished_at: string
+          plan_id: string
+          plan_name: string
+          rpe: number
+          session_id: string
+          started_at: string
+          status: string
+          workout_label: string
+          workout_name: string
         }[]
       }
       get_plan_header: {
@@ -2070,6 +2358,15 @@ export type Database = {
       hit_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
+      }
+      log_set: {
+        Args: {
+          p_data: Json
+          p_item_id: string
+          p_session_id: string
+          p_set_index: number
+        }
+        Returns: undefined
       }
       log_students_export: {
         Args: { p_count: number; p_filters: Json; p_format: string }
@@ -2158,6 +2455,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_pain_checkin: {
+        Args: { p_answer: string; p_session_id: string }
+        Returns: undefined
+      }
       record_red_flag_check: {
         Args: {
           p_items: string[]
@@ -2223,9 +2524,21 @@ export type Database = {
         Returns: string
       }
       save_training_plan: { Args: { p_plan: Json }; Returns: string }
+      session_effective_status: {
+        Args: { w: Database["public"]["Tables"]["workout_sessions"]["Row"] }
+        Returns: string
+      }
       soft_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
         Returns: undefined
+      }
+      start_workout_session: {
+        Args: { p_plan_id: string; p_student_id?: string; p_workout_id: string }
+        Returns: {
+          ask_pain_checkin: boolean
+          resumed: boolean
+          session_id: string
+        }[]
       }
       student_contraindication_rules: {
         Args: { p_student_id: string }
@@ -2253,6 +2566,21 @@ export type Database = {
           expired: number
           expiring: number
           no_plan: number
+        }[]
+      }
+      student_session_alerts: {
+        Args: { p_student_id: string }
+        Returns: {
+          exercise_name: string
+          feedback_note: string
+          hidden: boolean
+          kind: string
+          pain_checkin: string
+          pain_score: number
+          restricted: boolean
+          session_id: string
+          started_at: string
+          workout_label: string
         }[]
       }
       student_tab_counts: {

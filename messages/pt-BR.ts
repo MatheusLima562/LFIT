@@ -1091,6 +1091,11 @@ export const messages = {
     INVALID_GROUP_ORDER: "Exercícios agrupados precisam ficar em sequência.",
     INVALID_MEDIA: "Arquivo de vídeo inválido. Envie um MP4 ou WebM de até 15 MB.",
     VIDEO_QUOTA_EXCEEDED: "O armazenamento de vídeos do seu plano acabou. Remova vídeos que não usa mais ou faça upgrade do plano.",
+    ACCESS_SUSPENDED: "Acesso suspenso — fale com seu personal.",
+    PAIN_REQUIRED: "Informe como ficou a dor neste exercício (0 a 10).",
+    SESSION_NOT_FOUND: "Sessão de treino não encontrada.",
+    SESSION_CLOSED: "Esta sessão de treino já foi encerrada.",
+    ITEM_NOT_FOUND: "O treino foi atualizado pelo professor. Recarregue para ver a versão nova.",
   },
 } as const;
 

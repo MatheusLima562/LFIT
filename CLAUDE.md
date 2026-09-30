@@ -328,6 +328,28 @@ effective_status =
 - "Personalizar" um exercício global copia também as regras globais dele para a camada da org (ficam congeladas: uma
   mudança futura na regra global não chega à cópia).
 
+### App do aluno — Fase 3 (banco pronto; checkpoint antes das páginas)
+- Plano: `~/.claude/plans/magical-fluttering-nygaard.md` (aprovado 30/09/2026). **C1 dispensada**: RLS novo da Fase 3 usa
+  `students.user_id = auth.uid()` (+ joins), nunca `current_org_id()`.
+- Migration `20261010120000_fase3_workout_sessions.sql`: `workout_sessions` (uma por treino; `recorded_by`, `rpe`,
+  `feedback_note`, `pain_checkin` = resposta no INÍCIO sobre a sessão anterior, `trainer_reviewed_at/by`),
+  `session_item_logs` (um por exercício: **dor 0–10 por exercício**, obrigatória só se o item tem `care_note` —
+  `PAIN_REQUIRED` na RPC), `session_set_logs` (carga/quantidade por série). `plan_workout_items.care_note` ≤ 300.
+- **`save_training_plan` recria divisões e itens com ids novos a cada salvamento**: por isso os registros de sessão têm FK
+  `on delete set null` e guardam cópia (`workout_label/name`, `exercise_name`). Item antigo numa sessão aberta →
+  `ITEM_NOT_FOUND` ("o treino foi atualizado, recarregue"). `copy_plan` e `save_training_plan` já gravam `care_note`;
+  **o montador ainda não envia `care_note`** — ao criar a UI dele, fazer o round-trip no `builder.ts` antes, senão salvar
+  pela tela apaga o campo.
+- Sessão abandonada é **calculada** (`public.session_effective_status`: `in_progress` há mais de 6 h), não gravada por
+  job; iniciar outra sessão grava `'abandoned'` nas abertas. Escritas checam o status **gravado** (a fila local pode
+  sincronizar depois de 6 h). "Treino do dia" = rodízio por posição depois da última sessão **concluída** (casa pelo
+  rótulo copiado).
+- Leitura (RLS): titular ou staff com `can_view_student_health`. Escrita só por RPC; chamador duplo (`p_student_id` nulo
+  = aluno; preenchido = modo presencial, staff com acesso **e** saúde). Status efetivo ≠ `active` → `ACCESS_SUSPENDED`
+  (histórico continua visível). `log_set`/`complete_session_item` são upsert (idempotentes para a fila local).
+- Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
+  "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias. A fórmula deve aparecer na UI (tooltip no card). **Escondido até a 1.6** (hoje seria calculado sobre
@@ -371,6 +393,9 @@ sem efeitos colaterais).
 | Triagem — aviso restrito (2.10) | `plan_red_flag_pending` (só um booleano: última triagem do aluno do plano tem sinais sem liberação) | `require_staff` + `get_readable_plan`; nenhum sinal, observação ou liberação na resposta (teste de não vazamento) |
 | Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` (owner ou responsável; **não** exige consentimento — base legal art. 11, II, "e"/"d", a validar); chaves validadas contra `private.red_flag_keys()`; auditadas |
 | Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
+| **App do aluno (Fase 3), chamador duplo** | `get_my_active_plan`, `start_workout_session`, `record_pain_checkin`, `log_set`, `complete_session_item`, `finish_workout_session`, `get_my_workout_history` | `p_student_id` nulo → o próprio aluno (`students.user_id = auth.uid()`); preenchido (modo presencial) → staff com `can_access_student` **e** `can_view_student_health`. `private.resolve_training_student`/`lock_open_session` exigem status efetivo `active` (`ACCESS_SUSPENDED`). `get_my_active_plan` nunca devolve dado de contraindicação. Histórico continua visível com acesso suspenso |
+| Aluno (titular), leitura do próprio cadastro | `get_my_student_profile` | escopo `students.user_id = auth.uid()`; só o subconjunto seguro (sem `notes` do professor) |
+| Avisos de dor da Fase 3 | `student_session_alerts` (escada completo / restrito / oculto, como os alertas de contraindicação), `acknowledge_session_alert` | `require_staff`; completo só com `can_view_student_health`; restrito via `is_restricted_plan_viewer`/`is_restricted_health_viewer` sem tipo, dor nem comentário; "visto" exige `lock_accessible_student` + `can_view_student_health` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
@@ -458,13 +483,14 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada**
-  30/09/2026 — auditoria de segurança registrada antes da 2.11); **2.11** ampliação da biblioteca global; **2.9** página do aluno
-  `/alunos/[id]`, planejar antes) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
-  registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
+- Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
+  (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
+  aluno — **banco pronto, checkpoint antes das páginas**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.11**
+  ampliação da biblioteca global → **2.9** página do aluno `/alunos/[id]` (planejar antes) → **Importação do MFIT** (antes
+  de alunos reais) → **C1** contas com múltiplos vínculos (antes da C2) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
   Fase 4 gestão e retenção. Planos: `docs/planos/fase-c.md` e `docs/planos/etapa-2.8.md`; retomada em `docs/PROXIMOS_PASSOS.md`.
-  - **C1 (antes da Fase 3):** só o modelo de contas com múltiplos vínculos (`memberships` + vínculo ativo por
+  - **C1 (antes da C2; não precisa vir antes da Fase 3 — decisão de 30/09/2026):** só o modelo de contas com múltiplos vínculos (`memberships` + vínculo ativo por
     sessão via claim `session_id`; `current_org_id()`/`current_user_role()` passam a ler o vínculo ativo;
     `students.user_id` único por organização), seletor de vínculo no login e revisão de RLS e testes de
     isolamento. Resolve a decisão pendente "1 e-mail = 1 conta". **Nada de cobrança.**
