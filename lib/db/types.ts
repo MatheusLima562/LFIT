@@ -1107,7 +1107,6 @@ export type Database = {
       }
       session_item_logs: {
         Row: {
-          care_note_required: boolean
           completed_at: string | null
           created_at: string
           exercise_id: string | null
@@ -1115,12 +1114,12 @@ export type Database = {
           id: string
           item_id: string | null
           organization_id: string
+          pain_required: boolean
           pain_score: number | null
           session_id: string
           substitute: boolean
         }
         Insert: {
-          care_note_required?: boolean
           completed_at?: string | null
           created_at?: string
           exercise_id?: string | null
@@ -1128,12 +1127,12 @@ export type Database = {
           id?: string
           item_id?: string | null
           organization_id: string
+          pain_required?: boolean
           pain_score?: number | null
           session_id: string
           substitute?: boolean
         }
         Update: {
-          care_note_required?: boolean
           completed_at?: string | null
           created_at?: string
           exercise_id?: string | null
@@ -1141,6 +1140,7 @@ export type Database = {
           id?: string
           item_id?: string | null
           organization_id?: string
+          pain_required?: boolean
           pain_score?: number | null
           session_id?: string
           substitute?: boolean

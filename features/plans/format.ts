@@ -1,3 +1,4 @@
+import { formatRestSeconds } from "./prescription";
 import { formatDate } from "@/lib/format";
 import { todayISO } from "@/lib/dates";
 import { messages } from "@/messages/pt-BR";
@@ -28,11 +29,7 @@ const num = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
 /** 45 → "45 s" · 90 → "1 min 30 s" · 120 → "2 min". */
 export function formatRest(seconds: number | null) {
-  if (seconds === null) return null;
-  if (seconds < 60) return `${seconds} s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return s ? `${m} min ${s} s` : `${m} min`;
+  return seconds === null ? null : formatRestSeconds(seconds);
 }
 
 /** Carga numérica + unidade e/ou texto livre: "40 kg", "moderada", "40 kg · moderada". */

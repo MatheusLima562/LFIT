@@ -7,7 +7,7 @@ type ActivePlan = {
   plan: Row & { completed_sessions: number };
   suggested_workout_id: string;
   open_session: { id: string } | null;
-  workouts: { id: string; label: string; items: (Row & { id: string; care_note: string | null; substitutes: Row[] })[] }[];
+  workouts: { id: string; label: string; items: (Row & { id: string; care_note: string | null; ask_pain: boolean; substitutes: Row[] })[] }[];
 };
 
 describe.runIf(dbTestsEnabled)("Fase 3: sessões de treino do aluno", () => {
@@ -138,9 +138,9 @@ describe.runIf(dbTestsEnabled)("Fase 3: sessões de treino do aluno", () => {
     await rpc(studentUser.client, "log_set", {
       p_session_id: sid, p_item_id: itemSupra, p_set_index: 2, p_data: { quantity_value: 11, load_value: 5, load_unit: "kg" },
     });
-    const { data: logs } = await fx.db.from("session_item_logs").select("id, exercise_name, care_note_required").eq("session_id", sid);
+    const { data: logs } = await fx.db.from("session_item_logs").select("id, exercise_name, pain_required").eq("session_id", sid);
     expect(logs).toHaveLength(1);
-    expect(logs![0]).toMatchObject({ exercise_name: "Abdominal supra", care_note_required: true });
+    expect(logs![0]).toMatchObject({ exercise_name: "Abdominal supra", pain_required: true });
     const { data: sets } = await fx.db.from("session_set_logs").select("set_index, quantity_value").eq("item_log_id", logs![0].id).order("set_index");
     expect(sets).toEqual([{ set_index: 1, quantity_value: 12 }, { set_index: 2, quantity_value: 11 }]);
 
@@ -436,6 +436,43 @@ describe.runIf(dbTestsEnabled)("Fase 3: sessões de treino do aluno", () => {
     });
     expect(bulk.error).toBeNull();
     expect(await careNotes(bulk.plan_id)).toEqual(expected);
+  });
+
+  it("regra da dor: pedir dor só com alerta para o aluno ou orientação de cuidado — só o booleano, nada de saúde", async () => {
+    // s1 entra num grupo ligado a "Coluna lombar", com regra da equipe na prancha (sem orientação de cuidado).
+    const lombar = (await fx.db.from("health_conditions").select("id").eq("key", "lombar").single()).data!.id;
+    const { data: g } = await fx.db.from("special_groups").insert({ organization_id: org.id, name: "Grupo Sigiloso F3" }).select("id").single();
+    await fx.db.from("special_group_conditions").insert({ organization_id: org.id, group_id: g!.id, condition_id: lombar });
+    await fx.db.from("student_groups").insert({ organization_id: org.id, student_id: s1, group_id: g!.id });
+    await fx.db.from("exercise_contraindications").insert({
+      organization_id: org.id, exercise_id: ex.prancha, condition_id: lombar, level: "caution", note: "Nota sigilosa da prancha",
+    });
+
+    const plan = await rpc<ActivePlan>(studentUser.client, "get_my_active_plan");
+    const ask = Object.fromEntries(plan.workouts.flatMap((w) => w.items).map((i) => [(i.exercise as Row).id as string, i.ask_pain]));
+    expect(ask).toEqual({ [ex.supra]: true, [ex.prancha]: true, [ex.supino]: false }); // orientação · alerta · nada
+    const json = JSON.stringify(plan);
+    expect(json).not.toMatch(/Nota sigilosa|Nota interna|Grupo Sigiloso|Coluna lombar|"level"|caution|avoid|condition/);
+
+    // Na execução: prancha (só alerta) exige dor; supino (nada) não.
+    const [st] = await rpc<Start[]>(studentUser.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA });
+    await expect(
+      rpc(studentUser.client, "complete_session_item", { p_session_id: st.session_id, p_item_id: itemPrancha, p_pain_score: null }),
+    ).rejects.toThrow("PAIN_REQUIRED");
+    await rpc(studentUser.client, "complete_session_item", { p_session_id: st.session_id, p_item_id: itemPrancha, p_pain_score: 0 });
+    const session = await rpc<{ workout: { items: Row[] } }>(studentUser.client, "get_training_session", { p_session_id: st.session_id });
+    expect(JSON.stringify(session)).not.toMatch(/Nota sigilosa|Grupo Sigiloso|Coluna lombar|"level"|caution|avoid|condition/);
+    await rpc(studentUser.client, "finish_workout_session", { p_session_id: st.session_id });
+
+    const [sb] = await rpc<Start[]>(studentUser.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wB });
+    await rpc(studentUser.client, "complete_session_item", { p_session_id: sb.session_id, p_item_id: itemSupino, p_pain_score: null });
+
+    // Modo restrito (professor do plano sem acesso à saúde): o booleano nunca vaza, nem na cópia da sessão do aluno.
+    const restricted = await rpc<ActivePlan>(trainer2.client, "get_my_active_plan", { p_student_id: s1 });
+    expect(restricted.workouts.flatMap((w) => w.items).every((i) => i.ask_pain === false)).toBe(true);
+    const rs = await rpc<{ workout: { items: Row[] } }>(trainer2.client, "get_training_session", { p_session_id: st.session_id });
+    expect(rs.workout.items.every((i) => i.ask_pain === false)).toBe(true);
+    await rpc(studentUser.client, "finish_workout_session", { p_session_id: sb.session_id });
   });
 
   it("s2 (outro aluno) não tem plano ativo: get_my_active_plan devolve nulo", async () => {

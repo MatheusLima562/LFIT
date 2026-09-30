@@ -71,7 +71,7 @@ ok("3 séries gravadas", count === 3);
 // Impressão
 await page.goto(`${BASE}/treinos/${p0.id}/imprimir`); await settle(page);
 const txt = await page.locator("article").innerText();
-ok("impressão: colunas novas e valores", /QUANTIDADE/i.test(txt) && /INTENSIDADE/i.test(txt) && /20–30 s/.test(txt) && /RIR 2/.test(txt) && /Cadência 30X0/.test(txt) && /90–120 s/.test(txt), "");
+ok("impressão: colunas novas e valores", /QUANTIDADE/i.test(txt) && /INTENSIDADE/i.test(txt) && /20–30 s/.test(txt) && /RIR 2/.test(txt) && /Cadência 30X0/.test(txt) && /90 s – 2 min/.test(txt), "");
 await page.screenshot({ path: `${OUT}/02-impressao.png`, fullPage: true });
 const pm = await login("owner.seed@example.com", { width: 390, height: 844 });
 await pm.goto(`${BASE}/treinos/${p0.id}/editar`); await settle(pm);

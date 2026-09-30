@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyOp, currentExercise, firstOpenItem, initialRunState } from "@/features/student-app/session-state";
+import { applyOp, currentExercise, currentSetIndex, doneSetText, firstOpenItem, initialRunState, nextOpenItem } from "@/features/student-app/session-state";
 import { itemSummary, setTargets } from "@/features/student-app/format";
 import type { AppItem, AppTrainingSession } from "@/features/student-app/types";
 
@@ -9,7 +9,7 @@ const base = {
   load_value: 40, load_unit: "kg" as const, load_text: null, intensity: "RPE 8", speed: null, tempo: null, rest_min: 60, rest_max: 90,
 };
 const item = (id: string, extra: Partial<AppItem> = {}): AppItem => ({
-  ...base, id, position: 0, group_key: null, sets: 3, method: null, tip: null, care_note: null,
+  ...base, id, position: 0, group_key: null, sets: 3, method: null, tip: null, care_note: null, ask_pain: false,
   exercise: ex(`e-${id}`, `Exercício ${id}`), substitutes: [ex("sub", "Substituto")], sets_detail: [], ...extra,
 });
 const session = (items: AppItem[], logs: AppTrainingSession["items"] = []): AppTrainingSession => ({
@@ -48,4 +48,19 @@ describe("execução do treino (estado da tela)", () => {
     expect(st.a.sets[2]).toEqual({ qty: "9", load: "35", done: true });
     expect(st.a).toMatchObject({ completed: true, pain: 4 });
   });
+
+  it("modo foco: série atual, próximo exercício (com volta) e linha compacta", () => {
+    const items = [item("a"), item("b"), item("c")];
+    let st = initialRunState(session(items));
+    expect(currentSetIndex(items[0], st.a)).toBe(1);
+    st = applyOp(st, { kind: "log_set", sessionId: "s", itemId: "a", setIndex: 1, data: { quantity_value: 10, load_value: 42.5, load_unit: "kg", load_text: null, substitute_exercise_id: null } });
+    expect(currentSetIndex(items[0], st.a)).toBe(2);
+    st = applyOp(st, { kind: "complete_item", sessionId: "s", itemId: "b", pain: null, substituteId: null });
+    expect(nextOpenItem(items, st, "a")).toBe("c"); // pula o concluído
+    expect(nextOpenItem(items, st, "c")).toBe("a"); // volta ao começo
+    st = applyOp(applyOp(st, { kind: "complete_item", sessionId: "s", itemId: "a", pain: null, substituteId: null }), { kind: "complete_item", sessionId: "s", itemId: "c", pain: null, substituteId: null });
+    expect(nextOpenItem(items, st, "c")).toBeNull();
+    expect(doneSetText("reps", { qty: "10", load: "42,5", done: true }, "kg")).toBe("10 reps · 42,5 kg");
+  });
 });
+

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CloudOff, Loader2, CircleCheck } from "lucide-react";
+import { ArrowLeft, CloudOff, Loader2, CircleCheck, PartyPopper } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,10 @@ import { cn } from "@/lib/utils";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
 import { parseDecimal, setTargets } from "../format";
 import { enqueue, flush, isNetworkError, loadQueue, saveQueue, type QueueOp, type RunResult } from "../queue";
-import { applyOp, firstOpenItem, initialRunState, type RunState, type SetEntry } from "../session-state";
+import { applyOp, firstOpenItem, initialRunState, nextOpenItem, type RunState, type SetEntry } from "../session-state";
 import type { AppTrainingSession } from "../types";
-import { ExerciseCard } from "./ExerciseCard";
+import { FocusExercise } from "./FocusExercise";
+import { ProgressStrip } from "./ProgressStrip";
 import { RestTimer } from "./RestTimer";
 
 const t = messages.aluno;
@@ -146,12 +147,16 @@ export function SessionRunner({ data, askCheckin, backHref = "/aluno" }: { data:
     if (target.restSeconds) setRest((r) => ({ seconds: target.restSeconds!, key: (r?.key ?? 0) + 1 }));
   };
 
+  const goTo = (id: string | null) => {
+    setOpenId(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Concluir avança sozinho para o próximo exercício ainda aberto (com volta ao começo).
   const complete = (itemId: string, pain: number | null) => {
     push({ kind: "complete_item", sessionId, itemId, pain, substituteId: run[itemId].substituteId });
     setRest(null);
-    const next = items.find((i) => i.id !== itemId && !run[i.id]?.completed);
-    setOpenId(next?.id ?? null);
-    if (next) window.setTimeout(() => document.getElementById(`ex-${next.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    goTo(nextOpenItem(items, { ...run, [itemId]: { ...run[itemId], completed: true } }, itemId));
   };
 
   const finish = () => {
@@ -161,6 +166,8 @@ export function SessionRunner({ data, askCheckin, backHref = "/aluno" }: { data:
   };
 
   const doneCount = items.filter((i) => run[i.id]?.completed).length;
+  const focusIndex = openId ? items.findIndex((i) => i.id === openId) : -1;
+  const focusItem = focusIndex >= 0 ? items[focusIndex] : null;
   const groups = new Map<string, number>();
   items.forEach((i) => i.group_key && groups.set(i.group_key, (groups.get(i.group_key) ?? 0) + 1));
 
@@ -209,25 +216,31 @@ export function SessionRunner({ data, askCheckin, backHref = "/aluno" }: { data:
         {data.workout.notes && <p className="mt-2 text-[13px] whitespace-pre-line text-ink-2">{data.workout.notes}</p>}
       </header>
 
-      <ol className="flex flex-col gap-3">
-        {items.map((item, index) => (
-          <ExerciseCard
-            key={item.id}
-            item={item}
-            index={index}
-            state={run[item.id]}
-            restricted={restricted}
-            open={openId === item.id}
-            groupLabel={item.group_key ? messages.plans.groupLabel(groups.get(item.group_key) ?? 1) : null}
-            onToggle={() => setOpenId(openId === item.id ? null : item.id)}
-            onEditSet={(setIndex, patch) => editSet(item.id, setIndex, patch)}
-            onSetDone={(setIndex) => setDone(item.id, setIndex)}
-            onSubstitute={(exerciseId) => setRun((s) => ({ ...s, [item.id]: { ...s[item.id], substituteId: exerciseId } }))}
-            onComplete={(pain) => complete(item.id, pain)}
-            onReopen={() => setRun((s) => ({ ...s, [item.id]: { ...s[item.id], completed: false } }))}
-          />
-        ))}
-      </ol>
+      <ProgressStrip items={items} run={run} currentId={openId} onSelect={goTo} />
+
+      {focusItem ? (
+        <FocusExercise
+          key={focusItem.id}
+          item={focusItem}
+          index={focusIndex}
+          total={items.length}
+          state={run[focusItem.id]}
+          restricted={restricted}
+          groupLabel={focusItem.group_key ? messages.plans.groupLabel(groups.get(focusItem.group_key) ?? 1) : null}
+          onEditSet={(setIndex, patch) => editSet(focusItem.id, setIndex, patch)}
+          onSetDone={(setIndex) => setDone(focusItem.id, setIndex)}
+          onSubstitute={(exerciseId) => setRun((st) => ({ ...st, [focusItem.id]: { ...st[focusItem.id], substituteId: exerciseId } }))}
+          onComplete={(pain) => complete(focusItem.id, pain)}
+          onReopen={() => setRun((st) => ({ ...st, [focusItem.id]: { ...st[focusItem.id], completed: false } }))}
+          onPrev={focusIndex > 0 ? () => goTo(items[focusIndex - 1].id) : null}
+          onNext={focusIndex < items.length - 1 ? () => goTo(items[focusIndex + 1].id) : null}
+        />
+      ) : (
+        <section className="flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface p-6 text-center shadow-card">
+          <PartyPopper aria-hidden className="size-8 text-ink-3" />
+          <p className="text-[15px] font-medium text-ink">{doneCount === items.length ? t.run.allDone : t.run.finishTitle}</p>
+        </section>
+      )}
 
       {finishing && pending > 0 ? (
         <p role="status" className="rounded-xl border border-warning-line bg-warning-soft px-3 py-2.5 text-[13px] text-warning-ink">

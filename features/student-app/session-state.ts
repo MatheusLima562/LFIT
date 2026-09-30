@@ -72,3 +72,23 @@ export function currentExercise(item: AppItem, state: ItemState | undefined) {
 export function firstOpenItem(items: AppItem[], state: RunState): string | null {
   return items.find((i) => !state[i.id]?.completed)?.id ?? null;
 }
+
+/** Série atual do exercício: a primeira ainda não feita (null = todas feitas). */
+export function currentSetIndex(item: AppItem, state: ItemState | undefined): number | null {
+  return setTargets(item).find((t) => !state?.sets[t.index]?.done)?.index ?? null;
+}
+
+/** Próximo exercício não concluído depois de `fromId` (com volta ao começo); null = todos concluídos. */
+export function nextOpenItem(items: AppItem[], state: RunState, fromId: string | null): string | null {
+  const start = fromId ? items.findIndex((i) => i.id === fromId) : -1;
+  for (let k = 1; k <= items.length; k++) {
+    const it = items[(start + k + items.length) % items.length];
+    if (!state[it.id]?.completed) return it.id;
+  }
+  return null;
+}
+
+/** Linha compacta da série feita: "10 reps · 42,5 kg". */
+export function doneSetText(unitSuffix: string, entry: SetEntry, loadUnit: string): string {
+  return [entry.qty && `${entry.qty}${unitSuffix ? ` ${unitSuffix}` : ""}`, entry.load && `${entry.load} ${loadUnit}`].filter(Boolean).join(" · ") || "✓";
+}

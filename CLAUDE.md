@@ -333,7 +333,7 @@ effective_status =
   `students.user_id = auth.uid()` (+ joins), nunca `current_org_id()`.
 - Migration `20261010120000_fase3_workout_sessions.sql`: `workout_sessions` (uma por treino; `recorded_by`, `rpe`,
   `feedback_note`, `pain_checkin` = resposta no INÍCIO sobre a sessão anterior, `trainer_reviewed_at/by`),
-  `session_item_logs` (um por exercício: **dor 0–10 por exercício**, obrigatória só se o item tem `care_note` —
+  `session_item_logs` (um por exercício: **dor 0–10 por exercício**, obrigatória conforme `ask_pain` — ver abaixo —
   `PAIN_REQUIRED` na RPC), `session_set_logs` (carga/quantidade por série). `plan_workout_items.care_note` ≤ 300.
 - **`save_training_plan` preserva ids** (desde `20261011120000`): divisão/item com `id` do próprio plano é atualizado no
   lugar (pode mudar de divisão); `id` novo do cliente é usado se estiver livre (o `key` do montador é um UUID e vira o id —
@@ -360,13 +360,27 @@ effective_status =
   só no cliente via `SessionRunnerClient`), `historico`. Código em `features/student-app/` (lógica pura em `queue.ts`,
   `session-state.ts`, `format.ts`, testada em `tests/unit/student-*.test.ts`). A página roda em paralelo ao layout: não
   deixe uma RPC que recusa (ex.: `ACCESS_SUSPENDED`) derrubar a página — o layout é quem mostra o portão.
+- **Regra da dor** (`20261012120000_fase3_ask_pain.sql`): o servidor calcula `ask_pain` por item (orientação de cuidado
+  **ou** alerta de contraindicação para aquele aluno — cautela ou evitar, qualquer camada, no principal ou num
+  substituto — via `private.student_exercise_has_alert`) e devolve **só o booleano** (em `get_my_active_plan` e na cópia
+  da sessão); nunca nível, condição, grupo ou nota. `true` → escala 0–10 obrigatória ao concluir
+  (`session_item_logs.pain_required`, `PAIN_REQUIRED`); `false` → só o link "Sentiu algum desconforto?" (opcional). No
+  modo restrito sai sempre `false` (inclusive lendo uma sessão do aluno: `private.snapshot_without_pain`). Aviso ao
+  professor inalterado (dor > 5 ou "ainda incomoda").
+- **Execução em modo foco** (`FocusExercise` + `ProgressStrip`): um exercício por vez, série atual destacada (só ela
+  tem campos), feitas compactas com ✓ (lápis para editar), concluir avança para o próximo aberto (com volta); faixa de
+  progresso + Anterior/Próximo para voltar. Miniatura (`ExerciseThumb`: pôster do vídeo próprio ou marcador neutro;
+  toque abre o vídeo numa janela; link do YouTube/Vimeo não pré-carrega miniatura de terceiros).
+- **Pausa, regra única** (`formatRestSeconds`/`formatRestRange` em `features/plans/prescription.ts`, usada no montador,
+  na impressão e no app): até 90 s em segundos ("60 s", "60–90 s"), acima em minutos ("2 min", "2–3 min",
+  "90 s – 2 min").
 - **Fila local** (`queue.ts`): cada registro vira operação no `localStorage` (`lfit:aluno:fila:<sessão>`), reenviada em
   ordem (evento `online` + a cada 15 s); erro de rede → espera; erro do banco → descarta com aviso. "Finalizar" só sai da
   tela quando a fila esvazia. Sem service worker (manifest em `app/manifest.ts`, ícones gerados em `app/pwa/[file]`).
 - `requireStaff()` manda aluno para `/aluno` (antes: saía). `proxy.ts`: `/aluno/*` sem sessão → `/aluno/entrar`.
 - Seed: `aluno.seed@example.com` (Camila, plano ativo com orientação de cuidado no agachamento),
   `aluno.suspenso.seed@example.com` (Ana, bloqueada) e `aluno.consentimento.seed@example.com` (Diego, consentimento só
-  declarado); senha = `SEED_USER_PASSWORD`. Roteiro: `e2e/f3-app-aluno.e2e.mjs` (celular 390 px, inclusive sem internet).
+  declarado); senha = `SEED_USER_PASSWORD`. Roteiro: `e2e/f3-app-aluno.e2e.mjs` (celular 375 px, modo foco, inclusive sem internet).
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 

@@ -30,9 +30,19 @@ export function formatSpeed(speed: SpeedPreset | null, tempo: string | null) {
 }
 
 /** 60 → "60 s" · 60–90 → "60–90 s" · 120 → "2 min". */
+/** Pausa: até 90 s em segundos ("60 s", "90 s"); acima disso em minutos ("2 min", "2 min 30 s"). Mesma regra em tudo. */
+export function formatRestSeconds(seconds: number) {
+  if (seconds <= 90) return `${seconds} s`;
+  const m = Math.floor(seconds / 60);
+  const r = seconds % 60;
+  return r ? `${m} min ${r} s` : `${m} min`;
+}
+
+/** Faixa de pausa com a mesma regra: "60–90 s", "2–3 min", "90 s – 2 min". */
 export function formatRestRange(min: number | null, max: number | null) {
   if (min === null) return null;
-  const fmt = (s: number) => (s >= 60 && s % 60 === 0 ? `${s / 60} min` : `${s} s`);
-  if (max === null || max === min) return fmt(min);
-  return min % 60 === 0 && max % 60 === 0 && min >= 60 ? `${min / 60}–${max / 60} min` : `${min}–${max} s`;
+  if (max === null || max === min) return formatRestSeconds(min);
+  if (max <= 90) return `${min}–${max} s`;
+  if (min > 90 && min % 60 === 0 && max % 60 === 0) return `${min / 60}–${max / 60} min`;
+  return `${formatRestSeconds(min)} – ${formatRestSeconds(max)}`;
 }

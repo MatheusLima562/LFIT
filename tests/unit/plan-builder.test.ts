@@ -314,7 +314,7 @@ describe("situação do plano", async () => {
 describe("formatação para impressão", async () => {
   const { formatRest, formatLoad, formatDecimal } = await import("@/features/plans/format");
   it("descanso", () => {
-    expect([formatRest(null), formatRest(45), formatRest(60), formatRest(90), formatRest(125)]).toEqual([null, "45 s", "1 min", "1 min 30 s", "2 min 5 s"]);
+    expect([formatRest(null), formatRest(45), formatRest(60), formatRest(90), formatRest(125)]).toEqual([null, "45 s", "60 s", "90 s", "2 min 5 s"]);
   });
   it("carga", () => {
     expect(formatLoad(12.5, "kg", null)).toBe("12,5 kg");

@@ -11,9 +11,9 @@ const ok = (n, c, e = "") => { console.log(`${c ? "✓" : "✗"} ${n}${e ? " —
 const settle = (p) => p.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
 const waitText = (p, text, timeout = 15000) => p.getByText(text).first().waitFor({ timeout }).then(() => true, () => false);
 
-// Celular (iPhone 12/13/14): toque, tela estreita.
+// Celular de 375 px (iPhone SE/mini): toque, tela estreita.
 async function phone(email) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   const errors = []; page.on("pageerror", (e) => errors.push(e.message)); page.errors = errors; page.ctx = ctx;
   await page.goto(`${BASE}/aluno/entrar`);
@@ -37,7 +37,8 @@ ok("login do aluno cai no app (/aluno)", page.url() === `${BASE}/aluno`);
 ok("Hoje: plano ativo e divisão sugerida", (await waitText(page, "Hipertrofia ABC")) && (await waitText(page, "Sugerido para hoje")));
 ok("nenhum alerta de contraindicação no app do aluno", !/Evitar|Cautela|contraindica/i.test(await page.locator("main").innerText()));
 const sw = await page.evaluate(() => document.documentElement.scrollWidth);
-ok("sem rolagem horizontal no celular", sw <= 390, String(sw));
+ok("sem rolagem horizontal no celular", sw <= 375, String(sw));
+ok("pausa padronizada (até 90 s em segundos)", (await page.getByText(/· 60 s$/).count()) > 0 && (await page.getByText(/· 1 min$/).count()) === 0);
 await page.screenshot({ path: `${OUT}/f3-01-hoje.png`, fullPage: true });
 
 // --- Execução: série, descanso, fila sem internet, concluir, finalizar -----------------
@@ -48,7 +49,23 @@ await page.getByRole("button", { name: "Série 1: Feita" }).first().waitFor({ ti
 ok("sem pergunta de dor no primeiro treino", (await page.getByRole("dialog").count()) === 0);
 await page.screenshot({ path: `${OUT}/f3-02-execucao.png`, fullPage: true });
 
-const first = page.locator("li[id^='ex-']").first();
+// Modo foco: um exercício por vez, com a faixa de progresso para pular entre eles.
+ok("modo foco: um exercício na tela", (await page.locator("section[id^='ex-']").count()) === 1);
+const strip = page.getByRole("navigation", { name: "Exercícios do treino" });
+ok("faixa de progresso com todos os exercícios", (await strip.getByRole("button").count()) === 6);
+await strip.getByRole("button", { name: /^Exercício 3:/ }).click();
+ok("toque na faixa troca o exercício em foco", await waitText(page, "3 de 6"));
+await page.getByRole("button", { name: "Anterior" }).click();
+await page.getByRole("button", { name: "Anterior" }).click();
+ok("'Anterior' volta ao primeiro", await waitText(page, "1 de 6"));
+const thumbs = await page.getByRole("button", { name: /^Ver vídeo:/ }).count();
+if (thumbs > 0) {
+  await page.getByRole("button", { name: /^Ver vídeo:/ }).first().click();
+  ok("miniatura abre o vídeo", await page.getByRole("dialog").waitFor({ timeout: 5000 }).then(() => true, () => false));
+  await page.keyboard.press("Escape");
+}
+const first = page.locator("section[id^='ex-']");
+ok("sem alerta nem orientação: dor só pelo link discreto", (await first.getByRole("button", { name: "Sentiu algum desconforto?" }).count()) === 1 && (await first.getByRole("radio", { name: "Dor 0 de 10" }).count()) === 0);
 await first.getByLabel(/^Carga/).first().fill("42,5");
 await first.getByRole("button", { name: "Série 1: Feita" }).click();
 ok("descanso começa depois da série", await page.getByRole("timer").waitFor({ timeout: 5000 }).then(() => true, () => false));
@@ -57,7 +74,7 @@ await page.getByRole("button", { name: "Pular" }).click();
 ok("série salva", await waitText(page, "Tudo salvo"));
 
 await page.ctx.setOffline(true);
-await first.getByLabel(/^Feito/).nth(1).fill("9");
+await first.getByLabel(/^Feito/).first().fill("9"); // só a série atual tem campos
 await first.getByRole("button", { name: "Série 2: Feita" }).click();
 ok("sem internet: fica na fila local", await waitText(page, "Sem conexão — 1 registro pendente"));
 await page.screenshot({ path: `${OUT}/f3-04-sem-conexao.png` });
@@ -70,9 +87,10 @@ const { data: logs } = await admin
   .order("set_index");
 ok("séries gravadas (inclusive a feita sem internet)", logs?.length === 2 && logs[0].load_value === 42.5 && logs[1].quantity_value === 9, JSON.stringify(logs));
 
-await first.getByRole("button", { name: "Concluir exercício" }).click(); // sem orientação de cuidado: dor opcional
-// Concluir fecha o card e abre o próximo exercício; o progresso no topo sobe.
-ok("exercício concluído (dor opcional) e o próximo abre sozinho", await waitText(page, /^1\/\d+ · /));
+ok("séries feitas ficam compactas com ✓", await waitText(page, "Série 1 · 10 reps · 42,5 kg"));
+await first.getByRole("button", { name: "Concluir exercício" }).click(); // sem alerta nem orientação: dor opcional
+ok("concluir avança sozinho para o próximo", (await waitText(page, /^1\/\d+ · /)) && (await waitText(page, "2 de 6")));
+await page.screenshot({ path: `${OUT}/f3-02b-foco.png`, fullPage: true });
 await page.getByRole("button", { name: "Finalizar treino" }).click();
 await page.getByRole("radio", { name: "Esforço 7 de 10" }).click();
 await page.getByRole("button", { name: "Salvar e finalizar" }).click();
@@ -85,7 +103,7 @@ ok("rodízio: depois da A, sugere a B", await waitText(page, "Costas e bíceps")
 await page.getByText("Pernas").first().click();
 await page.getByRole("button", { name: "Iniciar treino C" }).click();
 await page.waitForURL(/\/aluno\/treino\//, { timeout: 20000 });
-const agacho = page.locator("li[id^='ex-']").first();
+const agacho = page.locator("section[id^='ex-']");
 await agacho.getByText("Orientação do seu personal").waitFor({ timeout: 15000 });
 ok("orientação de cuidado aparece (ícone neutro, sem nível)", (await agacho.innerText()).includes("Coluna neutra") && !/Evitar|Cautela/.test(await agacho.innerText()));
 const concluir = agacho.getByRole("button", { name: "Concluir exercício" });

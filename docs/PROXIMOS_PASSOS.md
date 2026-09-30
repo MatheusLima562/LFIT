@@ -96,6 +96,10 @@ antes/depois. **Auditoria de segurança entregue** (abaixo) — parada para sua 
    **Páginas do aluno prontas — aguardando seu teste no celular:** login `/aluno/entrar`, portões (acesso suspenso,
    consentimento pendente), Hoje, execução série a série (descanso, substitutos, vídeo, orientação de cuidado, dor por
    exercício, pergunta de dor no início, RPE/feedback, fila local sem internet), Histórico. Roteiro `e2e/f3-app-aluno`.
+   **Ajustes do 1º teste no celular:** modo foco (um exercício por vez, faixa de progresso, avanço automático), dor
+   obrigatória só com alerta para o aluno ou orientação de cuidado (booleano `ask_pain` calculado no servidor; demais:
+   link "Sentiu algum desconforto?"), miniatura que abre o vídeo, pausa padronizada (até 90 s em segundos).
+   **Aguardando o seu reteste.**
    **Falta depois do seu teste:** lado do professor ("Sessões e avisos" + "Iniciar treino" presencial em
    `/alunos/[id]/treinos`).
    **Como testar no celular** (mesma rede Wi-Fi do computador): `npm run build && npx next start -H 0.0.0.0 -p 3100`,

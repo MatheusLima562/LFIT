@@ -43,6 +43,8 @@ export interface AppItem extends AppPrescription {
   method: string | null;
   tip: string | null;
   care_note: string | null;
+  /** Pedir dor ao concluir (alerta para o aluno ou orientação de cuidado) — só o booleano, calculado no servidor. */
+  ask_pain: boolean;
   exercise: AppExercise;
   substitutes: AppExercise[];
   sets_detail: AppSetDetail[];

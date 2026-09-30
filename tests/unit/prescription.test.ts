@@ -16,9 +16,11 @@ describe("formatação da prescrição", () => {
       "60–90 s",
       "45 s",
       "2–3 min",
-      "1 min",
+      "60 s",
       null,
     ]);
+    // Regra única: até 90 s em segundos, acima disso em minutos.
+    expect([formatRestRange(90, 120), formatRestRange(150, null), formatRestRange(100, 180)]).toEqual(["90 s – 2 min", "2 min 30 s", "1 min 40 s – 3 min"]);
   });
 });
 
