@@ -44,6 +44,8 @@ export interface ItemDraft extends PrescriptionDraft {
   loadText: string;
   /** Dica (negrito e lista; substitui a antiga observação). */
   tip: string;
+  /** Orientação de cuidado ao aluno (≤ 300): o único texto ligado a alertas que chega ao app do aluno. */
+  careNote: string;
   /** Até 3 exercícios alternativos (falta de equipamento); também passam pelos alertas. */
   substitutes: { id: string; name: string }[];
   methodId: string;
@@ -141,6 +143,7 @@ export function emptyItem(exercise: { id: string; name: string; defaults?: ItemD
     loadUnit: "kg",
     loadText: "",
     tip: "",
+    careNote: "",
     substitutes: [],
     methodId: "",
     objectiveId: "",
@@ -330,11 +333,14 @@ export function toPayload(draft: PlanDraft): unknown {
     planned_sessions: parseNumber(draft.plannedSessions),
     trainer_id: draft.trainerId || null,
     notes: text(draft.notes),
+    // Os keys são UUIDs: viram os ids de divisões/itens (o servidor preserva os que já são do plano).
     workouts: draft.workouts.map((w) => ({
+      id: w.key,
       label: w.label.trim(),
       name: text(w.name),
       notes: text(w.notes),
       items: w.items.map((it) => ({
+        id: it.key,
         exercise_id: it.exerciseId,
         group_key: it.groupKey,
         sets: parseNumber(it.sets),
@@ -342,6 +348,7 @@ export function toPayload(draft: PlanDraft): unknown {
         ...load(it.loadValue, it.loadUnit),
         load_text: text(it.loadText),
         tip: text(it.tip),
+        care_note: text(it.careNote),
         substitutes: it.substitutes.map((s) => s.id),
         method_id: it.methodId || null,
         objective_id: it.objectiveId || null,
@@ -373,6 +380,7 @@ const FIELD: Record<string, string> = {
   rest_max: "restMax",
   notes: "notes",
   tip: "tip",
+  care_note: "careNote",
   substitutes: "substitutes",
   method_id: "methodId",
   objective_id: "objectiveId",
@@ -435,10 +443,12 @@ export interface SavedPlan {
   trainerId: string | null;
   notes: string | null;
   workouts: {
+    id: string;
     label: string;
     name: string | null;
     notes: string | null;
     items: {
+      id: string;
       exerciseId: string;
       exerciseName: string;
       groupKey: string | null;
@@ -448,6 +458,7 @@ export interface SavedPlan {
       loadText: string | null;
       prescription: SavedPrescription;
       tip: string | null;
+      careNote: string | null;
       substitutes: { id: string; name: string }[];
       methodId: string | null;
       objectiveId: string | null;
@@ -507,13 +518,14 @@ export function fromSaved(plan: SavedPlan): PlanDraft {
     plannedSessions: plan.plannedSessions === null ? "" : String(plan.plannedSessions),
     trainerId: plan.trainerId ?? "",
     notes: plan.notes ?? "",
+    // O id salvo vira o key: salvar de novo preserva divisões e itens (sessões e evolução dependem disso).
     workouts: plan.workouts.map((w) => ({
-      key: newKey(),
+      key: w.id,
       label: w.label,
       name: w.name ?? "",
       notes: w.notes ?? "",
       items: w.items.map((it) => ({
-        key: newKey(),
+        key: it.id,
         exerciseId: it.exerciseId,
         exerciseName: it.exerciseName,
         groupKey: it.groupKey,
@@ -523,6 +535,7 @@ export function fromSaved(plan: SavedPlan): PlanDraft {
         loadUnit: it.loadUnit ?? "kg",
         loadText: it.loadText ?? "",
         tip: it.tip ?? "",
+        careNote: it.careNote ?? "",
         substitutes: it.substitutes,
         methodId: it.methodId ?? "",
         objectiveId: it.objectiveId ?? "",

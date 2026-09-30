@@ -38,6 +38,31 @@ describe.runIf(dbTestsEnabled)("Fase 3: sessões de treino do aluno", () => {
       { label: "B", items: [item(ex.supino)] },
     ],
   });
+  type PayloadItem = Row & { id?: string };
+  type Payload = Row & { workouts: { id?: string; label: string; items: PayloadItem[] }[] };
+  /** Payload como o montador envia: com os ids atuais de divisões e itens. */
+  const currentPayload = async (): Promise<Payload> => {
+    const { data: p } = await fx.db.from("training_plans").select("id, student_id, name, starts_on, ends_on, trainer_id").eq("id", planId).single();
+    const { data: ws } = await fx.db.from("plan_workouts").select("id, label").eq("plan_id", planId).order("position");
+    const workouts: Payload["workouts"] = [];
+    for (const w of ws!) {
+      const { data: its } = await fx.db
+        .from("plan_workout_items")
+        .select("id, exercise_id, sets, quantity_unit, quantity_min, quantity_max, care_note, plan_item_substitutes(exercise_id, position)")
+        .eq("workout_id", w.id)
+        .order("position");
+      workouts.push({
+        id: w.id,
+        label: w.label,
+        items: its!.map((i) => ({
+          id: i.id, exercise_id: i.exercise_id, sets: i.sets, quantity_unit: i.quantity_unit,
+          quantity_min: i.quantity_min, quantity_max: i.quantity_max, care_note: i.care_note,
+          substitutes: [...i.plan_item_substitutes].sort((x, y) => x.position - y.position).map((x) => x.exercise_id),
+        })),
+      });
+    }
+    return { ...p!, workouts };
+  };
   const loadStructure = async () => {
     const { data: ws } = await fx.db.from("plan_workouts").select("id, label").eq("plan_id", planId).order("position");
     wA = ws!.find((w) => w.label === "A")!.id;
@@ -213,19 +238,95 @@ describe.runIf(dbTestsEnabled)("Fase 3: sessões de treino do aluno", () => {
     expect(await rpc<Row[]>(trainer.client, "student_session_alerts", { p_student_id: s1 })).toEqual([]);
   });
 
-  it("plano editado durante a sessão: histórico preservado; item antigo recusado com ITEM_NOT_FOUND", async () => {
-    const [st] = await rpc<Start[]>(studentUser.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA });
-    const oldItem = itemSupra;
-    await rpc(studentUser.client, "log_set", { p_session_id: st.session_id, p_item_id: oldItem, p_set_index: 1, p_data: { quantity_value: 9 } });
-    await rpc(trainer.client, "save_training_plan", { p_plan: planPayload(planId) }); // ids novos
+  it("salvar o plano preserva os ids de divisões e itens que continuam; só o novo ganha id; o removido sai", async () => {
+    const before = await currentPayload();
+    const newWorkoutId = crypto.randomUUID();
+    // Reordena A (prancha antes do supra), move o supino de B para A, cria a divisão C (id do cliente) e esvazia B.
+    const [a, b] = before.workouts;
+    const payload = {
+      ...before,
+      workouts: [
+        { ...a, items: [a.items[1], a.items[0], b.items[0]] },
+        { ...b, items: [] },
+        { id: newWorkoutId, label: "C", items: [item(ex.prancha)] },
+      ],
+    };
+    await rpc(trainer.client, "save_training_plan", { p_plan: payload });
+    const { data: ws } = await fx.db.from("plan_workouts").select("id, label, position").eq("plan_id", planId).order("position");
+    expect(ws).toEqual([
+      { id: wA, label: "A", position: 0 },
+      { id: wB, label: "B", position: 1 },
+      { id: newWorkoutId, label: "C", position: 2 },
+    ]);
+    const { data: its } = await fx.db.from("plan_workout_items").select("id, workout_id, position").eq("workout_id", wA).order("position");
+    expect(its).toEqual([
+      { id: itemPrancha, workout_id: wA, position: 0 },
+      { id: itemSupra, workout_id: wA, position: 1 },
+      { id: itemSupino, workout_id: wA, position: 2 },
+    ]);
+    // Orientação de cuidado e substitutos continuam no item preservado.
+    const { data: supra } = await fx.db.from("plan_workout_items").select("care_note").eq("id", itemSupra).single();
+    expect(supra!.care_note).toMatch(/Coluna neutra/);
+    expect((await fx.db.from("plan_item_substitutes").select("exercise_id").eq("item_id", itemSupra)).data).toEqual([{ exercise_id: ex.deadbug }]);
+
+    // Salvar de novo o mesmo conteúdo não muda nenhum id.
+    await rpc(trainer.client, "save_training_plan", { p_plan: await currentPayload() });
+    const { data: again } = await fx.db.from("plan_workout_items").select("id").eq("workout_id", wA).order("position");
+    expect(again!.map((r) => r.id)).toEqual([itemPrancha, itemSupra, itemSupino]);
+
+    // Volta à estrutura original (C sai: a divisão e o item dela são apagados).
+    await rpc(trainer.client, "save_training_plan", { p_plan: { ...before, trainer_id: trainer2.id } });
+    expect((await fx.db.from("plan_workouts").select("id").eq("id", newWorkoutId)).data).toEqual([]);
     await loadStructure();
-    const { data: kept } = await fx.db.from("session_item_logs").select("item_id, exercise_name").eq("session_id", st.session_id);
-    expect(kept).toEqual([{ item_id: null, exercise_name: "Abdominal supra" }]);
+    expect([itemSupra, itemPrancha, itemSupino]).toEqual([before.workouts[0].items[0].id, before.workouts[0].items[1].id, before.workouts[1].items[0].id]);
+  });
+
+  it("plano editado durante a sessão: a sessão aberta segue a cópia da divisão; a mudança vale na próxima", async () => {
+    const [st] = await rpc<Start[]>(studentUser.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA });
+    await rpc(studentUser.client, "log_set", { p_session_id: st.session_id, p_item_id: itemSupra, p_set_index: 1, p_data: { quantity_value: 9 } });
+
+    // O professor tira a prancha e o supra do plano (e salva sem ids — formato antigo, tudo novo).
+    await rpc(trainer.client, "save_training_plan", {
+      p_plan: { ...planPayload(planId), workouts: [{ label: "A", items: [item(ex.supino)] }, { label: "B", items: [item(ex.supino)] }] },
+    });
+
+    // A sessão aberta continua aceitando os itens da cópia, inclusive os que saíram do plano.
+    await rpc(studentUser.client, "log_set", { p_session_id: st.session_id, p_item_id: itemPrancha, p_set_index: 1, p_data: { quantity_value: 30 } });
+    await rpc(studentUser.client, "complete_session_item", { p_session_id: st.session_id, p_item_id: itemSupra, p_pain_score: 1 });
+    const session = await rpc<{ workout: { items: { id: string }[] }; items: Row[] }>(studentUser.client, "get_training_session", {
+      p_session_id: st.session_id,
+    });
+    expect(session.workout.items.map((i) => i.id)).toEqual([itemSupra, itemPrancha]);
+    expect(session.items).toHaveLength(2);
+    // Item que nunca esteve na cópia continua recusado.
     await expect(
-      rpc(studentUser.client, "log_set", { p_session_id: st.session_id, p_item_id: oldItem, p_set_index: 2, p_data: {} }),
+      rpc(studentUser.client, "log_set", { p_session_id: st.session_id, p_item_id: itemSupino, p_set_index: 1, p_data: {} }),
     ).rejects.toThrow("ITEM_NOT_FOUND");
-    const [row] = (await fx.db.from("workout_sessions").select("workout_id, workout_label").eq("id", st.session_id)).data!;
-    expect(row).toEqual({ workout_id: null, workout_label: "A" });
+    await rpc(studentUser.client, "finish_workout_session", { p_session_id: st.session_id });
+
+    // A próxima sessão já usa o plano novo.
+    const plan = await rpc<ActivePlan>(studentUser.client, "get_my_active_plan");
+    expect(plan.workouts[0].items.map((i) => (i.exercise as Row).id)).toEqual([ex.supino]);
+
+    // Restaura o plano do teste (supra com orientação, prancha, supino) para os próximos cenários.
+    await rpc(trainer.client, "save_training_plan", { p_plan: planPayload(planId) });
+    await loadStructure();
+  });
+
+  it("série guarda o exercício realmente feito (substituto), para a evolução de cargas", async () => {
+    const [st] = await rpc<Start[]>(studentUser.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA });
+    await rpc(studentUser.client, "log_set", { p_session_id: st.session_id, p_item_id: itemSupra, p_set_index: 1, p_data: { quantity_value: 10 } });
+    await rpc(studentUser.client, "log_set", {
+      p_session_id: st.session_id, p_item_id: itemSupra, p_set_index: 2, p_data: { quantity_value: 8, substitute_exercise_id: ex.deadbug },
+    });
+    const { data: log } = await fx.db.from("session_item_logs").select("id, exercise_id, substitute").eq("session_id", st.session_id).single();
+    expect(log).toMatchObject({ exercise_id: ex.deadbug, substitute: true });
+    const { data: sets } = await fx.db.from("session_set_logs").select("set_index, exercise_id").eq("item_log_id", log!.id).order("set_index");
+    expect(sets).toEqual([{ set_index: 1, exercise_id: ex.supra }, { set_index: 2, exercise_id: ex.deadbug }]);
+    await rpc(studentUser.client, "complete_session_item", {
+      p_session_id: st.session_id, p_item_id: itemSupra, p_pain_score: 0, p_substitute_exercise_id: ex.deadbug,
+    });
+    await rpc(studentUser.client, "finish_workout_session", { p_session_id: st.session_id });
   });
 
   it("sessão aberta há mais de 6 h: aparece como abandonada e não impede uma nova", async () => {
@@ -261,32 +362,80 @@ describe.runIf(dbTestsEnabled)("Fase 3: sessões de treino do aluno", () => {
     }
   });
 
-  it("modo presencial: responsável registra em nome do aluno; sem acesso ou sem ver a saúde é recusado", async () => {
+  it("modo presencial completo: o responsável registra em nome do aluno, com dor", async () => {
+    const plan = await rpc<ActivePlan & { mode: string }>(trainer.client, "get_my_active_plan", { p_student_id: s1 });
+    expect(plan.mode).toBe("full");
     const [st] = await rpc<Start[]>(trainer.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA, p_student_id: s1 });
     await rpc(trainer.client, "log_set", { p_session_id: st.session_id, p_item_id: itemPrancha, p_set_index: 1, p_data: { quantity_value: 30 } });
+    await rpc(trainer.client, "complete_session_item", { p_session_id: st.session_id, p_item_id: itemSupra, p_pain_score: 3 });
     await rpc(trainer.client, "finish_workout_session", { p_session_id: st.session_id, p_rpe: 6 });
     const [row] = (await fx.db.from("workout_sessions").select("recorded_by, status").eq("id", st.session_id)).data!;
     expect(row).toEqual({ recorded_by: trainer.id, status: "completed" });
     const history = await rpc<Row[]>(studentUser.client, "get_my_workout_history");
     expect(history.find((h) => h.session_id === st.session_id)).toMatchObject({ by_trainer: true });
-
-    await expect(
-      rpc(trainer2.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA, p_student_id: s1 }),
-    ).rejects.toThrow("STUDENT_NOT_FOUND");
-    // Owner com acesso ao aluno, mas sem ver a saúde (não é o responsável e o titular não confirmou).
-    await expect(
-      rpc(owner.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA, p_student_id: s1 }),
-    ).rejects.toThrow("FORBIDDEN");
     await expect(
       rpc(ownerB.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA, p_student_id: s1 }),
     ).rejects.toThrow("STUDENT_NOT_FOUND");
   });
 
-  it("orientação de cuidado sobrevive às cópias do plano", async () => {
-    const copy = await rpc<string>(trainer.client, "duplicate_plan", { p_plan_id: planId });
-    const { data: ws } = await fx.db.from("plan_workouts").select("id").eq("plan_id", copy);
-    const { data: items } = await fx.db.from("plan_workout_items").select("care_note").in("workout_id", ws!.map((w) => w.id));
-    expect(items!.filter((i) => i.care_note)).toHaveLength(1);
+  it("modo presencial restrito: professor do plano (e staff sem ver a saúde) registra SEM dor e não lê dor", async () => {
+    // trainer2 é o professor do plano ativo, sem acesso ao cadastro nem à saúde do aluno.
+    const plan = await rpc<ActivePlan & { mode: string }>(trainer2.client, "get_my_active_plan", { p_student_id: s1 });
+    expect(plan.mode).toBe("restricted");
+    const [st] = await rpc<Start[]>(trainer2.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA, p_student_id: s1 });
+    expect(st.ask_pain_checkin).toBe(false);
+    await rpc(trainer2.client, "log_set", { p_session_id: st.session_id, p_item_id: itemSupra, p_set_index: 1, p_data: { quantity_value: 10 } });
+    await expect(
+      rpc(trainer2.client, "complete_session_item", { p_session_id: st.session_id, p_item_id: itemSupra, p_pain_score: 2 }),
+    ).rejects.toThrow("FORBIDDEN");
+    // Sem dor, mesmo com orientação de cuidado.
+    await rpc(trainer2.client, "complete_session_item", { p_session_id: st.session_id, p_item_id: itemSupra, p_pain_score: null });
+    await expect(rpc(trainer2.client, "record_pain_checkin", { p_session_id: st.session_id, p_answer: "normal" })).rejects.toThrow("FORBIDDEN");
+    await rpc(trainer2.client, "finish_workout_session", { p_session_id: st.session_id, p_rpe: 7 });
+
+    // Leitura de uma sessão com dor (a do responsável, acima): dor escondida no modo restrito, visível no completo.
+    const { data: withPain } = await fx.db.from("workout_sessions").select("id").eq("student_id", s1).eq("recorded_by", trainer.id).single();
+    const r = await rpc<{ mode: string; items: Row[] }>(trainer2.client, "get_training_session", { p_session_id: withPain!.id });
+    expect(r.mode).toBe("restricted");
+    expect(r.items.every((i) => i.pain_score === null)).toBe(true);
+    const f = await rpc<{ items: Row[] }>(trainer.client, "get_training_session", { p_session_id: withPain!.id });
+    expect(f.items.some((i) => i.pain_score === 3)).toBe(true);
+    // Nem RLS nem histórico para quem é restrito.
+    expect((await trainer2.client.from("workout_sessions").select("id")).data).toEqual([]);
+    await expect(rpc(trainer2.client, "get_my_workout_history", { p_student_id: s1 })).rejects.toThrow("STUDENT_NOT_FOUND");
+
+    // Owner com acesso ao aluno, mas sem ver a saúde: também restrito.
+    const [os] = await rpc<Start[]>(owner.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wB, p_student_id: s1 });
+    await rpc(owner.client, "log_set", { p_session_id: os.session_id, p_item_id: itemSupino, p_set_index: 1, p_data: { quantity_value: 8, load_value: 40, load_unit: "kg" } });
+    await rpc(owner.client, "finish_workout_session", { p_session_id: os.session_id });
+    // Outro aluno de outro professor: nem o trainer2 treina.
+    await expect(
+      rpc(trainer2.client, "start_workout_session", { p_plan_id: planId, p_workout_id: wA, p_student_id: s2 }),
+    ).rejects.toThrow(/STUDENT_NOT_FOUND|PLAN_NOT_FOUND/);
+  });
+
+  it("orientação de cuidado sobrevive a duplicar, salvar como modelo, aplicar modelo e copiar para alunos", async () => {
+    const careNotes = async (id: string) => {
+      const { data: ws } = await fx.db.from("plan_workouts").select("id").eq("plan_id", id);
+      const { data: items } = await fx.db.from("plan_workout_items").select("care_note").in("workout_id", ws!.map((w) => w.id));
+      return items!.map((i) => i.care_note).filter(Boolean);
+    };
+    const expected = [expect.stringMatching(/Coluna neutra/)];
+
+    const dup = await rpc<string>(trainer.client, "duplicate_plan", { p_plan_id: planId });
+    expect(await careNotes(dup)).toEqual(expected);
+
+    const template = await rpc<string>(trainer.client, "save_plan_as_template", { p_plan_id: planId, p_name: "Modelo F3" });
+    expect(await careNotes(template)).toEqual(expected);
+
+    const applied = await rpc<string>(trainer.client, "apply_template_to_student", { p_template_id: template, p_student_id: s2 });
+    expect(await careNotes(applied)).toEqual(expected);
+
+    const [bulk] = await rpc<{ plan_id: string; error: string | null }[]>(trainer.client, "apply_plan_to_students", {
+      p_source: planId, p_students: [s2], p_starts_on: spDateDaysAgo(0), p_ends_on: spDateDaysAgo(-30), p_no_end: false, p_activate: false,
+    });
+    expect(bulk.error).toBeNull();
+    expect(await careNotes(bulk.plan_id)).toEqual(expected);
   });
 
   it("s2 (outro aluno) não tem plano ativo: get_my_active_plan devolve nulo", async () => {

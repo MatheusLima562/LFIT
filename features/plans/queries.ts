@@ -48,6 +48,7 @@ const toPrescription = (r: PrescriptionRow): SavedPrescription => ({
 });
 
 type ItemRow = PrescriptionRow & {
+  id: string;
   position: number;
   group_key: string | null;
   sets: number | null;
@@ -55,6 +56,7 @@ type ItemRow = PrescriptionRow & {
   load_unit: LoadUnit | null;
   load_text: string | null;
   tip: string | null;
+  care_note: string | null;
   method_id: string | null;
   objective_id: string | null;
   method: { name: string } | null;
@@ -79,13 +81,13 @@ type PlanRow = {
   status: PlanStatus;
   created_by: string | null;
   student: { id: string; first_name: string; last_name: string } | null;
-  plan_workouts: { label: string; name: string | null; notes: string | null; position: number; plan_workout_items: ItemRow[] }[];
+  plan_workouts: { id: string; label: string; name: string | null; notes: string | null; position: number; plan_workout_items: ItemRow[] }[];
 };
 
 const PLAN_SELECT =
   "id, student_id, name, goal, level, starts_on, ends_on, no_end, planned_sessions, trainer_id, notes, status, created_by, " +
   "student:students!training_plans_student_id_organization_id_fkey(id, first_name, last_name), " +
-  "plan_workouts(label, name, notes, position, plan_workout_items(position, group_key, sets, load_value, load_unit, load_text, tip, method_id, objective_id, " + PRESCRIPTION_COLS + ", " +
+  "plan_workouts(id, label, name, notes, position, plan_workout_items(id, position, group_key, sets, load_value, load_unit, load_text, tip, care_note, method_id, objective_id, " + PRESCRIPTION_COLS + ", " +
   "method:training_methods!plan_workout_items_method_fkey(name), objective:training_objectives!plan_workout_items_objective_fkey(name), " +
   "plan_item_substitutes(position, exercise:exercises(id, name)), " +
   "exercise:exercises!plan_workout_items_exercise_id_fkey(id, name), plan_item_sets(position, set_type, load_value, load_unit, load_text, " + PRESCRIPTION_COLS + ")))";
@@ -106,10 +108,12 @@ export function toSavedPlan(row: PlanRow): SavedPlan {
     trainerId: row.trainer_id,
     notes: row.notes,
     workouts: [...row.plan_workouts].sort(byPosition).map((w) => ({
+      id: w.id,
       label: w.label,
       name: w.name,
       notes: w.notes,
       items: [...w.plan_workout_items].sort(byPosition).map((it) => ({
+        id: it.id,
         exerciseId: it.exercise?.id ?? "",
         exerciseName: it.exercise?.name ?? "—",
         groupKey: it.group_key,
@@ -119,6 +123,7 @@ export function toSavedPlan(row: PlanRow): SavedPlan {
         loadText: it.load_text,
         prescription: toPrescription(it),
         tip: it.tip,
+        careNote: it.care_note,
         substitutes: [...it.plan_item_substitutes]
           .sort(byPosition)
           .flatMap((x) => (x.exercise ? [{ id: x.exercise.id, name: x.exercise.name }] : [])),

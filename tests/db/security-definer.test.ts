@@ -93,7 +93,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "record_red_flag_check", "record_red_flag_clearance", "plan_red_flag_pending",
     "get_my_student_profile", "get_my_active_plan", "start_workout_session", "record_pain_checkin", "log_set",
     "complete_session_item", "finish_workout_session", "get_my_workout_history", "student_session_alerts",
-    "acknowledge_session_alert",
+    "acknowledge_session_alert", "get_training_session",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

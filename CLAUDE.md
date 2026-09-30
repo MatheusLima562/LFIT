@@ -335,18 +335,24 @@ effective_status =
   `feedback_note`, `pain_checkin` = resposta no INÍCIO sobre a sessão anterior, `trainer_reviewed_at/by`),
   `session_item_logs` (um por exercício: **dor 0–10 por exercício**, obrigatória só se o item tem `care_note` —
   `PAIN_REQUIRED` na RPC), `session_set_logs` (carga/quantidade por série). `plan_workout_items.care_note` ≤ 300.
-- **`save_training_plan` recria divisões e itens com ids novos a cada salvamento**: por isso os registros de sessão têm FK
-  `on delete set null` e guardam cópia (`workout_label/name`, `exercise_name`). Item antigo numa sessão aberta →
-  `ITEM_NOT_FOUND` ("o treino foi atualizado, recarregue"). `copy_plan` e `save_training_plan` já gravam `care_note`;
-  **o montador ainda não envia `care_note`** — ao criar a UI dele, fazer o round-trip no `builder.ts` antes, senão salvar
-  pela tela apaga o campo.
+- **`save_training_plan` preserva ids** (desde `20261011120000`): divisão/item com `id` do próprio plano é atualizado no
+  lugar (pode mudar de divisão); `id` novo do cliente é usado se estiver livre (o `key` do montador é um UUID e vira o id —
+  não muda no próximo salvamento); o que saiu é apagado. Payload sem ids (seed/importação) = tudo novo.
+- **Sessão usa a cópia da divisão** (`workout_sessions.snapshot`, mesmo formato de `private.workout_json`): editar o plano
+  não afeta a sessão aberta — `log_set`/`complete_session_item` validam contra a cópia (item fora dela → `ITEM_NOT_FOUND`);
+  a mudança vale na próxima sessão. `session_item_logs.item_id` não tem FK (é o id da cópia). A tela de execução lê
+  `get_training_session` (cópia + registros; dor/resposta/feedback nulos no modo restrito).
+- `session_set_logs.exercise_id` = exercício feito na série (principal ou substituto) — base da evolução de cargas.
 - Sessão abandonada é **calculada** (`public.session_effective_status`: `in_progress` há mais de 6 h), não gravada por
   job; iniciar outra sessão grava `'abandoned'` nas abertas. Escritas checam o status **gravado** (a fila local pode
   sincronizar depois de 6 h). "Treino do dia" = rodízio por posição depois da última sessão **concluída** (casa pelo
   rótulo copiado).
 - Leitura (RLS): titular ou staff com `can_view_student_health`. Escrita só por RPC; chamador duplo (`p_student_id` nulo
-  = aluno; preenchido = modo presencial, staff com acesso **e** saúde). Status efetivo ≠ `active` → `ACCESS_SUSPENDED`
+  = aluno; preenchido = modo presencial). Presencial `full` (vê a saúde) registra dor; `restricted` (professor do plano,
+  ou staff sem ver a saúde) registra **sem** dor e vê só o aviso restrito. Status efetivo ≠ `active` → `ACCESS_SUSPENDED`
   (histórico continua visível). `log_set`/`complete_session_item` são upsert (idempotentes para a fila local).
+- Montador: `care_note` e os ids (`key`) vão no payload (`builder.ts`); duplicar/aplicar modelo/copiar para alunos
+  (`copy_plan`) copiam `care_note`.
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 
@@ -393,7 +399,7 @@ sem efeitos colaterais).
 | Triagem — aviso restrito (2.10) | `plan_red_flag_pending` (só um booleano: última triagem do aluno do plano tem sinais sem liberação) | `require_staff` + `get_readable_plan`; nenhum sinal, observação ou liberação na resposta (teste de não vazamento) |
 | Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` (owner ou responsável; **não** exige consentimento — base legal art. 11, II, "e"/"d", a validar); chaves validadas contra `private.red_flag_keys()`; auditadas |
 | Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
-| **App do aluno (Fase 3), chamador duplo** | `get_my_active_plan`, `start_workout_session`, `record_pain_checkin`, `log_set`, `complete_session_item`, `finish_workout_session`, `get_my_workout_history` | `p_student_id` nulo → o próprio aluno (`students.user_id = auth.uid()`); preenchido (modo presencial) → staff com `can_access_student` **e** `can_view_student_health`. `private.resolve_training_student`/`lock_open_session` exigem status efetivo `active` (`ACCESS_SUSPENDED`). `get_my_active_plan` nunca devolve dado de contraindicação. Histórico continua visível com acesso suspenso |
+| **App do aluno (Fase 3), chamador duplo** | `get_my_active_plan`, `start_workout_session`, `get_training_session`, `record_pain_checkin`, `log_set`, `complete_session_item`, `finish_workout_session`, `get_my_workout_history` | `private.training_mode`: `self` (o próprio aluno, `students.user_id = auth.uid()`), `full` (staff com acesso que vê a saúde) ou `restricted` (staff com acesso sem ver a saúde, ou professor do plano ativo) — no restrito nada de dor é gravado, perguntado ou devolvido (`FORBIDDEN`). `private.training_target`/`lock_open_session` exigem status efetivo `active` (`ACCESS_SUSPENDED`). Nunca devolvem dado de contraindicação. Histórico: titular (mesmo suspenso) ou `full` |
 | Aluno (titular), leitura do próprio cadastro | `get_my_student_profile` | escopo `students.user_id = auth.uid()`; só o subconjunto seguro (sem `notes` do professor) |
 | Avisos de dor da Fase 3 | `student_session_alerts` (escada completo / restrito / oculto, como os alertas de contraindicação), `acknowledge_session_alert` | `require_staff`; completo só com `can_view_student_health`; restrito via `is_restricted_plan_viewer`/`is_restricted_health_viewer` sem tipo, dor nem comentário; "visto" exige `lock_accessible_student` + `can_view_student_health` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |

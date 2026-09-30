@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   emptyItem,
+  importItems,
   emptyWorkout,
   fromSaved,
   groupItems,
@@ -22,6 +23,9 @@ import {
 import { planPayloadSchema } from "@/features/plans/schemas";
 
 const EX = "11111111-1111-4111-8111-111111111111";
+const W_ID = "22222222-2222-4222-8222-222222222222";
+const I1 = "33333333-3333-4333-8333-333333333333";
+const I2 = "44444444-4444-4444-8444-444444444444";
 const mk = (name: string, groupKey: string | null = null): ItemDraft => ({ ...emptyItem({ id: EX, name }), key: name, groupKey });
 const names = (items: ItemDraft[]) => items.map((i) => i.exerciseName);
 const groups = (items: ItemDraft[]) => items.map((i) => i.groupKey);
@@ -241,13 +245,14 @@ describe("validação e payload", () => {
       notes: null,
       workouts: [
         {
+          id: W_ID,
           label: "A",
           name: null,
           notes: null,
           items: [
-            { exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, loadValue: 12.5, loadUnit: "kg", loadText: null, prescription: pr({ quantityMin: 10, intensity: "RPE 8", restMin: 60 }), tip: null, substitutes: [], methodId: null, objectiveId: null, setsDetail: [] },
+            { id: I1, exerciseId: EX, exerciseName: "x", groupKey: "bi1", sets: 3, loadValue: 12.5, loadUnit: "kg", loadText: null, prescription: pr({ quantityMin: 10, intensity: "RPE 8", restMin: 60 }), tip: null, careNote: "Coluna neutra; se doer, pare.", substitutes: [], methodId: null, objectiveId: null, setsDetail: [] },
             {
-              exerciseId: EX, exerciseName: "y", groupKey: "bi1", sets: null, loadValue: null, loadUnit: null, loadText: null, prescription: pr({ tempo: "3010" }), tip: null, substitutes: [], methodId: null, objectiveId: null,
+              id: I2, exerciseId: EX, exerciseName: "y", groupKey: "bi1", sets: null, loadValue: null, loadUnit: null, loadText: null, prescription: pr({ tempo: "3010" }), tip: null, careNote: null, substitutes: [], methodId: null, objectiveId: null,
               setsDetail: [{ setType: "warmup", loadValue: null, loadUnit: null, loadText: "leve", prescription: pr({ quantityMin: 12, restMin: 45, restMax: 60 }) }],
             },
           ],
@@ -263,6 +268,25 @@ describe("validação e payload", () => {
     expect(r.payload.workouts[0].items[0]).toMatchObject({ quantity_min: 10, intensity: "RPE 8", rest_min: 60 });
     expect(r.payload.workouts[0].items[1]).toMatchObject({ tempo: "3010", speed: null });
     expect(r.payload.workouts[0].items[1].sets_detail[0]).toMatchObject({ set_type: "warmup", load_text: "leve", quantity_min: 12, rest_min: 45, rest_max: 60 });
+    // Ids salvos voltam no payload (o servidor preserva divisões e itens) e a orientação de cuidado não se perde.
+    expect(r.payload.workouts[0].id).toBe(W_ID);
+    expect(r.payload.workouts[0].items.map((i) => i.id)).toEqual([I1, I2]);
+    expect(r.payload.workouts[0].items.map((i) => i.care_note)).toEqual(["Coluna neutra; se doer, pare.", null]);
+  });
+
+  it("orientação de cuidado: vazia vira nulo, acima de 300 é recusada; importar copia o texto com id novo", () => {
+    const it0 = { ...emptyItem({ id: EX, name: "x" }), careNote: "   " };
+    const base = draft([it0]);
+    const ok = validateDraft(base);
+    expect(ok.ok && ok.payload.workouts[0].items[0].care_note).toBeNull();
+    const long = validateDraft({ ...base, workouts: [{ ...base.workouts[0], items: [{ ...it0, careNote: "x".repeat(301) }] }] });
+    expect(long.ok).toBe(false);
+    if (!long.ok) expect(long.errors[`${it0.key}.careNote`]).toMatch(/300/);
+
+    const src = { ...emptyItem({ id: EX, name: "x" }), careNote: "Amplitude confortável." };
+    const [copy] = importItems([], [src]);
+    expect(copy.key).not.toBe(src.key);
+    expect(copy.careNote).toBe("Amplitude confortável.");
   });
 
   it("rótulos das divisões", () => {

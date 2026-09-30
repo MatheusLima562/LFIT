@@ -1161,13 +1161,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "session_item_logs_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "plan_workout_items"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "session_item_logs_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -1185,6 +1178,7 @@ export type Database = {
       }
       session_set_logs: {
         Row: {
+          exercise_id: string | null
           id: string
           item_log_id: string
           load_text: string | null
@@ -1196,6 +1190,7 @@ export type Database = {
           set_index: number
         }
         Insert: {
+          exercise_id?: string | null
           id?: string
           item_log_id: string
           load_text?: string | null
@@ -1207,6 +1202,7 @@ export type Database = {
           set_index: number
         }
         Update: {
+          exercise_id?: string | null
           id?: string
           item_log_id?: string
           load_text?: string | null
@@ -1218,6 +1214,20 @@ export type Database = {
           set_index?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "session_set_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_set_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "session_set_logs_item_log_id_fkey"
             columns: ["item_log_id"]
@@ -1696,6 +1706,7 @@ export type Database = {
           plan_id: string | null
           recorded_by: string | null
           rpe: number | null
+          snapshot: Json
           started_at: string
           status: string
           student_id: string
@@ -1715,6 +1726,7 @@ export type Database = {
           plan_id?: string | null
           recorded_by?: string | null
           rpe?: number | null
+          snapshot: Json
           started_at?: string
           status?: string
           student_id: string
@@ -1734,6 +1746,7 @@ export type Database = {
           plan_id?: string | null
           recorded_by?: string | null
           rpe?: number | null
+          snapshot?: Json
           started_at?: string
           status?: string
           student_id?: string
@@ -2348,6 +2361,7 @@ export type Database = {
           organization_name: string
         }[]
       }
+      get_training_session: { Args: { p_session_id: string }; Returns: Json }
       hard_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
         Returns: {

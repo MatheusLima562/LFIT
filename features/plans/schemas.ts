@@ -69,6 +69,9 @@ const setSchema = z
 
 const itemSchema = z
   .object({
+    // Id do item (o `key` do montador): preserva o item no salvamento; se for UUID livre, vira o id do item novo.
+    // Não-UUID é ignorado pelo servidor (item novo).
+    id: z.string().max(64).nullish(),
     exercise_id: z.uuid(),
     group_key: z
       .string()
@@ -85,6 +88,8 @@ const itemSchema = z
       .nullable()
       .transform((t) => (t === null ? null : sanitizeTip(t) || null)),
     substitutes: z.array(z.uuid()).max(3, v.substitutes),
+    // Orientação de cuidado ao aluno (a única coisa do alerta que chega ao app do aluno).
+    care_note: optionalText(300, v.careNote).optional().transform((t) => t || null),
     method_id: z.uuid().nullable(),
     objective_id: z.uuid().nullable(),
     sets_detail: z.array(setSchema).max(MAX_SETS),
@@ -98,6 +103,7 @@ const itemSchema = z
   });
 
 const workoutSchema = z.object({
+  id: z.string().max(64).nullish(),
   label: z.string().trim().min(1, v.label).max(10, v.label),
   name: optionalText(80),
   notes: optionalText(500),

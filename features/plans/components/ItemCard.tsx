@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import type { StudentRule, TrainingListOption } from "../queries";
 import { formatQuantity, formatRestRange } from "../prescription";
+import { CARE_NOTE_MAX, suggestCareNote } from "../care-note";
 import { BasicErrors, IntensityInput, LoadInputs, MoreToggle, PrescriptionMore, prescriptionExtras, QuantityRange, RestRange } from "./PrescriptionFields";
 import { TipEditor } from "./TipEditor";
 import type { DraftErrors, ItemDraft, SetDraft } from "../builder";
@@ -56,7 +58,8 @@ export function ItemCard(props: ItemCardProps) {
   // "Mais opções" abre sozinho quando algo dali já está preenchido; erro num campo escondido força a abertura.
   const extras = itemExtras(item);
   const [more, setMore] = useState(extras > 0);
-  const moreOpen = more || ["qtyNote", "tempo", "loadText", "substitutes"].some((f) => err(f));
+  const moreOpen = more || ["qtyNote", "tempo", "loadText", "substitutes", "careNote"].some((f) => err(f));
+  const careSuggestion = suggestCareNote(rules);
 
   const field = (f: keyof ItemDraft, label: string, opts: { placeholder?: string; inputMode?: "numeric" | "decimal" | "text"; maxLength?: number; className?: string } = {}) => (
     <label className={cn("flex min-w-0 flex-col gap-1 text-[11px] text-ink-3", opts.className)} htmlFor={id(f)}>
@@ -226,6 +229,36 @@ export function ItemCard(props: ItemCardProps) {
 
           <TipEditor id={id("tip")} value={item.tip} disabled={readOnly} onChange={(v) => props.onChange({ tip: v })} />
 
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor={id("care")} className="text-[11px] text-ink-3">
+                {t.careNote.label}
+              </label>
+              {!readOnly && careSuggestion && (
+                <Button type="button" variant="ghost" size="xs" onClick={() => props.onChange({ careNote: careSuggestion })}>
+                  {t.careNote.suggest}
+                </Button>
+              )}
+            </div>
+            <Textarea
+              id={id("care")}
+              rows={2}
+              maxLength={CARE_NOTE_MAX}
+              value={item.careNote}
+              placeholder={t.careNote.placeholder}
+              disabled={readOnly}
+              aria-invalid={!!err("careNote")}
+              aria-describedby={id("care-hint")}
+              className="text-[13px]"
+              onChange={(e) => props.onChange({ careNote: e.target.value })}
+            />
+            <p id={id("care-hint")} className="flex justify-between gap-2 text-xs text-ink-3">
+              <span>{t.careNote.hint}</span>
+              <span className="shrink-0 tabular-nums">{t.careNote.count(item.careNote.length, CARE_NOTE_MAX)}</span>
+            </p>
+            {err("careNote") && <span className="text-xs text-destructive">{err("careNote")}</span>}
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <p className="text-[11px] text-ink-3" id={id("subs-label")}>
               {t.substitutes.label} · <span>{t.substitutes.hint}</span>
@@ -317,7 +350,7 @@ const NONE = "__none__";
 
 /** Campos de "Mais opções" preenchidos no item. */
 function itemExtras(it: ItemDraft) {
-  return prescriptionExtras(it) + [it.loadText.trim(), it.methodId, it.objectiveId, it.tip.trim(), it.substitutes.length].filter(Boolean).length;
+  return prescriptionExtras(it) + [it.loadText.trim(), it.methodId, it.objectiveId, it.tip.trim(), it.careNote.trim(), it.substitutes.length].filter(Boolean).length;
 }
 
 /** Resumo em uma linha do item recolhido: 3 × 8–12 reps · 40 kg · RPE 8 · 60–90 s. */
