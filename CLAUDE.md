@@ -289,10 +289,18 @@ effective_status =
   item e séries mostram só Séries · Quantidade (mín–máx) · Carga · Intensidade · Pausa, o resto em "Mais opções" (abre sozinho
   se algo estiver preenchido ou com erro).
 
-### Base de conhecimento — etapa 2.10 (Fase B pronta; aguardando teste do dono)
+### Base de conhecimento — etapa 2.10 (Fase B aprovada no teste do dono — 30/09/2026)
 - **Fonte:** `docs/conhecimento/*.md`, aprovados na revisão clínica do dono (25/09/2026). O Guia no app
   (`features/knowledge/guides.ts`) é transcrito deles: **ao revisar um documento, atualize o Guia** (teste unitário
   confere chaves, referências citadas e termos internos). Plano: `docs/planos/etapa-2.10-fase-b.md`.
+- **Ajustes do teste do dono** (aluna Ana Duarte): (1) `guideKeyFor` não herda mais o Guia da região para condição
+  própria da org sem chave global (`Estenose foraminal (exemplo)` no seed mostra "Sem Guia" em vez do Guia de
+  lombalgia); (2) alerta duplicado quando a mesma condição tem regra global e da equipe para o mesmo exercício:
+  `student_contraindication_rules`/`plan_contraindication_alerts` devolvem só o pior nível, com a regra mais branda
+  como detalhe recolhido ("Regra global/da equipe: nível" — `20261009120000_alerts_dedupe_and_source.sql`); (3) nota
+  do alerta com o rótulo "Como adaptar:"; (4) menu "⋯" da lista de alunos tinha "Treinos" como primeiro item (fácil de
+  confundir com "editar o cadastro"): agora tem "Editar cadastro", "Treinos" e "Triagem de saúde" (rola até a seção);
+  atalho "Registrar triagem" direto no painel "Condições do aluno" do montador, sem sair da tela.
 - **Condições:** `health_conditions.parent_id` (região, **um nível só**; global só sob global; da org sob global ou da
   própria org — gatilho `validate_condition_parent`) e `search_terms` (sinônimos de busca, até 10). 8 globais novas
   (hérnia/estenose/espondilolistese com o padrão direcional no nome + "Dor lombar — intolerância à flexão/extensão",
@@ -450,8 +458,8 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
-- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔, aguardando
-  teste); **2.11** ampliação da biblioteca global; **2.9** página do aluno
+- Roadmap (ordem aprovada): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔ (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada**
+  30/09/2026 — auditoria de segurança registrada antes da 2.11); **2.11** ampliação da biblioteca global; **2.9** página do aluno
   `/alunos/[id]`, planejar antes) → **C1** contas com múltiplos vínculos → **Fase 3 mínima** (app do aluno: treino do dia,
   registro série a série, dor 0–10) → **Importação do MFIT** (antes de alunos reais) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →

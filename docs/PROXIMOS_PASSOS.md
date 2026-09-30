@@ -1,21 +1,29 @@
 # Próximos passos (retomada)
 
-_Atualizado em 28/09/2026 (ajuste de cores concluído — aguardando sua revisão)._
+_Atualizado em 30/09/2026 (Fase B da 2.10 aprovada no teste do dono)._
 
 ## Etapa atual
 **Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. 2.8 completa (aguardando seu novo teste). **2.10 Fase B
-pronta** (aguardando seu teste). Dashboard "Início" com dados reais nos cards possíveis hoje. Suíte de roteiros de
-navegador movida para `e2e/` (24 roteiros, `npm run test:e2e`). **Ajuste de cores concluído** (marca × semântica,
+aprovada** no seu teste manual (Guias, alertas, triagem, liberação, Guia da hérnia) — 4 ajustes entraram no caminho
+(ver "Falta" → item 4). Dashboard "Início" com dados reais nos cards possíveis hoje. Suíte de roteiros de
+navegador em `e2e/` (27 roteiros, `npm run test:e2e`). **Ajuste de cores concluído** (marca × semântica,
 contraste AA, validação para o white label) — commit `6ab389e`, **parado para sua revisão** com screenshots
-antes/depois. Nada em andamento no código.
+antes/depois. **Auditoria de segurança entregue** (abaixo) — parada para sua revisão, sem prazo (2.11 foi para depois da Fase 3).
+Plano do app do aluno (C1 + Fase 3 + lado do professor + pré-requisitos) em andamento — ver item 5 de "Falta".
 
-## Pendências de segurança registradas (não urgente; fazer antes da 2.11)
-1. Teste automático: listar todas as funções `SECURITY DEFINER` do schema `public` (via `pg_proc`) e falhar se
-   alguma não estiver na tabela documentada do CLAUDE.md (nome + checagem interna). Ainda não implementado —
-   `tests/db/security-definer.test.ts` testa comportamento de funções específicas, mas não faz essa checagem de
-   cobertura.
-2. Auditoria: levantar quais funções `SECURITY DEFINER` poderiam virar `SECURITY INVOKER` (confiando só em RLS) sem
-   perder segurança nem performance. Propor a lista antes de mudar qualquer uma. Ainda não iniciada.
+## Pendências de segurança registradas (feitas; aguardando sua revisão)
+1. **Teste automático de cobertura** — `tests/db/security-definer-coverage.test.ts`: lista as funções
+   `SECURITY DEFINER` do schema `public` (via `pg_proc`, usando `supabase db query --linked` — nada de conexão
+   direta nem função nova no banco) e falha se alguma não estiver na tabela do CLAUDE.md, ou se o CLAUDE.md citar
+   uma função que não existe mais. Hoje: 40 funções, todas já documentadas (o teste passa sem alterar nada).
+2. **Auditoria de candidatas a `SECURITY INVOKER`** — `docs/planos/auditoria-security-definer.md`. Resultado: só
+   `public.can_view_student_health` é uma candidata segura (é um repasse de 1 linha para `private.can_view_student_health`,
+   que já é `SECURITY DEFINER` e já tem `grant` para `authenticated`; virar `INVOKER` não muda nada do que a função
+   enxerga). `organization_plan_usage` parece candidata mas **não é seguro mudar como está**: hoje conta alunos da
+   organização inteira ignorando o RLS de `students`; virar `INVOKER` faria o contador de vagas ficar errado para
+   quem não é owner (RLS de `students` só mostra os alunos do próprio trainer). As demais 38 seguem `DEFINER` por
+   motivo concreto (escrita em tabela sem grant para `authenticated`, principalmente `audit_logs` — "ninguém escreve
+   diretamente" — ou bypass intencional de RLS para o professor do plano). **Nenhuma mudança aplicada**; só a lista.
 
 ## Concluído (branch `feat/fase-2-treinos`)
 - 2.1 Banco: biblioteca global (52 exercícios), 11 condições, planos/divisões/itens/séries, RPCs e alertas.
@@ -29,6 +37,9 @@ antes/depois. Nada em andamento no código.
 - Planejamento aprovado da Fase C (dividida em C1 e C2) — `docs/planos/fase-c.md`.
 - 2.8.0 banco (`72a4305`); alertas restritos + trava `is_seed` (`bdfdb61`); seção C8 "Vendas (plano Gold)" em
   `docs/planos/fase-c.md` (`7279fd4`).
+- 2.10 Fase B aprovada no teste do dono; 4 ajustes do teste (`80b2bd7` + commit da dedupe de alertas).
+- Auditoria de segurança: teste de cobertura `tests/db/security-definer-coverage.test.ts` + lista de candidatas a
+  `SECURITY INVOKER` em `docs/planos/auditoria-security-definer.md` (nenhuma função alterada).
 
 ## Falta (ordem aprovada)
 1. ~~2.6 Impressão~~ ✔
@@ -41,22 +52,21 @@ antes/depois. Nada em andamento no código.
    na linha principal — migration `20261007120000`; Subida/Descida — `20261007120100`/`…120200`). 291 testes.
    **Limpeza futura:** remover `intensity_type`/`intensity_value` (sem uso) junto com as próximas colunas legadas.
    **Aguardando o seu novo teste**; ajustes que surgirem entram aqui.
-4. **2.10** Base de conhecimento dor × exercício — **Fase A encerrada** (25/09/2026); **Fase B pronta, aguardando o seu
-   teste** (plano em `docs/planos/etapa-2.10-fase-b.md`; commits B1 `8051a29`, B2 `65ea750`, B3 `b9c962b`, B4).
-   Migrations `20261008120000` (condições, 2 exercícios, 19 regras), `…120100` (triagem), `…120200` (índice).
-   **Roteiro de teste sugerido** (seed: `npm run db:seed -- --reset`; owner é o responsável pela Ana Duarte, do grupo
-   "Dor na Coluna"):
-   - `/treinos/condicoes`: busque "condromalácia"; abra "Guia" da hérnia e do ombro (também no celular).
-   - `/treinos/novo?aluno=` Ana Duarte: painel "Condições do aluno" → "Guia" na aba lateral; adicione "Abdominal supra"
-     (cautela global + "evitar" da camada da org no seed).
-   - Alunos → editar a Ana → "Triagem de sinais de alerta": registre um sinal (+ encaminhamento) → aviso no montador →
-     "Registrar liberação" → o aviso some. Repita com um aluno **sem consentimento de saúde**: a triagem funciona.
-   - Com um professor sem acesso à saúde do aluno: nada de condições, Guia do aluno ou triagem. Se ele for o **professor
-     do plano** e houver sinal pendente, só o aviso restrito "Aluno com pendência de liberação — alinhe com o professor
-     responsável antes de prescrever" (sem sinais nem observação).
-   - Observações da triagem e da liberação: contador até 300 caracteres.
-   - Início: fórmula da retenção e do engajamento no ícone (i); sem o banner "Conteúdos Prontos + Limite em Dobro".
-   **Pendente:** seu teste final da Fase B. A 2.11 só começa depois da sua aprovação.
+4. **2.10** Base de conhecimento dor × exercício — **Fase A encerrada** (25/09/2026); **Fase B aprovada** no seu teste
+   manual (30/09/2026: Guias, alertas, triagem, liberação, Guia da hérnia) — plano em `docs/planos/etapa-2.10-fase-b.md`;
+   commits B1 `8051a29`, B2 `65ea750`, B3 `b9c962b`, B4. Migrations `20261008120000` (condições, 2 exercícios, 19
+   regras), `…120100` (triagem), `…120200` (índice).
+   **Ajustes do seu teste** (aluna Ana Duarte, commits `80b2bd7` e o da dedupe de alertas):
+   - Condição própria da org sem Guia (ex.: "Estenose foraminal (exemplo)") não herda mais o Guia da região — mostra
+     "Sem Guia" em vez de abrir por engano o Guia genérico.
+   - Alerta duplicado (mesma condição com regra global E da equipe para o mesmo exercício, ex.: "Abdominal supra"):
+     agora só o pior nível vira o alerta principal; a regra mais branda fica como detalhe recolhido.
+   - Nota do alerta com o rótulo "Como adaptar:" antes do texto.
+   - Menu "⋯" da lista de alunos ganhou "Editar cadastro", "Treinos" e "Triagem de saúde" (itens distintos — antes só
+     havia o lápis sem rótulo e "Treinos" no topo do menu, fácil de confundir); atalho "Registrar triagem" direto no
+     painel "Condições do aluno" do montador, sem sair da tela.
+   Roteiros e2e cobrindo os 4 ajustes: `m210-bugs-fase-b`, `m210-navegacao-triagem` (+ `k210-triagem`,
+   `k210-triagem-restrita`, `k210-guias` de regressão).
    Documentos revisados em `docs/conhecimento/`: lombalgia inespecífica, hérnia (flexão), estenose e espondilolistese
    (extensão), cervicalgia, ombro (manguito), joelho patelofemoral e artrose. Sem alerta automático: lombalgia
    inespecífica, cervicalgia, dor patelofemoral e artrose de joelho (só Guia). `docs/revisao/contraindicacoes-v2.csv`:
@@ -65,18 +75,25 @@ antes/depois. Nada em andamento no código.
    ("Dor lombar — intolerância à flexão/extensão"). "Condromalácia" só como sinônimo de busca.
    **Pendências registradas:** espondilólise/espondilolistese ístmica em jovens atletas; depois, se aprovado: quadril,
    hipertensão, osteoporose, gestação.
-5. **2.11** Ampliação da biblioteca global (+80 exercícios, mínimo 50; sinônimos; equipamentos novos; campo novo
-   "padrão de movimento" também nos 52 atuais) — **depois da Fase B; mostrar o plano antes**. Contraindicações só
-   sugeridas em `docs/revisao/biblioteca-v2.csv` (colunas `exercicio;sinonimos;padrao;equipamento;grupos;
-   padrao_series;condicao_sugerida;nivel_sugerido;como_adaptar;base_na_documentacao;aprovar;ajuste`), derivadas
-   apenas de `docs/conhecimento/` (arquivo + seção), sem pesquisa nova; balísticos/impacto só no Guia (fase de crise).
-   Migration só com as linhas "S". **Parar após o CSV.** Não duplicar os 2 exercícios criados na Fase B.
-6. **2.9** Página do aluno `/alunos/[id]` (cabeçalho com ações, abas Treinos/Informações/Turmas, sub-abas Atuais/
-   Futuros/Anteriores/Todos, entradas pela lista) — **mostrar o plano antes de implementar**; sem migration salvo necessidade.
-7. **C1** Contas com múltiplos vínculos (sem cobrança).
-8. **Fase 3 mínima** → **Importação do MFIT** → **C2** comercialização → **1.6** → **1.7**.
+5. **App do aluno — decisão de 30/09/2026: prioridade muda.** 2.11 (biblioteca) e 2.9 (página do aluno para o
+   professor) **ficam para depois**. Ordem agora:
+   1. **C1 enxuta** (só o necessário para o login do aluno não precisar de retrabalho — ex.: `memberships` básico e
+      vínculo ativo por sessão — **ou** justificar adiar C1 inteira para depois da Fase 3, se o login puder ser feito
+      sem ela sem gerar retrabalho) — **planejar antes, mostrar o plano**.
+   2. **Fase 3 mínima** (PWA do aluno): login por link/senha, treino do dia e plano atual, execução série a série
+      (carga/reps feitas), timer de descanso, substitutos, vídeo do exercício, orientação de cuidado (sem alertas de
+      contraindicação), pergunta de dor no início do próximo treino, escala de dor 0–10 por exercício com orientação,
+      feedback/RPE ao final, histórico simples — regras já registradas na seção "Requisitos para a Fase 3" abaixo.
+   3. **Lado do professor** na Fase 3: ver sessões registradas, feedbacks e avisos de dor, com as mesmas regras de
+      visibilidade restrita já usadas em 2.8/2.10 (professor do plano sem acesso à saúde recebe a versão restrita).
+   4. **Checklist de pré-requisitos** para uso com alunos reais (o que depende do dono): SMTP (Resend) + templates,
+      `lfit-prod` (plano pago do Supabase), deploy Vercel com domínio, chaves do Turnstile de produção, revisão
+      jurídica dos Termos/Política.
+   **Checkpoint pedido: parar depois do desenho do banco** (antes de implementar) para revisão.
+   Depois da Fase 3: **2.11** biblioteca → **2.9** página do aluno (professor) → **Importação do MFIT** → **C2**
+   comercialização → **1.6** → **1.7**.
 
-## Requisitos registrados para a Fase 3 (não implementar antes)
+## Requisitos registrados para a Fase 3 (agora em planejamento — ver item 5 de "Falta")
 - **Anamnese → triagem:** as respostas do aluno sobre sinais de alerta alimentam a mesma lista da triagem
   (`student_red_flag_checks`, `source = 'anamnesis'`, chaves de `features/knowledge/red-flags.ts`), com a mesma regra:
   sinais relatados (nunca diagnóstico) e aviso até a liberação registrada.
@@ -106,16 +123,21 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
 ## Decisões pendentes com você
 - **Revisão do ajuste de cores** (marca × semântica, laranja reduzido, contraste AA) — screenshots antes/depois
   no scratchpad da sessão; commit `6ab389e`.
-- **Teste da Fase B da 2.10** (roteiro no item 4 acima). Depois: auditoria de segurança (item acima) → plano da 2.11.
+- **Revisão da auditoria de segurança** (`docs/planos/auditoria-security-definer.md`): aprovar (ou não) a única
+  mudança proposta — `public.can_view_student_health` → `SECURITY INVOKER`.
+- **Plano do app do aluno** (C1 enxuta + Fase 3 + lado do professor + checklist de pré-requisitos) — em
+  planejamento; checkpoint depois do desenho do banco.
 - **Gateway** da C2: Asaas (decidido); confirmar no contrato: subconta aceita CPF? tarifa de subconta é por conta
   ativa ou criada? (ver seções C2 e C8 de `docs/planos/fase-c.md`).
-- **Resultado do seu teste do montador** — ajustes que surgirem entram na 2.8.
-- Pré-requisitos seus: SMTP (Resend) + templates, chaves do Turnstile de produção, conta no gateway, projeto `lfit-prod`,
-  revisão jurídica dos Termos/Política.
+- **Resultado do seu teste do montador (2.8)** — ajustes que surgirem entram na 2.8.
+- Pré-requisitos seus (checklist do plano da Fase 3): SMTP (Resend) + templates, chaves do Turnstile de produção,
+  conta no gateway, projeto `lfit-prod`, revisão jurídica dos Termos/Política.
 
 ## Avisos úteis
 - Seed/testes só no lfit-dev. Se o login travar nos roteiros de navegador, limpar `public.rate_limits` no lfit-dev.
-- Security Advisor: 32 avisos "authenticated can execute SECURITY DEFINER" (todos documentados no CLAUDE.md) + senha vazada (plano pago).
+- Security Advisor: 35 avisos "authenticated can execute SECURITY DEFINER" (as 40 do schema `public` menos as 5 só
+  de `service_role`; todas as 35 documentadas no CLAUDE.md, conferido por `tests/db/security-definer-coverage.test.ts`)
+  + senha vazada (plano pago).
 
 ## O que testar na 2.8
 - Plano: "Sem data de expiração", sessões previstas, professor do plano, "Agendar" com início futuro; abas Atuais/
@@ -127,7 +149,9 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
   menu do plano → "Copiar para alunos".
 
 ## Próximo comando
-Depois do teste: **ajustes da 2.8** (se houver) ou **"Planeje a 2.9"** (mostrar o plano antes). Antes, confira o estado com:
+Plano do app do aluno em andamento (C1 enxuta + Fase 3 + lado do professor + checklist), checkpoint depois do
+desenho do banco. Depois: ajustes da 2.8 (se houver, do seu novo teste do montador). Antes de continuar, confira o
+estado com:
 ```bash
 git status && npx tsc --noEmit && npm test
 ```
