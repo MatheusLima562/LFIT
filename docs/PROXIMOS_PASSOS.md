@@ -1,6 +1,6 @@
 # Próximos passos (retomada)
 
-_Atualizado em 30/09/2026 (Fase B da 2.10 aprovada no teste do dono)._
+_Atualizado em 30/09/2026 (Fase 3: páginas do aluno prontas — aguardando seu teste no celular)._
 
 ## Etapa atual
 **Fase 2 — Treinos e exercícios.** 2.1 a 2.7 concluídas. 2.8 completa (aguardando seu novo teste). **2.10 Fase B
@@ -9,7 +9,7 @@ aprovada** no seu teste manual (Guias, alertas, triagem, liberação, Guia da h�
 navegador em `e2e/` (27 roteiros, `npm run test:e2e`). **Ajuste de cores concluído** (marca × semântica,
 contraste AA, validação para o white label) — commit `6ab389e`, **parado para sua revisão** com screenshots
 antes/depois. **Auditoria de segurança entregue** (abaixo) — parada para sua revisão, sem prazo (2.11 foi para depois da Fase 3).
-**Fase 3 (app do aluno): plano aprovado e banco pronto — parado no checkpoint para sua revisão** (item 5 de "Falta").
+**Fase 3 (app do aluno): banco aprovado (com 4 ajustes) e páginas do aluno prontas — parado para o seu teste no celular** (item 5 de "Falta").
 
 ## Pendências de segurança registradas (feitas; aguardando sua revisão)
 1. **Teste automático de cobertura** — `tests/db/security-definer-coverage.test.ts`: lista as funções
@@ -91,9 +91,18 @@ antes/depois. **Auditoria de segurança entregue** (abaixo) — parada para sua 
       jurídica dos Termos/Política.
    **Plano aprovado** (`~/.claude/plans/magical-fluttering-nygaard.md`, com os 6 ajustes: dor por exercício, status
    efetivo, consentimento pendente, fila local, abandono em 6 h, modo presencial). **C1 dispensada** (justificativa no
-   plano). **Banco pronto — CHECKPOINT (aguardando sua revisão antes das páginas):** migration
-   `20261010120000_fase3_workout_sessions.sql` aplicada no lfit-dev; testes em `tests/db/fase3-sessions.test.ts`.
-   Próxima etapa depois da revisão: páginas do aluno (`app/(aluno)/`), montador com `care_note`, lado do professor.
+   plano). **Banco aprovado** com 4 ajustes (`9d125d4`: ids estáveis no plano, sessão usa a cópia da divisão,
+   `exercise_id` por série, presencial restrito sem dor; `care_note` no montador com sugestão a partir do alerta).
+   **Páginas do aluno prontas — aguardando seu teste no celular:** login `/aluno/entrar`, portões (acesso suspenso,
+   consentimento pendente), Hoje, execução série a série (descanso, substitutos, vídeo, orientação de cuidado, dor por
+   exercício, pergunta de dor no início, RPE/feedback, fila local sem internet), Histórico. Roteiro `e2e/f3-app-aluno`.
+   **Falta depois do seu teste:** lado do professor ("Sessões e avisos" + "Iniciar treino" presencial em
+   `/alunos/[id]/treinos`).
+   **Como testar no celular** (mesma rede Wi-Fi do computador): `npm run build && npx next start -H 0.0.0.0 -p 3100`,
+   abra `http://<IP do computador>:3100/aluno` no celular. Contas (senha = `SEED_USER_PASSWORD`):
+   `aluno.seed@example.com` (Camila, treino ativo), `aluno.suspenso.seed@example.com` (Ana, acesso suspenso),
+   `aluno.consentimento.seed@example.com` (Diego, confirmação de saúde). Para testar sem internet: modo avião no meio do
+   treino, marque uma série, desligue o modo avião.
    Depois da Fase 3: **2.11** biblioteca → **2.9** página do aluno (professor) → **Importação do MFIT** → **C2**
    comercialização → **1.6** → **1.7**.
 
@@ -129,8 +138,7 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
   no scratchpad da sessão; commit `6ab389e`.
 - **Revisão da auditoria de segurança** (`docs/planos/auditoria-security-definer.md`): aprovar (ou não) a única
   mudança proposta — `public.can_view_student_health` → `SECURITY INVOKER`.
-- **Revisão do banco da Fase 3** (checkpoint): tabelas, RLS e RPCs da migration `20261010120000` — ver item 5 de
-  "Falta" e a seção "App do aluno — Fase 3" do CLAUDE.md.
+- **Teste do app do aluno no celular** (roteiro no item 5 de "Falta").
 - **Gateway** da C2: Asaas (decidido); confirmar no contrato: subconta aceita CPF? tarifa de subconta é por conta
   ativa ou criada? (ver seções C2 e C8 de `docs/planos/fase-c.md`).
 - **Resultado do seu teste do montador (2.8)** — ajustes que surgirem entram na 2.8.
@@ -153,9 +161,8 @@ Nenhum. Últimos arquivos mexidos: `features/plans/*`, `features/exercises/*`, `
   menu do plano → "Copiar para alunos".
 
 ## Próximo comando
-Fase 3: banco pronto, **parado no checkpoint**. Depois da sua revisão: **páginas do aluno** (login `/aluno/entrar`,
-portões de status/consentimento, Hoje, Execução com fila local, Fim, Histórico), `care_note` no montador e "Sessões e
-avisos" + modo presencial em `/alunos/[id]/treinos`. Antes de continuar, confira o estado com:
+Fase 3: páginas do aluno prontas, **parado para o seu teste no celular**. Depois: ajustes do teste → lado do professor
+("Sessões e avisos" + "Iniciar treino" presencial em `/alunos/[id]/treinos`). Antes de continuar, confira o estado com:
 ```bash
 git status && npx tsc --noEmit && npm test
 ```

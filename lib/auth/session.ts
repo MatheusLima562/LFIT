@@ -39,7 +39,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
   };
 });
 
-/** Exige owner/trainer. Sem sessão → login; aluno ou sem perfil → sai com aviso. */
+/** Exige owner/trainer. Sem sessão → login; sem perfil → sai com aviso; aluno → app do aluno. */
 export async function requireStaff(): Promise<Session> {
   const session = await getSession();
   if (!session) {
@@ -47,6 +47,14 @@ export async function requireStaff(): Promise<Session> {
     const { data } = await supabase.auth.getClaims();
     redirect(data?.claims?.sub ? "/auth/sair?motivo=perfil" : "/entrar");
   }
-  if (session.role === "student") redirect("/auth/sair?motivo=perfil");
+  if (session.role === "student") redirect("/aluno");
+  return session;
+}
+
+/** Exige aluno (app do aluno). Sem sessão → login do app; staff → painel. */
+export async function requireStudent(): Promise<Session> {
+  const session = await getSession();
+  if (!session) redirect("/aluno/entrar");
+  if (session.role !== "student") redirect("/");
   return session;
 }

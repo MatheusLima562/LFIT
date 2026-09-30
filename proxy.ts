@@ -2,9 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Rotas acessíveis sem sessão. */
-const PUBLIC_PATHS = ["/entrar", "/esqueci-senha", "/redefinir-senha", "/convite", "/criar-conta", "/auth", "/cadastro", "/acesso"];
+const PUBLIC_PATHS = [
+  "/entrar", "/esqueci-senha", "/redefinir-senha", "/convite", "/criar-conta", "/auth", "/cadastro", "/acesso",
+  "/aluno/entrar", "/manifest.webmanifest", "/pwa",
+];
 /** Rotas de autenticação: quem já está logado vai para o início. */
-const AUTH_ONLY_PATHS = ["/entrar", "/esqueci-senha", "/criar-conta"];
+const AUTH_ONLY_PATHS = ["/entrar", "/esqueci-senha", "/criar-conta", "/aluno/entrar"];
+/** App do aluno: login e início próprios. */
+const isStudentApp = (pathname: string) => pathname === "/aluno" || pathname.startsWith("/aluno/");
 
 const matches = (pathname: string, paths: string[]) =>
   paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -38,14 +43,19 @@ export async function proxy(request: NextRequest) {
 
   if (!signedIn && !matches(pathname, PUBLIC_PATHS)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/entrar";
-    url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
+    if (isStudentApp(pathname)) {
+      url.pathname = "/aluno/entrar";
+      url.search = "";
+    } else {
+      url.pathname = "/entrar";
+      url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
+    }
     return redirectWithCookies(url, response);
   }
 
   if (signedIn && matches(pathname, AUTH_ONLY_PATHS)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = isStudentApp(pathname) ? "/aluno" : "/";
     url.search = "";
     return redirectWithCookies(url, response);
   }

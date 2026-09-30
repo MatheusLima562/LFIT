@@ -8,7 +8,11 @@ import { respondHealthConsent } from "../consent-actions";
 
 const t = messages.consent;
 
-export function HealthConsentForm() {
+/**
+ * `nextHref`: no app do aluno a resposta volta para o app (a sessão continua); sem ele (primeiro acesso pelo link),
+ * termina em /acesso/concluir, que encerra a sessão.
+ */
+export function HealthConsentForm({ nextHref }: { nextHref?: string } = {}) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -17,7 +21,7 @@ export function HealthConsentForm() {
       const result = await respondHealthConsent(accept);
       if (!result.ok) return setError(result.error);
       // Navegação completa (documento): o Route Handler /acesso/concluir encerra a sessão via cookies.
-      const target = new URL(`/acesso/concluir?consentimento=${accept ? "aceito" : "recusado"}`, window.location.origin);
+      const target = new URL(nextHref ?? `/acesso/concluir?consentimento=${accept ? "aceito" : "recusado"}`, window.location.origin);
       window.location.assign(target.href);
     });
 

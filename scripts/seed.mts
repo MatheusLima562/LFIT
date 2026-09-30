@@ -33,6 +33,17 @@ const USERS = {
   trainer2: { email: "trainer2.seed@example.com", name: "Caio Exemplo", role: "trainer" },
 } as const;
 
+/**
+ * Contas do app do aluno (Fase 3), ligadas a alunos do seed pelo índice de criação:
+ * 2 = Camila Freitas (acesso ativo, plano "Hipertrofia ABC"); 0 = Ana Duarte (bloqueada por inadimplência → tela
+ * "Acesso suspenso"); 3 = Diego Almeida (consentimento de saúde só declarado → tela de confirmação antes do treino).
+ */
+const STUDENT_USERS = {
+  aluno: { email: "aluno.seed@example.com", index: 2 },
+  suspenso: { email: "aluno.suspenso.seed@example.com", index: 0 },
+  consentimento: { email: "aluno.consentimento.seed@example.com", index: 3 },
+} as const;
+
 const noSession = { auth: { persistSession: false, autoRefreshToken: false } };
 const admin = createClient(url, serviceKey, noSession);
 
@@ -78,14 +89,14 @@ async function reset() {
 
   // Escopo fechado: só os e-mails fixos @example.com deste script (nunca um domínio real).
   const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  const seedEmails = new Set<string>(Object.values(USERS).map((u) => u.email));
+  const seedEmails = new Set<string>([...Object.values(USERS), ...Object.values(STUDENT_USERS)].map((u) => u.email));
   for (const user of data?.users ?? []) {
     if (user.email && seedEmails.has(user.email)) await admin.auth.admin.deleteUser(user.id);
   }
   console.log("Dados de exemplo removidos.");
 }
 
-async function createUser(orgId: string, user: (typeof USERS)[keyof typeof USERS]) {
+async function createUser(orgId: string, user: { email: string; name: string; role: "owner" | "trainer" | "student" }) {
   const created = await admin.auth.admin.createUser({ email: user.email, password: password!, email_confirm: true });
   if (created.error) throw new Error(`criar usuário ${user.email}: ${created.error.message}`);
   const id = created.data.user.id;
@@ -205,7 +216,10 @@ async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelh
             label: "C",
             name: "Pernas",
             items: [
-              item("Agachamento livre com barra", { sets: 4, reps: "8–10", rest_seconds: 120, tempo: "3010" }),
+              item("Agachamento livre com barra", {
+                sets: 4, reps: "8–10", rest_seconds: 120, tempo: "3010",
+                care_note: "Coluna neutra e amplitude confortável. Se a dor passar de 3/10, pare e avise o professor.",
+              }),
               item("Leg press 45°"),
               item("Cadeira extensora", { group_key: "tri1" }),
               item("Mesa flexora", { group_key: "tri1" }),
@@ -258,7 +272,11 @@ async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelh
               }),
               item("Remada unilateral com halter"),
               // Substitutos (2.8): alternativas quando faltar equipamento — também passam pelos alertas.
-              item("Levantamento terra romeno", { notes: "Somente sem dor lombar", substitutes: [ex("Elevação pélvica"), ex("Ponte de glúteos")] }),
+              item("Levantamento terra romeno", {
+                notes: "Somente sem dor lombar",
+                care_note: "Barra junto ao corpo e coluna neutra; desça só até onde não houver dor.",
+                substitutes: [ex("Elevação pélvica"), ex("Ponte de glúteos")],
+              }),
             ],
           },
         ],
@@ -402,10 +420,22 @@ async function seed() {
 
   await seedTraining(owner, org.id, groups.map((g) => g.id), ids);
 
+  // App do aluno: contas com senha = SEED_USER_PASSWORD, ligadas ao cadastro (como faria o link de acesso).
+  for (const u of Object.values(STUDENT_USERS)) {
+    const { data: st } = await admin.from("students").select("first_name, last_name").eq("id", ids[u.index]).single();
+    const userId = await createUser(org.id, { email: u.email, name: `${st!.first_name} ${st!.last_name}`, role: "student" });
+    ok(await admin.from("students").update({ user_id: userId }).eq("id", ids[u.index]), "ligar conta do aluno");
+  }
+  // Consentimento só declarado pelo professor (grupo "Dor no Joelho"): o app pede a confirmação do titular.
+  const pendingConsent = ids[STUDENT_USERS.consentimento.index];
+  ok(await admin.from("students").update({ health_consent_declared_at: new Date().toISOString(), health_consent_declared_by: ownerId }).eq("id", pendingConsent), "consentimento declarado");
+  ok(await admin.from("student_groups").insert({ organization_id: org.id, student_id: pendingConsent, group_id: groups[1].id }), "grupo do consentimento pendente");
+
   const [usage] = must(await owner.rpc("organization_plan_usage"), "uso do plano") as { used: number; student_limit: number }[];
   console.log(`Seed concluído: ${ids.length} alunos (${usage.used}/${usage.student_limit} vagas ocupadas).`);
   console.log("Usuários de exemplo (senha = SEED_USER_PASSWORD):");
   for (const u of Object.values(USERS)) console.log(`  ${u.role.padEnd(7)} ${u.email}`);
+  for (const u of Object.values(STUDENT_USERS)) console.log(`  aluno   ${u.email}`);
 }
 
 if (process.argv.includes("--reset")) await reset();

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CircleCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { messages } from "@/messages/pt-BR";
 
 const t = messages.access;
@@ -18,6 +20,9 @@ export default async function AccessReadyPage({ searchParams }: PageProps<"/aces
       <h1 className="text-2xl font-semibold tracking-tight text-ink">{t.readyTitle}</h1>
       <p className="text-sm text-ink-2">{t.readyText}</p>
       {consentNote && <p className="text-sm text-ink-2">{consentNote}</p>}
+      <Button asChild size="lg" className="w-full">
+        <Link href="/aluno/entrar">{t.openApp}</Link>
+      </Button>
     </div>
   );
 }

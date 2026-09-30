@@ -81,7 +81,7 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
 - O executor (`e2e/run.mjs`) limpa `public.rate_limits` antes de cada roteiro e falha se houver qualquer linha "✗".
 - Cadastro público: o `next start` precisa das chaves de TESTE do Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY=
   1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
-- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`), idempotentes (limpam o que
+- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`), idempotentes (limpam o que
   criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
 ## Estrutura de pastas
@@ -328,7 +328,7 @@ effective_status =
 - "Personalizar" um exercício global copia também as regras globais dele para a camada da org (ficam congeladas: uma
   mudança futura na regra global não chega à cópia).
 
-### App do aluno — Fase 3 (banco pronto; checkpoint antes das páginas)
+### App do aluno — Fase 3 (banco + páginas do aluno prontos; aguardando teste do dono no celular)
 - Plano: `~/.claude/plans/magical-fluttering-nygaard.md` (aprovado 30/09/2026). **C1 dispensada**: RLS novo da Fase 3 usa
   `students.user_id = auth.uid()` (+ joins), nunca `current_org_id()`.
 - Migration `20261010120000_fase3_workout_sessions.sql`: `workout_sessions` (uma por treino; `recorded_by`, `rpe`,
@@ -353,6 +353,20 @@ effective_status =
   (histórico continua visível). `log_set`/`complete_session_item` são upsert (idempotentes para a fila local).
 - Montador: `care_note` e os ids (`key`) vão no payload (`builder.ts`); duplicar/aplicar modelo/copiar para alunos
   (`copy_plan`) copiam `care_note`.
+- **Páginas** (`app/aluno/`, URL `/aluno`, sem colidir com `/alunos` do staff): `(acesso)/entrar` (login próprio —
+  `/entrar` continua só do staff), `(logado)/layout.tsx` com os portões nesta ordem: `requireStudent()` → status efetivo
+  (`get_my_student_profile`; ≠ `active` → "Acesso suspenso") → consentimento pendente (`get_my_health_consent_request` →
+  `HealthConsentForm nextHref="/aluno"`) → app. Telas: Hoje (divisão sugerida, "Retomar"), `treino/[sessionId]` (execução,
+  só no cliente via `SessionRunnerClient`), `historico`. Código em `features/student-app/` (lógica pura em `queue.ts`,
+  `session-state.ts`, `format.ts`, testada em `tests/unit/student-*.test.ts`). A página roda em paralelo ao layout: não
+  deixe uma RPC que recusa (ex.: `ACCESS_SUSPENDED`) derrubar a página — o layout é quem mostra o portão.
+- **Fila local** (`queue.ts`): cada registro vira operação no `localStorage` (`lfit:aluno:fila:<sessão>`), reenviada em
+  ordem (evento `online` + a cada 15 s); erro de rede → espera; erro do banco → descarta com aviso. "Finalizar" só sai da
+  tela quando a fila esvazia. Sem service worker (manifest em `app/manifest.ts`, ícones gerados em `app/pwa/[file]`).
+- `requireStaff()` manda aluno para `/aluno` (antes: saía). `proxy.ts`: `/aluno/*` sem sessão → `/aluno/entrar`.
+- Seed: `aluno.seed@example.com` (Camila, plano ativo com orientação de cuidado no agachamento),
+  `aluno.suspenso.seed@example.com` (Ana, bloqueada) e `aluno.consentimento.seed@example.com` (Diego, consentimento só
+  declarado); senha = `SEED_USER_PASSWORD`. Roteiro: `e2e/f3-app-aluno.e2e.mjs` (celular 390 px, inclusive sem internet).
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 
@@ -491,7 +505,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
   (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
-  aluno — **banco pronto, checkpoint antes das páginas**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.11**
+  aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.11**
   ampliação da biblioteca global → **2.9** página do aluno `/alunos/[id]` (planejar antes) → **Importação do MFIT** (antes
   de alunos reais) → **C1** contas com múltiplos vínculos (antes da C2) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
