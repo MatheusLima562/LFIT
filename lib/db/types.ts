@@ -190,6 +190,114 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          attached_exercise_name: string | null
+          attached_item_id: string | null
+          body: string
+          created_at: string
+          id: string
+          organization_id: string
+          sender_id: string | null
+          sender_role: string
+          student_id: string
+        }
+        Insert: {
+          attached_exercise_name?: string | null
+          attached_item_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          sender_id?: string | null
+          sender_role: string
+          student_id: string
+        }
+        Update: {
+          attached_exercise_name?: string | null
+          attached_item_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          sender_id?: string | null
+          sender_role?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_attached_item_id_fkey"
+            columns: ["attached_item_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_reads: {
+        Row: {
+          last_read_at: string
+          reader_id: string
+          reader_role: string
+          student_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          reader_id: string
+          reader_role: string
+          student_id: string
+        }
+        Update: {
+          last_read_at?: string
+          reader_id?: string
+          reader_role?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_reads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_reads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_students: {
         Row: {
           class_id: string
@@ -1523,6 +1631,68 @@ export type Database = {
           },
         ]
       }
+      trainer_announcements: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          student_id: string | null
+          trainer_id: string
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id: string
+          student_id?: string | null
+          trainer_id: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          student_id?: string | null
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_announcements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_announcements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_announcements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_announcements_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_methods: {
         Row: {
           archived_at: string | null
@@ -1697,6 +1867,9 @@ export type Database = {
       }
       workout_sessions: {
         Row: {
+          coach_reply: string | null
+          coach_reply_at: string | null
+          coach_reply_by: string | null
           created_at: string
           feedback_note: string | null
           finished_at: string | null
@@ -1717,6 +1890,9 @@ export type Database = {
           workout_name: string | null
         }
         Insert: {
+          coach_reply?: string | null
+          coach_reply_at?: string | null
+          coach_reply_by?: string | null
           created_at?: string
           feedback_note?: string | null
           finished_at?: string | null
@@ -1737,6 +1913,9 @@ export type Database = {
           workout_name?: string | null
         }
         Update: {
+          coach_reply?: string | null
+          coach_reply_at?: string | null
+          coach_reply_by?: string | null
           created_at?: string
           feedback_note?: string | null
           finished_at?: string | null
@@ -1757,6 +1936,13 @@ export type Database = {
           workout_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "workout_sessions_coach_reply_by_fkey"
+            columns: ["coach_reply_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workout_sessions_organization_id_fkey"
             columns: ["organization_id"]
@@ -2114,6 +2300,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: boolean
       }
+      chat_unread_count: { Args: { p_student_id: string }; Returns: number }
       clear_student_expiration: {
         Args: { p_student_id: string }
         Returns: {
@@ -2306,7 +2493,46 @@ export type Database = {
         Args: { p_feedback?: string; p_rpe?: number; p_session_id: string }
         Returns: undefined
       }
+      get_chat_messages: {
+        Args: { p_before?: string; p_student_id: string }
+        Returns: {
+          attached_exercise_name: string | null
+          attached_item_id: string | null
+          body: string
+          created_at: string
+          id: string
+          organization_id: string
+          sender_id: string | null
+          sender_role: string
+          student_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "chat_messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
+      get_my_announcement: {
+        Args: { p_student_id?: string }
+        Returns: {
+          active: boolean
+          body: string
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          student_id: string | null
+          trainer_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trainer_announcements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_my_health_consent_request: {
         Args: never
         Returns: {
@@ -2325,14 +2551,19 @@ export type Database = {
           last_name: string
           organization_name: string
           photo_path: string
+          sessions_this_month: number
           student_id: string
+          trainer_avatar_url: string
           trainer_name: string
+          trainer_office_hours: string
+          week_streak: number
         }[]
       }
       get_my_workout_history: {
         Args: { p_student_id?: string }
         Returns: {
           by_trainer: boolean
+          coach_reply: string
           exercises_done: number
           finished_at: string
           plan_id: string
@@ -2361,6 +2592,7 @@ export type Database = {
           organization_name: string
         }[]
       }
+      get_session_summary: { Args: { p_session_id: string }; Returns: Json }
       get_training_session: { Args: { p_session_id: string }; Returns: Json }
       hard_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
@@ -2372,6 +2604,18 @@ export type Database = {
       hit_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
+      }
+      list_chat_inbox: {
+        Args: never
+        Returns: {
+          last_message: string
+          last_message_at: string
+          last_sender_role: string
+          photo_path: string
+          student_id: string
+          student_name: string
+          unread_count: number
+        }[]
       }
       log_set: {
         Args: {
@@ -2386,6 +2630,7 @@ export type Database = {
         Args: { p_count: number; p_filters: Json; p_format: string }
         Returns: undefined
       }
+      mark_chat_read: { Args: { p_student_id: string }; Returns: undefined }
       organization_plan_usage: {
         Args: never
         Returns: {
@@ -2521,6 +2766,10 @@ export type Database = {
         }
       }
       reject_signups: { Args: { p_ids: string[] }; Returns: number }
+      reply_to_session: {
+        Args: { p_reply: string; p_session_id: string }
+        Returns: undefined
+      }
       request_anamnesis: {
         Args: { p_student_id: string; p_template_id: string }
         Returns: string
@@ -2538,14 +2787,43 @@ export type Database = {
         Returns: string
       }
       save_training_plan: { Args: { p_plan: Json }; Returns: string }
+      send_chat_message: {
+        Args: {
+          p_attached_item_id?: string
+          p_body: string
+          p_student_id: string
+        }
+        Returns: {
+          attached_exercise_name: string | null
+          attached_item_id: string | null
+          body: string
+          created_at: string
+          id: string
+          organization_id: string
+          sender_id: string | null
+          sender_role: string
+          student_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       session_effective_status: {
         Args: { w: Database["public"]["Tables"]["workout_sessions"]["Row"] }
+        Returns: string
+      }
+      set_trainer_announcement: {
+        Args: { p_body: string; p_student_id?: string }
         Returns: string
       }
       soft_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
         Returns: undefined
       }
+      staff_total_unread_count: { Args: never; Returns: number }
       start_workout_session: {
         Args: { p_plan_id: string; p_student_id?: string; p_workout_id: string }
         Returns: {
