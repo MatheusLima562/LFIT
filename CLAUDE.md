@@ -384,6 +384,42 @@ effective_status =
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 
+### App humanizado — etapa 2.12 (banco aplicado em lfit-dev; aguardando páginas)
+- Plano: `docs/planos/etapa-2.12.md` ("Revisão 2", aprovado). Migration
+  `20261013120000_humanized_app_chat.sql`: chat aluno ↔ professor responsável/owner (com caixa de conversas do
+  professor), recado do professor, resumo humanizado do fim do treino (constância + recorde pessoal) e resposta do
+  professor ao feedback. Checkpoint do dono: **banco pronto, páginas ainda não implementadas.**
+- **Chat** (`chat_messages`, `chat_reads`): sempre visível a quem acessa o aluno (owner + professor responsável),
+  **independente do consentimento de saúde** (mesma base legal da triagem); professor do plano sem acesso ao aluno
+  não vê nada — tudo-ou-nada, sem escada restrita/oculta aqui. Cursor de leitura **por pessoa** (`chat_reads`,
+  chave `student_id, reader_role, reader_id`): o owner marcar como lido não muda o não lido do professor
+  responsável, e vice-versa. Anexo (`attached_item_id`) só de item do **plano ativo** do aluno; nome copiado
+  (`attached_exercise_name`) sobrevive ao item sumir. Escrita só por RPC (`send_chat_message`/`mark_chat_read`,
+  tabelas sem grant de insert/update/delete); limite de 30 mensagens/minuto por remetente. Realtime habilitado só
+  nessa tabela (`alter publication supabase_realtime add table public.chat_messages`, respeita o RLS; primeiro uso
+  de Realtime no projeto).
+- **Recado do professor** (`trainer_announcements`, tabela própria — não é chat): por aluno específico ou
+  broadcast (`student_id` nulo = todos os alunos do próprio chamador); expira (`expires_at`, padrão 7 dias);
+  `get_my_announcement()` devolve só o mais recente ainda válido visível ao aluno.
+- **Resumo do fim do treino** (`get_session_summary`): por exercício, `is_pr` só é `true` quando existe carga
+  anterior registrada numa sessão concluída **anterior** (nunca na primeira vez que o aluno faz o exercício); não
+  mistura unidade de carga (kg × lb comparados separadamente). Destaque pretendido na tela: constância
+  (`sessions_this_month`/`week_streak`), recorde como selo discreto — não o título.
+- **Resposta ao feedback**: `workout_sessions` ganhou `coach_reply`/`coach_reply_at`/`coach_reply_by` (RPC
+  `reply_to_session`, staff com `can_access_student`); `get_my_workout_history` devolve `coach_reply`.
+- **`get_my_student_profile`** ganhou `trainer_avatar_url`, `trainer_office_hours` (de
+  `profiles.preferences->>'office_hours'` do professor responsável), `sessions_this_month` (sessões concluídas no
+  mês civil em SP) e `week_streak` (semanas seg–dom consecutivas em SP com ≥ 1 sessão concluída; quebra a zero se a
+  mais recente for anterior à semana passada).
+- **Fora do escopo desta etapa:** notificação push de mensagem nova (depende da etapa de notificações; sem ela,
+  cada lado só vê mensagem nova ao abrir o app/painel); tela de criar recado e caixa de conversas do professor no
+  painel (`/chat`); páginas do aluno (`/aluno/chat`, `/aluno/perfil`) e barra inferior de 4 abas; **tela para o
+  professor editar o próprio horário de atendimento (`profiles.preferences.office_hours`) e foto
+  (`trainer_avatar_url`)** — sem ela, a Hoje humanizada mostra esses campos vazios (o grant de update já existe,
+  falta só a UI) — tudo isso entra na próxima etapa, depois deste checkpoint.
+- Testes: `tests/db/chat-humanized.test.ts` (isolamento entre organizações, cursores independentes, rate limit,
+  anexo restrito ao plano ativo, recado não vaza, `is_pr` exige histórico, conteúdo nunca em `audit_logs`).
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias. A fórmula deve aparecer na UI (tooltip no card). **Escondido até a 1.6** (hoje seria calculado sobre
@@ -392,8 +428,17 @@ effective_status =
 ## Segurança e LGPD (obrigatório)
 - Grupos especiais (ex.: "Dor na Coluna"), anamnese e escala de dor são **dados de saúde**
   (dados sensíveis, LGPD art. 11) e **nunca** aparecem em URLs, logs ou e-mails.
+- Mesma regra para o **conteúdo do chat** aluno↔professor (`chat_messages.body`), o **recado do professor**
+  (`trainer_announcements.body`) e a **resposta ao feedback** (`workout_sessions.coach_reply`): nunca em
+  `audit_logs`, log, e-mail, URL ou (quando existir) conteúdo de notificação push — nenhuma RPC do chat/recado/
+  resposta chama `private.audit()` com o texto; se precisar auditar o envio em si, só id/contagem, nunca o corpo.
 - **Exceção (a validar com advogado):** a triagem de sinais de alerta + encaminhamento + liberação usa a base legal do
-  art. 11, II, "e"/"d" e não depende do consentimento (ver "Base de conhecimento"); a recusa não a apaga.
+  art. 11, II, "e"/"d" e não depende do consentimento (ver "Base de conhecimento"); a recusa não a apaga. **O chat
+  (2.12) segue a mesma base legal e também não depende do consentimento** — é texto livre e o aluno pode descrever
+  dado de saúde nele (ex.: "sinto dor no joelho"), mesma razão pela qual a triagem é tratada como dado sensível.
+  **Plano B:** se o advogado não aceitar essa base legal para o chat, ele passa a exigir consentimento de saúde
+  **confirmado** pelo titular (como os grupos especiais) antes de habilitar `send_chat_message`/`get_chat_messages`
+  para o par aluno↔professor.
 - **Consentimento em duas etapas:** no cadastro pelo professor, ele DECLARA ter obtido o consentimento
   (`health_consent_declared_at/_by`); o aluno CONFIRMA pessoalmente no primeiro acesso
   (`health_data_consent_at`, tela `/acesso/consentimento`) ou recusa (dados de saúde apagados).
@@ -428,8 +473,12 @@ sem efeitos colaterais).
 | Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` (owner ou responsável; **não** exige consentimento — base legal art. 11, II, "e"/"d", a validar); chaves validadas contra `private.red_flag_keys()`; auditadas |
 | Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
 | **App do aluno (Fase 3), chamador duplo** | `get_my_active_plan`, `start_workout_session`, `get_training_session`, `record_pain_checkin`, `log_set`, `complete_session_item`, `finish_workout_session`, `get_my_workout_history` | `private.training_mode`: `self` (o próprio aluno, `students.user_id = auth.uid()`), `full` (staff com acesso que vê a saúde) ou `restricted` (staff com acesso sem ver a saúde, ou professor do plano ativo) — no restrito nada de dor é gravado, perguntado ou devolvido (`FORBIDDEN`). `private.training_target`/`lock_open_session` exigem status efetivo `active` (`ACCESS_SUSPENDED`). Nunca devolvem dado de contraindicação. Histórico: titular (mesmo suspenso) ou `full` |
-| Aluno (titular), leitura do próprio cadastro | `get_my_student_profile` | escopo `students.user_id = auth.uid()`; só o subconjunto seguro (sem `notes` do professor) |
+| Aluno (titular), leitura do próprio cadastro | `get_my_student_profile` | escopo `students.user_id = auth.uid()`; só o subconjunto seguro (sem `notes` do professor); inclui `trainer_office_hours`, `sessions_this_month` e `week_streak` (2.12, "App humanizado") |
 | Avisos de dor da Fase 3 | `student_session_alerts` (escada completo / restrito / oculto, como os alertas de contraindicação), `acknowledge_session_alert` | `require_staff`; completo só com `can_view_student_health`; restrito via `is_restricted_plan_viewer`/`is_restricted_health_viewer` sem tipo, dor nem comentário; "visto" exige `lock_accessible_student` + `can_view_student_health` |
+| **Chat aluno ↔ professor/owner (2.12)** | `send_chat_message`, `mark_chat_read`, `chat_unread_count` | `private.chat_reader` (helper em `private`, fora da API, plpgsql): resolve o chamador como `student` (`is_own_student`) ou `staff` (`can_access_student`) — tudo-ou-nada, **independente do consentimento de saúde** (mesma base legal da triagem, art. 11 II "e"/"d"); sem acesso de nenhum lado, `STUDENT_NOT_FOUND`. `send_chat_message` só aceita anexo do item do **plano ativo** do aluno e limita a 30 mensagens/minuto (aluno contado por `student_id`; staff por `sender_id`, somando todas as conversas) |
+| Leitura do chat, sem efeito (2.12) | `get_chat_messages` (aluno ou staff), `list_chat_inbox`, `staff_total_unread_count` (caixa de conversas do professor) | funções `sql` — mesmo padrão "leitura sem efeito": `is_own_student`/`private.can_access_student()`; quem não acessa recebe lista/contagem vazia, nunca erro |
+| Recado do professor (2.12) | `get_my_announcement`, `set_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor |
+| Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()`; `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
@@ -517,13 +566,20 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
   lfit-dev.
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
+- **2.12 App humanizado:** banco aplicado em lfit-dev (chat aluno ↔ professor/owner com caixa de conversas do
+  professor, recado do professor, resumo humanizado do fim do treino com recorde pessoal, resposta do professor ao
+  feedback) — ver "App humanizado — etapa 2.12". **Páginas ainda pendentes** (checkpoint do dono antes de
+  implementá-las).
 - Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
   (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
-  aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.11**
+  aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.12**
+  app humanizado (chat, recado, resumo/recorde, resposta ao feedback — **banco aplicado em lfit-dev, páginas
+  pendentes**, ver "App humanizado — etapa 2.12") → **2.11**
   ampliação da biblioteca global → **2.9** página do aluno `/alunos/[id]` (planejar antes) → **Importação do MFIT** (antes
   de alunos reais) → **C1** contas com múltiplos vínculos (antes da C2) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
-  Fase 4 gestão e retenção. Planos: `docs/planos/fase-c.md` e `docs/planos/etapa-2.8.md`; retomada em `docs/PROXIMOS_PASSOS.md`.
+  Fase 4 gestão e retenção. Planos: `docs/planos/fase-c.md`, `docs/planos/etapa-2.8.md` e `docs/planos/etapa-2.12.md`;
+  retomada em `docs/PROXIMOS_PASSOS.md`.
   - **C1 (antes da C2; não precisa vir antes da Fase 3 — decisão de 30/09/2026):** só o modelo de contas com múltiplos vínculos (`memberships` + vínculo ativo por
     sessão via claim `session_id`; `current_org_id()`/`current_user_role()` passam a ler o vínculo ativo;
     `students.user_id` único por organização), seletor de vínculo no login e revisão de RLS e testes de

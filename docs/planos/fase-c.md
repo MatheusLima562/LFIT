@@ -124,6 +124,11 @@ do Pro** · **sem Free permanente** (só Pro e Gold pagos; `free` fica como tier
   liberação), acessíveis ao professor responsável e ao owner, com auditoria. Se o aluno recusar o consentimento, os
   grupos e demais dados de saúde são apagados, mas a triagem e a liberação ficam. Os Termos e a Política de Privacidade
   precisam descrever essa base legal, a finalidade, quem acessa e a retenção desses registros.
+- **Mesma pendência para o chat aluno↔professor (2.12, `docs/planos/etapa-2.12.md`):** é texto livre, então o aluno
+  pode descrever dado de saúde nele (ex.: "sinto dor no joelho"); hoje o chat usa a mesma base legal da triagem
+  (art. 11, II, "e"/"d") e não depende do consentimento confirmado. **Plano B:** se o advogado não aceitar essa base
+  para o chat, ele passa a exigir consentimento de saúde confirmado pelo titular antes de habilitar
+  `send_chat_message`/`get_chat_messages` para o par aluno↔professor. Os Termos precisam cobrir esse cenário também.
 - Versões no código (`lib/legal.ts`). O aceite é registrado com documento, versão e data, e um aceite novo é exigido quando a versão muda.
 
 ### C8. Vendas (plano Gold) — pagamentos dos alunos
