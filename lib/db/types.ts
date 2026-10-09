@@ -195,6 +195,7 @@ export type Database = {
           attached_exercise_name: string | null
           attached_item_id: string | null
           body: string
+          client_msg_id: string
           created_at: string
           id: string
           organization_id: string
@@ -206,6 +207,7 @@ export type Database = {
           attached_exercise_name?: string | null
           attached_item_id?: string | null
           body: string
+          client_msg_id: string
           created_at?: string
           id?: string
           organization_id: string
@@ -217,6 +219,7 @@ export type Database = {
           attached_exercise_name?: string | null
           attached_item_id?: string | null
           body?: string
+          client_msg_id?: string
           created_at?: string
           id?: string
           organization_id?: string
@@ -2499,6 +2502,7 @@ export type Database = {
           attached_exercise_name: string | null
           attached_item_id: string | null
           body: string
+          client_msg_id: string
           created_at: string
           id: string
           organization_id: string
@@ -2791,12 +2795,14 @@ export type Database = {
         Args: {
           p_attached_item_id?: string
           p_body: string
+          p_client_msg_id: string
           p_student_id: string
         }
         Returns: {
           attached_exercise_name: string | null
           attached_item_id: string | null
           body: string
+          client_msg_id: string
           created_at: string
           id: string
           organization_id: string

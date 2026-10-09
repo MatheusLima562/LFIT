@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { anon, dbTestsEnabled, Fixture, rpc, spDateDaysAgo, studentData, type TestOrg, type TestUser } from "./helpers";
 
@@ -58,10 +59,18 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["student_session_alerts", () => ({ p_student_id: studentId })],
     ["acknowledge_session_alert", () => ({ p_session_id: studentId })],
     ["get_my_active_plan", () => ({ p_student_id: otherId })],
+    // 2.12: chat/recado/resumo de OUTRO aluno, e as de staff.
+    ["send_chat_message", () => ({ p_student_id: otherId, p_body: "x", p_client_msg_id: randomUUID() })],
+    ["mark_chat_read", () => ({ p_student_id: otherId })],
+    ["chat_unread_count", () => ({ p_student_id: otherId })],
+    ["get_my_announcement", () => ({ p_student_id: otherId })],
+    ["get_session_summary", () => ({ p_session_id: randomUUID() })],
+    ["set_trainer_announcement", () => ({ p_body: "x", p_student_id: studentId })],
+    ["reply_to_session", () => ({ p_session_id: randomUUID(), p_reply: "x" })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
-    await expect(rpc(student.client, fn, args())).rejects.toThrow(/FORBIDDEN|STUDENT_NOT_FOUND/);
+    await expect(rpc(student.client, fn, args())).rejects.toThrow(/FORBIDDEN|STUDENT_NOT_FOUND|SESSION_NOT_FOUND/);
   });
 
   it("nada mudou depois das tentativas", async () => {
@@ -79,6 +88,9 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
   it("consultas não revelam nada ao aluno", async () => {
     expect(await rpc<unknown[]>(student.client, "organization_plan_usage")).toHaveLength(0);
     expect(await rpc(student.client, "can_view_student_health", { p_student_id: otherId })).toBe(false);
+    expect(await rpc<unknown[]>(student.client, "get_chat_messages", { p_student_id: otherId })).toHaveLength(0);
+    expect(await rpc<unknown[]>(student.client, "list_chat_inbox")).toHaveLength(0);
+    expect(await rpc(student.client, "staff_total_unread_count")).toBe(0);
   });
 
   it("funções do titular (intencionais) só enxergam o próprio cadastro", async () => {
@@ -94,6 +106,8 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "get_my_student_profile", "get_my_active_plan", "start_workout_session", "record_pain_checkin", "log_set",
     "complete_session_item", "finish_workout_session", "get_my_workout_history", "student_session_alerts",
     "acknowledge_session_alert", "get_training_session",
+    "send_chat_message", "get_chat_messages", "mark_chat_read", "chat_unread_count", "list_chat_inbox",
+    "staff_total_unread_count", "get_my_announcement", "set_trainer_announcement", "get_session_summary", "reply_to_session",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

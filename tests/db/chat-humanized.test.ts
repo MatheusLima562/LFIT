@@ -78,11 +78,11 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
   afterAll(() => fx.cleanup());
 
   it("chat: aluno, responsável e owner acessam; professor do plano sem acesso ao aluno não vê nada (tudo-ou-nada)", async () => {
-    const m1 = await rpc<Row>(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "Oi, professor!" });
+    const m1 = await rpc<Row>(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "Oi, professor!" });
     expect(m1).toMatchObject({ sender_role: "student", sender_id: null, student_id: s1 });
-    const m2 = await rpc<Row>(trainer.client, "send_chat_message", { p_student_id: s1, p_body: "Oi! Tudo bem?" });
+    const m2 = await rpc<Row>(trainer.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "Oi! Tudo bem?" });
     expect(m2).toMatchObject({ sender_role: "staff", sender_id: trainer.id });
-    const m3 = await rpc<Row>(owner.client, "send_chat_message", { p_student_id: s1, p_body: "Owner também vê" });
+    const m3 = await rpc<Row>(owner.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "Owner também vê" });
     expect(m3).toMatchObject({ sender_role: "staff", sender_id: owner.id });
 
     const asStudent = await rpc<Row[]>(studentUser.client, "get_chat_messages", { p_student_id: s1 });
@@ -91,7 +91,7 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
     // trainer2: sem acesso nenhum ao aluno. send_chat_message (plpgsql) recusa explicitamente; get_chat_messages
     // (sql puro) não lança — só filtra e devolve vazio, mesmo padrão de "leitura sem efeito" do projeto.
     expect(await rpc<Row[]>(trainer2.client, "get_chat_messages", { p_student_id: s1 })).toEqual([]);
-    await expect(rpc(trainer2.client, "send_chat_message", { p_student_id: s1, p_body: "x" })).rejects.toThrow("STUDENT_NOT_FOUND");
+    await expect(rpc(trainer2.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "x" })).rejects.toThrow("STUDENT_NOT_FOUND");
 
     // trainer2 vira professor do plano (sem acesso ao cadastro/saúde) — ainda assim, sem chat (diferente da escada dos alertas).
     const { planId, wA, itemA } = plans.get(s1)!;
@@ -110,7 +110,7 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
 
   it("isolamento entre organizações: ownerB não acessa nada de s1 (chat, recado, resumo, feedback) nem lê as tabelas direto", async () => {
     expect(await rpc<Row[]>(ownerB.client, "get_chat_messages", { p_student_id: s1 })).toEqual([]);
-    await expect(rpc(ownerB.client, "send_chat_message", { p_student_id: s1, p_body: "x" })).rejects.toThrow("STUDENT_NOT_FOUND");
+    await expect(rpc(ownerB.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "x" })).rejects.toThrow("STUDENT_NOT_FOUND");
     expect(await rpc<Row[]>(ownerB.client, "list_chat_inbox")).toEqual([]);
     await expect(rpc(ownerB.client, "get_my_announcement", { p_student_id: s1 })).rejects.toThrow("STUDENT_NOT_FOUND");
 
@@ -125,7 +125,9 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
 
   it("escrita direta é recusada: chat, recados e coach_reply só por RPC (sem grant de insert/update/delete)", async () => {
     for (const client of [studentUser.client, trainer.client, owner.client]) {
-      expect((await client.from("chat_messages").insert({ organization_id: org.id, student_id: s1, sender_role: "staff", sender_id: owner.id, body: "x" })).error).not.toBeNull();
+      // Linha completa (com client_msg_id): a recusa tem de vir da falta de grant, não de coluna faltando.
+      const direct = await client.from("chat_messages").insert({ organization_id: org.id, student_id: s1, sender_role: "staff", sender_id: owner.id, body: "x", client_msg_id: randomUUID() });
+      expect(direct.error?.code).toBe("42501");
       expect((await client.from("chat_reads").insert({ student_id: s1, reader_role: "staff", reader_id: owner.id })).error).not.toBeNull();
       expect((await client.from("trainer_announcements").insert({ organization_id: org.id, trainer_id: owner.id, body: "x" })).error).not.toBeNull();
       expect((await client.from("workout_sessions").update({ coach_reply: "x" }).eq("student_id", s1)).error).not.toBeNull();
@@ -134,16 +136,16 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
 
   it("anexo: só item do plano ATIVO do aluno; recusa item de outro aluno", async () => {
     const { itemA } = plans.get(s1)!;
-    const ok = await rpc<Row>(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "Olha esse exercício", p_attached_item_id: itemA });
+    const ok = await rpc<Row>(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "Olha esse exercício", p_attached_item_id: itemA });
     expect(ok).toMatchObject({ attached_item_id: itemA, attached_exercise_name: "Abdominal supra" });
     await expect(
-      rpc(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "x", p_attached_item_id: plans.get(s2)!.itemA }),
+      rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "x", p_attached_item_id: plans.get(s2)!.itemA }),
     ).rejects.toThrow("INVALID_INPUT");
   });
 
   it("corpo vazio ou só espaço é recusado antes de gravar", async () => {
-    await expect(rpc(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "   " })).rejects.toThrow("INVALID_INPUT");
-    await expect(rpc(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "" })).rejects.toThrow("INVALID_INPUT");
+    await expect(rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "   " })).rejects.toThrow("INVALID_INPUT");
+    await expect(rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "" })).rejects.toThrow("INVALID_INPUT");
   });
 
   it("get_chat_messages pagina com p_before", async () => {
@@ -155,23 +157,23 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
   });
 
   it("limite de 30 mensagens/minuto: aluno contado por student_id (sender_id nulo); staff somando alunos diferentes", async () => {
-    for (let i = 0; i < 30; i++) await rpc(otherUser.client, "send_chat_message", { p_student_id: s2, p_body: `m${i}` });
-    await expect(rpc(otherUser.client, "send_chat_message", { p_student_id: s2, p_body: "31ª" })).rejects.toThrow("RATE_LIMITED");
+    for (let i = 0; i < 30; i++) await rpc(otherUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s2, p_body: `m${i}` });
+    await expect(rpc(otherUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s2, p_body: "31ª" })).rejects.toThrow("RATE_LIMITED");
     // O limite é por aluno (student_id), não global: s1 continua liberado.
-    await rpc(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "s1 não é afetado pelo limite de s2" });
+    await rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "s1 não é afetado pelo limite de s2" });
 
     // owner2 (não owner — que já enviou 1 mensagem no primeiro teste e estouraria o total em 1) testa o limite do lado staff.
-    for (let i = 0; i < 14; i++) await rpc(owner2.client, "send_chat_message", { p_student_id: s1, p_body: `o${i}` });
-    for (let i = 0; i < 15; i++) await rpc(owner2.client, "send_chat_message", { p_student_id: s3, p_body: `o${i}` });
+    for (let i = 0; i < 14; i++) await rpc(owner2.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: `o${i}` });
+    for (let i = 0; i < 15; i++) await rpc(owner2.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s3, p_body: `o${i}` });
     // 29 do owner2 no último minuto, somando as duas conversas — a 30ª ainda passa, a 31ª não.
-    await rpc(owner2.client, "send_chat_message", { p_student_id: s1, p_body: "30ª do owner2" });
-    await expect(rpc(owner2.client, "send_chat_message", { p_student_id: s3, p_body: "31ª do owner2" })).rejects.toThrow("RATE_LIMITED");
+    await rpc(owner2.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "30ª do owner2" });
+    await expect(rpc(owner2.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s3, p_body: "31ª do owner2" })).rejects.toThrow("RATE_LIMITED");
     // Outro remetente (trainer) não é afetado pelo limite do owner2.
-    await rpc(trainer.client, "send_chat_message", { p_student_id: s1, p_body: "trainer não é afetado" });
+    await rpc(trainer.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "trainer não é afetado" });
   });
 
   it("cursores de leitura independentes: o owner marcar como lido não muda o não lido do professor responsável", async () => {
-    await rpc(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "mensagem nova para contagem" });
+    await rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "mensagem nova para contagem" });
     const unreadOwnerBefore = await rpc<number>(owner.client, "chat_unread_count", { p_student_id: s1 });
     const unreadTrainerBefore = await rpc<number>(trainer.client, "chat_unread_count", { p_student_id: s1 });
     expect(unreadOwnerBefore).toBeGreaterThan(0);
@@ -185,7 +187,7 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
     expect(await rpc<number>(trainer.client, "chat_unread_count", { p_student_id: s1 })).toBe(0);
 
     // Lado do aluno: cursor único.
-    await rpc(trainer.client, "send_chat_message", { p_student_id: s1, p_body: "resposta do professor" });
+    await rpc(trainer.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "resposta do professor" });
     expect(await rpc<number>(studentUser.client, "chat_unread_count", { p_student_id: s1 })).toBeGreaterThan(0);
     await rpc(studentUser.client, "mark_chat_read", { p_student_id: s1 });
     expect(await rpc<number>(studentUser.client, "chat_unread_count", { p_student_id: s1 })).toBe(0);
@@ -194,7 +196,7 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
   it("list_chat_inbox: não lidas primeiro, inclui aluno sem mensagem; staff_total_unread_count soma tudo; aluno não vê a caixa", async () => {
     await rpc(owner.client, "mark_chat_read", { p_student_id: s1 });
     await rpc(owner.client, "mark_chat_read", { p_student_id: s3 });
-    await rpc(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: "não lida para o owner" });
+    await rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "não lida para o owner" });
     // Aluno novo, sem mensagem nenhuma (s2 já tem 30 do teste de limite) — prova que a caixa inclui quem nunca escreveu.
     const s4 = (await rpc<{ id: string }>(owner.client, "create_student", { p_data: studentData() })).id;
 
@@ -284,7 +286,7 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
 
   it("conteúdo do chat e da resposta ao feedback nunca aparece em audit_logs", async () => {
     const marker = `segredo-${randomUUID()}`;
-    await rpc(studentUser.client, "send_chat_message", { p_student_id: s1, p_body: `mensagem ${marker}` });
+    await rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: `mensagem ${marker}` });
     const sid = await completedSession(s1, spNoonIso(240), 5); // data longe do mês/semana testados em outro caso
     await rpc(trainer.client, "reply_to_session", { p_session_id: sid, p_reply: `resposta ${marker}` });
     const { data } = await fx.db.from("audit_logs").select("diff").eq("organization_id", org.id);
@@ -309,9 +311,59 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
     expect(p3.week_streak).toBe(0);
   });
 
+  it("envio idempotente: reenvio com o mesmo client_msg_id devolve a mesma linha, sem duplicar nem contar no limite", async () => {
+    // Remetentes novos, para não herdar contagem do teste de limite.
+    const idemUser = await fx.user(org, "student", "idem");
+    const idemOwner = await fx.user(org, "owner", "idem-o");
+    const s5 = (await rpc<{ id: string }>(owner.client, "create_student", { p_data: studentData() })).id;
+    await fx.db.from("students").update({ user_id: idemUser.id }).eq("id", s5);
+    const count = async (cid: string) =>
+      (await fx.db.from("chat_messages").select("id", { count: "exact", head: true }).eq("client_msg_id", cid)).count;
+
+    // Sem client_msg_id é recusado.
+    await expect(rpc(idemUser.client, "send_chat_message", { p_client_msg_id: null, p_student_id: s5, p_body: "x" })).rejects.toThrow("INVALID_INPUT");
+
+    // Reenvio (aluno): mesma linha, uma só no banco.
+    const cid = randomUUID();
+    const a = await rpc<Row>(idemUser.client, "send_chat_message", { p_client_msg_id: cid, p_student_id: s5, p_body: "reenvio" });
+    const b = await rpc<Row>(idemUser.client, "send_chat_message", { p_client_msg_id: cid, p_student_id: s5, p_body: "reenvio" });
+    expect(b.id).toBe(a.id);
+    expect(await count(cid)).toBe(1);
+
+    // Mesmo id com outro texto: erro do cliente, nunca uma segunda mensagem.
+    await expect(rpc(idemUser.client, "send_chat_message", { p_client_msg_id: cid, p_student_id: s5, p_body: "outro texto" })).rejects.toThrow("INVALID_INPUT");
+    expect(await count(cid)).toBe(1);
+
+    // Único POR REMETENTE: o professor pode usar o mesmo uuid na mesma conversa sem colidir com o aluno.
+    const st = await rpc<Row>(idemOwner.client, "send_chat_message", { p_client_msg_id: cid, p_student_id: s5, p_body: "reenvio" });
+    expect(st.id).not.toBe(a.id);
+    expect(st.sender_role).toBe("staff");
+    expect(await count(cid)).toBe(2);
+
+    // Staff: mesmo id em OUTRA conversa é recusado (único por sender_id, em todas as conversas).
+    await expect(rpc(idemOwner.client, "send_chat_message", { p_client_msg_id: cid, p_student_id: s1, p_body: "reenvio" })).rejects.toThrow("INVALID_INPUT");
+
+    // Envios simultâneos com o mesmo id: uma linha só, os dois recebem o mesmo id.
+    const race = randomUUID();
+    const [r1, r2] = await Promise.all([
+      rpc<Row>(idemUser.client, "send_chat_message", { p_client_msg_id: race, p_student_id: s5, p_body: "corrida" }),
+      rpc<Row>(idemUser.client, "send_chat_message", { p_client_msg_id: race, p_student_id: s5, p_body: "corrida" }),
+    ]);
+    expect(r1.id).toBe(r2.id);
+    expect(await count(race)).toBe(1);
+
+    // Limite: 2 mensagens do aluno até aqui; completa 30 com ids novos.
+    for (let i = 0; i < 28; i++) await rpc(idemUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s5, p_body: `l${i}` });
+    // No limite, o reenvio de uma já gravada ainda devolve a linha (não conta de novo)...
+    const again = await rpc<Row>(idemUser.client, "send_chat_message", { p_client_msg_id: cid, p_student_id: s5, p_body: "reenvio" });
+    expect(again.id).toBe(a.id);
+    // ...e uma mensagem nova é recusada.
+    await expect(rpc(idemUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s5, p_body: "31ª" })).rejects.toThrow("RATE_LIMITED");
+  });
+
   it("segurança: anônimo não executa nenhuma RPC nova", async () => {
     for (const [fn, args] of [
-      ["send_chat_message", { p_student_id: s1, p_body: "x" }],
+      ["send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "x" }],
       ["get_chat_messages", { p_student_id: s1 }],
       ["mark_chat_read", { p_student_id: s1 }],
       ["chat_unread_count", { p_student_id: s1 }],
