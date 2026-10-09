@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Capturas dos roteiros e2e
 e2e/.output/
+
+# Claude Code (config local, por máquina)
+.claude/settings.local.json
