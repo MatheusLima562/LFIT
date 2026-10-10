@@ -84,7 +84,7 @@ export const navigation: NavSection[] = [
           { label: "Indicações", href: "/marketing/indicacoes" },
         ],
       },
-      { id: "chat", label: "Chat", href: "/chat", icon: MessageCircle, badge: 3 },
+      { id: "chat", label: "Chat", href: "/chat", icon: MessageCircle, status: "available" },
     ],
   },
   {

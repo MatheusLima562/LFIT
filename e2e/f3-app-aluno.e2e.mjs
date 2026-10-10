@@ -63,6 +63,8 @@ if (thumbs > 0) {
   await page.getByRole("button", { name: /^Ver vídeo:/ }).first().click();
   ok("miniatura abre o vídeo", await page.getByRole("dialog").waitFor({ timeout: 5000 }).then(() => true, () => false));
   await page.keyboard.press("Escape");
+  // Enquanto a janela fecha (animação), o resto da página fica aria-hidden e o getByRole abaixo não acha nada.
+  await page.getByRole("dialog").waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
 }
 const first = page.locator("section[id^='ex-']");
 ok("sem alerta nem orientação: dor só pelo link discreto", (await first.getByRole("button", { name: "Sentiu algum desconforto?" }).count()) === 1 && (await first.getByRole("radio", { name: "Dor 0 de 10" }).count()) === 0);

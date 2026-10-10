@@ -11,6 +11,7 @@
  * Os alunos são criados pelas mesmas RPCs do app (logado como o owner de
  * exemplo), então passam por limite do plano, matrícula e auditoria.
  */
+import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { assertDevProject } from "./dev-guard.mts";
 
@@ -309,6 +310,29 @@ async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelh
   ok(await owner.rpc("activate_plan", { p_plan_id: semFim }), "ativar sem expiração");
 }
 
+/**
+ * Chat da Camila com o professor responsável (Caio, trainer2): mensagens fictícias, enviadas pelo próprio RPC (com
+ * client_msg_id, como o app) e datadas de ontem. A Camila leu tudo; o Caio e o owner têm as 2 da aluna não lidas.
+ */
+async function seedChat(studentId: string) {
+  const camila = await signIn(STUDENT_USERS.aluno.email);
+  const caio = await signIn(USERS.trainer2.email);
+  const conversation: [SupabaseClient, string][] = [
+    [camila, "Oi, Caio! Posso trocar o treino de terça para quarta esta semana?"],
+    [caio, "Pode sim, Camila. Só mantenha um dia de descanso entre o A e o B."],
+    [camila, "Combinado, obrigada!"],
+  ];
+  const yesterday = Date.now() - 86_400_000;
+  for (const [i, [client, body]] of conversation.entries()) {
+    const msg = must(
+      await client.rpc("send_chat_message", { p_student_id: studentId, p_body: body, p_client_msg_id: randomUUID() }),
+      "mensagem do chat",
+    ) as { id: string };
+    ok(await admin.from("chat_messages").update({ created_at: new Date(yesterday + i * 7 * 60_000).toISOString() }).eq("id", msg.id), "datar mensagem");
+  }
+  ok(await camila.rpc("mark_chat_read", { p_student_id: studentId }), "chat lido pela aluna");
+}
+
 async function seed() {
   const existing = await admin.from("organizations").select("id").eq("slug", SLUG).maybeSingle();
   if (existing.data) {
@@ -430,6 +454,8 @@ async function seed() {
   const pendingConsent = ids[STUDENT_USERS.consentimento.index];
   ok(await admin.from("students").update({ health_consent_declared_at: new Date().toISOString(), health_consent_declared_by: ownerId }).eq("id", pendingConsent), "consentimento declarado");
   ok(await admin.from("student_groups").insert({ organization_id: org.id, student_id: pendingConsent, group_id: groups[1].id }), "grupo do consentimento pendente");
+
+  await seedChat(ids[STUDENT_USERS.aluno.index]);
 
   const [usage] = must(await owner.rpc("organization_plan_usage"), "uso do plano") as { used: number; student_limit: number }[];
   console.log(`Seed concluído: ${ids.length} alunos (${usage.used}/${usage.student_limit} vagas ocupadas).`);

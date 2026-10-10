@@ -81,7 +81,7 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
 - O executor (`e2e/run.mjs`) limpa `public.rate_limits` antes de cada roteiro e falha se houver qualquer linha "✗".
 - Cadastro público: o `next start` precisa das chaves de TESTE do Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY=
   1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
-- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`), idempotentes (limpam o que
+- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`), idempotentes (limpam o que
   criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
 ## Estrutura de pastas
@@ -100,6 +100,7 @@ app/
 features/
   auth/                    # schemas.ts (Zod), actions.ts (server actions), components/
   organizations/queries.ts # uso do plano (RPC organization_plan_usage)
+  chat/                    # thread.ts (lógica pura), hooks.ts (Realtime, selos), queries.ts, components/ (conversa, caixa)
   students/                # search-params.ts (estado da URL), schemas.ts (form Zod), queries.ts, actions.ts,
                            # account.ts, access-actions.ts (link do aluno), components/ (lista, form/, modal)
 components/
@@ -384,7 +385,7 @@ effective_status =
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 
-### App humanizado — etapa 2.12 (banco aplicado em lfit-dev; aguardando páginas)
+### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat pronta — aguardando teste do dono no celular)
 - Plano: `docs/planos/etapa-2.12.md` ("Revisão 2", aprovado). Migration
   `20261013120000_humanized_app_chat.sql`: chat aluno ↔ professor responsável/owner (com caixa de conversas do
   professor), recado do professor, resumo humanizado do fim do treino (constância + recorde pessoal) e resposta do
@@ -412,14 +413,35 @@ effective_status =
   `profiles.preferences->>'office_hours'` do professor responsável), `sessions_this_month` (sessões concluídas no
   mês civil em SP) e `week_streak` (semanas seg–dom consecutivas em SP com ≥ 1 sessão concluída; quebra a zero se a
   mais recente for anterior à semana passada).
-- **Fora do escopo desta etapa:** notificação push de mensagem nova (depende da etapa de notificações; sem ela,
-  cada lado só vê mensagem nova ao abrir o app/painel); tela de criar recado e caixa de conversas do professor no
-  painel (`/chat`); páginas do aluno (`/aluno/chat`, `/aluno/perfil`) e barra inferior de 4 abas; **tela para o
-  professor editar o próprio horário de atendimento (`profiles.preferences.office_hours`) e foto
-  (`trainer_avatar_url`)** — sem ela, a Hoje humanizada mostra esses campos vazios (o grant de update já existe,
-  falta só a UI) — tudo isso entra na próxima etapa, depois deste checkpoint.
+- **Páginas** (plano `docs/planos/etapa-2.12-paginas.md`, em 3 entregas). **3.1 chat (pronta):** `/aluno/chat` (aviso fixo
+  de emergência + quem vê a conversa + horário do professor; anexo de exercício do plano ativo; altura `100dvh`, campo
+  de 16 px, lista com `aria-live`) e `/chat` no painel (caixa `list_chat_inbox` + conversa, `?aluno=<id>`; item "Chat"
+  do menu `available`, selo real de `staff_total_unread_count` no lugar do mock). Barra do aluno com **3 abas** (Hoje ·
+  Histórico · Chat); Perfil entra na 3.2. Código em `features/chat/`:
+  - Envio **do navegador direto para `send_chat_message`** (nunca server action), sempre com `client_msg_id`: reenviar o
+    mesmo texto/anexo reusa o id, texto ou anexo editado gera outro. A mensagem local é deduplicada com o retorno do RPC
+    e com o evento do Realtime pela chave remetente + `client_msg_id`. Sem rede → "Não enviada · Tentar de novo /
+    Editar"; recusa do banco (`RATE_LIMITED`) → texto volta ao campo com aviso amigável.
+  - Realtime: só INSERT (DELETE/UPDATE ignorados); quem garante o isolamento é o RLS, não o filtro do canal (teste com 6
+    clientes em `tests/db/chat-realtime.test.ts`). Fora do ar → "Reconectando…" + busca a cada 20 s com a aba visível;
+    ao reconectar, ao voltar a internet e ao voltar à aba, busca a página mais recente — e de novo 3 s depois
+    (`SETTLE_REFETCH_MS`: o canal fica `SUBSCRIBED` um pouco antes de o servidor começar a entregar as mudanças; uma
+    mensagem gravada nessa janela se perderia). Rajadas chegam devagar pelo Realtime (observado: 30 inserções levaram
+    mais de 5 s), sem perda.
+  - Lida: `mark_chat_read` ao abrir, ao chegar mensagem com a aba visível (espera de 0,8 s) e **ao sair da conversa com
+    uma marcação pendente** (senão a mensagem vista ficava como não lida). Selos (`useChatUnread`) sempre buscam a
+    contagem no banco; o Realtime e o evento `lfit:chat-read` só disparam a busca.
+  - Roteiro `e2e/k212-chat.e2e.mjs` (375 px): imprime uma **frase-canário** única por execução para buscar nos logs do
+    Supabase; derruba o WebSocket do Realtime por um proxy do Playwright (`routeWebSocket`); limpa as mensagens pelo
+    marcador da execução, não por horário (o relógio local não bate com o do banco).
+- **Fora do escopo da 3.1:** notificação push de mensagem nova (depende da etapa de notificações; sem ela, cada lado
+  só vê mensagem nova ao abrir o app/painel); Hoje humanizada, fim de treino, `/aluno/perfil` e barra de 4 abas (3.2);
+  criar/encerrar recado, resposta ao feedback e **tela para o professor editar o próprio horário de atendimento
+  (`profiles.preferences.office_hours`) e foto (`trainer_avatar_url`)** (3.3) — sem ela, a Hoje humanizada mostra
+  esses campos vazios.
 - Testes: `tests/db/chat-humanized.test.ts` (isolamento entre organizações, cursores independentes, rate limit,
-  anexo restrito ao plano ativo, recado não vaza, `is_pr` exige histórico, conteúdo nunca em `audit_logs`).
+  anexo restrito ao plano ativo, recado não vaza, `is_pr` exige histórico, conteúdo nunca em `audit_logs`, envio
+  idempotente), `tests/db/chat-realtime.test.ts`, `tests/unit/chat-thread.test.ts`.
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
@@ -569,12 +591,12 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - **2.12 App humanizado:** banco aplicado em lfit-dev (chat aluno ↔ professor/owner com caixa de conversas do
   professor, recado do professor, resumo humanizado do fim do treino com recorde pessoal, resposta do professor ao
-  feedback) — ver "App humanizado — etapa 2.12". **Páginas ainda pendentes** (checkpoint do dono antes de
-  implementá-las).
+  feedback) — ver "App humanizado — etapa 2.12". **3.1 (chat) pronta**, aguardando teste do dono no celular; 3.2
+  (aluno) e 3.3 (professor) pendentes.
 - Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
   (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
   aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.12**
-  app humanizado (chat, recado, resumo/recorde, resposta ao feedback — **banco aplicado em lfit-dev, páginas
+  app humanizado (chat, recado, resumo/recorde, resposta ao feedback — **banco aplicado; 3.1 chat pronta, 3.2/3.3
   pendentes**, ver "App humanizado — etapa 2.12") → **2.11**
   ampliação da biblioteca global → **2.9** página do aluno `/alunos/[id]` (planejar antes) → **Importação do MFIT** (antes
   de alunos reais) → **C1** contas com múltiplos vínculos (antes da C2) → **C2** comercialização

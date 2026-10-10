@@ -84,7 +84,7 @@ const PHOTO_BUCKET = "student-photos";
 const PHOTO_URL_TTL = 60 * 60;
 
 /** URLs assinadas (bucket privado, RLS do Storage) em lote. */
-async function signPhotoUrls(supabase: Awaited<ReturnType<typeof createClient>>, paths: string[]) {
+export async function signPhotoUrls(supabase: Awaited<ReturnType<typeof createClient>>, paths: string[]) {
   const map = new Map<string, string>();
   if (paths.length === 0) return map;
   const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, PHOTO_URL_TTL);

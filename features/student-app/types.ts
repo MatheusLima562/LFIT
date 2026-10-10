@@ -124,7 +124,11 @@ export interface AppProfile {
   photo_path: string | null;
   organization_name: string;
   trainer_name: string | null;
+  trainer_avatar_url: string | null;
+  trainer_office_hours: string | null;
   effective_status: "active" | "blocked" | "inactive" | "expired";
+  sessions_this_month: number;
+  week_streak: number;
 }
 
 export interface AppHistoryEntry {

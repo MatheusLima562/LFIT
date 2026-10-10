@@ -3,6 +3,7 @@
 import { Menu } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { PlanUsage, ShellUser } from "@/types/dashboard";
+import { useChatUnread } from "@/features/chat/hooks";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -13,10 +14,14 @@ import { UserMenu } from "./UserMenu";
 interface AppShellProps {
   user: ShellUser;
   plan: PlanUsage;
+  /** Não lidas do chat no carregamento; depois o selo se atualiza sozinho. */
+  chatUnread: number;
   children: ReactNode;
 }
 
-export function AppShell({ user, plan, children }: AppShellProps) {
+export function AppShell({ user, plan, chatUnread, children }: AppShellProps) {
+  const unread = useChatUnread({ initial: chatUnread, studentId: null });
+  const counts = { chat: unread };
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -36,7 +41,7 @@ export function AppShell({ user, plan, children }: AppShellProps) {
           collapsed ? "w-[76px]" : "w-[252px]",
         )}
       >
-        <Sidebar user={user} plan={plan} collapsed={collapsed} onToggleCollapse={() => setCollapsed((c) => !c)} />
+        <Sidebar user={user} plan={plan} counts={counts} collapsed={collapsed} onToggleCollapse={() => setCollapsed((c) => !c)} />
       </aside>
 
       {/* Mobile/tablet: drawer */}
@@ -44,7 +49,7 @@ export function AppShell({ user, plan, children }: AppShellProps) {
         <SheetContent side="left" showCloseButton={false} className="w-[18rem] max-w-[85vw] gap-0 p-0 lg:hidden">
           <SheetTitle className="sr-only">Menu</SheetTitle>
           <SheetDescription className="sr-only">Navegação principal do LFit</SheetDescription>
-          <Sidebar user={user} plan={plan} onNavigate={() => setDrawerOpen(false)} />
+          <Sidebar user={user} plan={plan} counts={counts} onNavigate={() => setDrawerOpen(false)} />
         </SheetContent>
       </Sheet>
 

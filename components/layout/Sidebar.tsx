@@ -22,6 +22,8 @@ interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   onNavigate?: () => void;
+  /** Contagens reais por item (ex.: não lidas do Chat). */
+  counts?: Partial<Record<string, number>>;
 }
 
 const itemBase =
@@ -64,7 +66,7 @@ function CountBadge({ count, collapsed }: { count: number; collapsed?: boolean }
 }
 
 /** Item recolhido: só ícone + tooltip (inclusive nos desabilitados, via span focável). */
-function CollapsedItem({ item, active }: { item: NavItem; active: boolean }) {
+function CollapsedItem({ item, active, count }: { item: NavItem; active: boolean; count?: number }) {
   const available = isAvailable(item);
   const label = available ? item.label : `${item.label} · ${messages.app.soon}`;
   return (
@@ -78,7 +80,7 @@ function CollapsedItem({ item, active }: { item: NavItem; active: boolean }) {
             className={cn(itemBase, "justify-center px-0", active ? "bg-brand-50 text-brand-700" : "hover:bg-canvas")}
           >
             <NavIcon item={item} active={active} />
-            {item.badge ? <CountBadge count={item.badge} collapsed /> : null}
+            {count ? <CountBadge count={count} collapsed /> : null}
           </Link>
         ) : (
           <span tabIndex={0} aria-disabled="true" aria-label={label} className={cn(itemBase, "cursor-default justify-center px-0")}>
@@ -91,7 +93,7 @@ function CollapsedItem({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }: SidebarProps) {
+export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate, counts }: SidebarProps) {
   const pathname = usePathname();
   const [openIds, setOpenIds] = useState<Set<string>>(() => {
     const initial = new Set<string>();
@@ -139,7 +141,7 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
                 if (collapsed) {
                   return (
                     <li key={item.id}>
-                      <CollapsedItem item={item} active={active} />
+                      <CollapsedItem item={item} active={active} count={counts?.[item.id]} />
                     </li>
                   );
                 }
@@ -167,7 +169,7 @@ export function Sidebar({ user, plan, collapsed, onToggleCollapse, onNavigate }:
                       >
                         <NavIcon item={item} active={active} />
                         <span className="truncate">{item.label}</span>
-                        {item.badge ? <CountBadge count={item.badge} /> : null}
+                        {counts?.[item.id] ? <CountBadge count={counts[item.id]!} /> : null}
                       </Link>
                     </li>
                   );

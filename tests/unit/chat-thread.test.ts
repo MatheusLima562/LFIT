@@ -1,0 +1,164 @@
+import { describe, expect, it } from "vitest";
+import {
+  addLocal,
+  type ChatRow,
+  classifySendError,
+  dayLabel,
+  mergeRows,
+  messageKey,
+  normalizeBody,
+  oldestSentAt,
+  pickClientMsgId,
+  removeLocal,
+  setLocalStatus,
+  type ThreadMessage,
+} from "@/features/chat/thread";
+
+const STUDENT = "11111111-1111-1111-1111-111111111111";
+const STAFF = "22222222-2222-2222-2222-222222222222";
+
+let seq = 0;
+function row(over: Partial<ChatRow> = {}): ChatRow {
+  seq += 1;
+  return {
+    id: `id-${seq}`,
+    organization_id: "org",
+    student_id: STUDENT,
+    sender_role: "student",
+    sender_id: null,
+    body: `mensagem ${seq}`,
+    attached_item_id: null,
+    attached_exercise_name: null,
+    client_msg_id: `cid-${seq}`,
+    created_at: `2026-10-09T12:00:${String(seq).padStart(2, "0")}.000Z`,
+    ...over,
+  };
+}
+
+function local(over: Partial<ThreadMessage> = {}): ThreadMessage {
+  return {
+    id: null,
+    client_msg_id: "cid-local",
+    student_id: STUDENT,
+    sender_role: "student",
+    sender_id: null,
+    body: "olá",
+    attached_item_id: null,
+    attached_exercise_name: null,
+    created_at: "2026-10-09T13:00:00.000Z",
+    status: "sending",
+    ...over,
+  };
+}
+
+describe("mergeRows: juntar, deduplicar e ordenar", () => {
+  it("ordena por created_at mesmo chegando fora de ordem", () => {
+    const a = row({ created_at: "2026-10-09T10:00:00.000Z" });
+    const b = row({ created_at: "2026-10-09T09:00:00.000Z" });
+    const c = row({ created_at: "2026-10-09T11:00:00.000Z" });
+    const out = mergeRows(mergeRows([], [a]), [c, b]);
+    expect(out.map((m) => m.id)).toEqual([b.id, a.id, c.id]);
+  });
+
+  it("desempata pelo id quando o horário é igual", () => {
+    const x = row({ id: "b", created_at: "2026-10-09T10:00:00.000Z" });
+    const y = row({ id: "a", created_at: "2026-10-09T10:00:00.000Z" });
+    expect(mergeRows([], [x, y]).map((m) => m.id)).toEqual(["a", "b"]);
+  });
+
+  it("a mesma linha vinda duas vezes (recarga + Realtime) aparece uma vez só", () => {
+    const a = row();
+    const out = mergeRows(mergeRows([], [a]), [{ ...a }]);
+    expect(out).toHaveLength(1);
+  });
+
+  it("mensagem local é substituída pela linha do banco com o mesmo client_msg_id — chegue antes o retorno ou o Realtime", () => {
+    const sending = addLocal([], local());
+    const server = row({ client_msg_id: "cid-local", body: "olá" });
+    const viaRealtime = mergeRows(sending, [server]);
+    expect(viaRealtime).toHaveLength(1);
+    expect(viaRealtime[0]).toMatchObject({ id: server.id, status: "sent" });
+    // O retorno do RPC chega depois do Realtime: continua uma só.
+    expect(mergeRows(viaRealtime, [server])).toHaveLength(1);
+  });
+
+  it("o mesmo client_msg_id de remetentes diferentes (aluno × professor) não colide", () => {
+    const fromStudent = row({ client_msg_id: "same" });
+    const fromStaff = row({ client_msg_id: "same", sender_role: "staff", sender_id: STAFF });
+    expect(mergeRows([], [fromStudent, fromStaff])).toHaveLength(2);
+    expect(messageKey(fromStudent as unknown as ThreadMessage)).not.toBe(messageKey(fromStaff as unknown as ThreadMessage));
+  });
+
+  it("envios locais ficam sempre no fim; confirmadas vêm antes, em ordem", () => {
+    const early = row({ created_at: "2026-10-09T08:00:00.000Z" });
+    const withLocal = addLocal(mergeRows([], [early]), local({ created_at: "2026-10-09T07:00:00.000Z" }));
+    const later = row({ created_at: "2026-10-09T09:00:00.000Z" });
+    const out = mergeRows(withLocal, [later]);
+    expect(out.map((m) => m.status)).toEqual(["sent", "sent", "sending"]);
+  });
+});
+
+describe("envio local: falha, reenvio e edição", () => {
+  it("falha de rede marca como não enviada; reenvio volta a 'sending' com a mesma chave", () => {
+    const l = local();
+    const key = messageKey(l);
+    const failed = setLocalStatus(addLocal([], l), key, "failed");
+    expect(failed[0].status).toBe("failed");
+    const again = addLocal(failed, l);
+    expect(again).toHaveLength(1);
+    expect(again[0].status).toBe("sending");
+  });
+
+  it("não rebaixa uma mensagem já confirmada", () => {
+    const server = row({ client_msg_id: "cid-local", body: "olá" });
+    const sent = mergeRows([], [server]);
+    expect(addLocal(sent, local())).toEqual(sent);
+    expect(setLocalStatus(sent, messageKey(sent[0]), "failed")[0].status).toBe("sent");
+    expect(removeLocal(sent, messageKey(sent[0]))).toHaveLength(1);
+  });
+
+  it("editar tira a não enviada da lista", () => {
+    const l = local();
+    const list = setLocalStatus(addLocal([], l), messageKey(l), "failed");
+    expect(removeLocal(list, messageKey(l))).toEqual([]);
+  });
+});
+
+describe("pickClientMsgId: reenvio reusa o id, edição gera outro", () => {
+  const gen = () => "novo";
+  const last = { clientMsgId: "antigo", body: "oi", attachedItemId: null };
+  it("sem tentativa anterior → id novo", () => expect(pickClientMsgId(null, "oi", null, gen)).toBe("novo"));
+  it("mesmo texto e mesmo anexo → mesmo id", () => expect(pickClientMsgId(last, "oi", null, gen)).toBe("antigo"));
+  it("texto editado → id novo", () => expect(pickClientMsgId(last, "oi!", null, gen)).toBe("novo"));
+  it("anexo trocado → id novo", () => expect(pickClientMsgId(last, "oi", "item-1", gen)).toBe("novo"));
+});
+
+describe("normalizeBody e classifySendError", () => {
+  it("tira espaços das pontas e corta em 2000", () => {
+    expect(normalizeBody("  oi  ")).toBe("oi");
+    expect(normalizeBody("x".repeat(2500))).toHaveLength(2000);
+  });
+  it("RATE_LIMITED do banco → mensagem amigável", () => expect(classifySendError({ code: "P0001", message: "RATE_LIMITED" })).toBe("rate_limited"));
+  it("sem resposta do servidor → rede", () => {
+    expect(classifySendError({ message: "TypeError: Failed to fetch" })).toBe("network");
+    expect(classifySendError({ code: "", message: "Load failed" })).toBe("network");
+  });
+  it("outra recusa do banco → outra", () => expect(classifySendError({ code: "P0002", message: "STUDENT_NOT_FOUND" })).toBe("other"));
+});
+
+describe("dayLabel (São Paulo) e cursor de mensagens anteriores", () => {
+  const now = new Date("2026-10-09T15:00:00.000Z"); // 12h em SP
+  it("hoje, ontem e data", () => {
+    expect(dayLabel("2026-10-09T13:00:00.000Z", now)).toBe("Hoje");
+    expect(dayLabel("2026-10-08T20:00:00.000Z", now)).toBe("Ontem");
+    expect(dayLabel("2026-10-01T12:00:00.000Z", now)).toBe("01/10/2026");
+  });
+  it("virada do dia em SP, não em UTC: 01:30 UTC de 09/10 ainda é 08/10 em SP", () => {
+    expect(dayLabel("2026-10-09T01:30:00.000Z", now)).toBe("Ontem");
+  });
+  it("oldestSentAt ignora envios locais", () => {
+    const a = row({ created_at: "2026-10-09T08:00:00.000Z" });
+    expect(oldestSentAt(addLocal([], local()))).toBeNull();
+    expect(oldestSentAt(addLocal(mergeRows([], [a]), local()))).toBe(a.created_at);
+  });
+});

@@ -185,7 +185,6 @@ export interface NavItem {
   icon: LucideIcon;
   /** Só "available" navega. Ausente = módulo em construção: aparece desabilitado com "Em breve". */
   status?: "available" | "soon";
-  badge?: number;
   children?: NavChild[];
 }
 
