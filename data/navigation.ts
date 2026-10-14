@@ -1,5 +1,6 @@
 import {
   Apple,
+  BookOpen,
   CalendarDays,
   ClipboardCheck,
   Dumbbell,
@@ -91,6 +92,7 @@ export const navigation: NavSection[] = [
     id: "sistema",
     title: "Sistema",
     items: [
+      { id: "ajuda", label: "Ajuda", href: "/ajuda", icon: BookOpen, status: "available" },
       { id: "configuracoes", label: "Configurações", href: "/configuracoes", icon: Settings },
       { id: "impressoes", label: "Impressões", href: "/impressoes", icon: Printer },
       { id: "suporte", label: "Suporte", href: "/suporte", icon: LifeBuoy },

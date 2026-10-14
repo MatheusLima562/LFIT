@@ -101,6 +101,7 @@ features/
   auth/                    # schemas.ts (Zod), actions.ts (server actions), components/
   organizations/queries.ts # uso do plano (RPC organization_plan_usage)
   chat/                    # thread.ts (lógica pura), hooks.ts (Realtime, selos), queries.ts, components/ (conversa, caixa)
+  help/                    # tutoriais: tutorials.ts (frontmatter), markdown.ts (Markdown mínimo, sem dependência), queries.ts
   students/                # search-params.ts (estado da URL), schemas.ts (form Zod), queries.ts, actions.ts,
                            # account.ts, access-actions.ts (link do aluno), components/ (lista, form/, modal)
 components/
@@ -117,6 +118,7 @@ lib/
   dates.ts                 # dd/mm/aaaa ↔ ISO, fim do dia em SP, máscara
   phone.ts                 # países (pt-BR), máscara, E.164
 messages/pt-BR.ts          # textos da UI + tradução dos códigos de erro das RPCs
+content/tutoriais/         # tutoriais em Markdown (README = convenções); professor/ → /ajuda no painel, aluno/ reservado
 data/                      # navegação (status de cada módulo), ações rápidas, mocks do dashboard
 supabase/migrations/       # schema, RLS e RPCs
 scripts/                   # seed.mts, bootstrap-owner.mts
@@ -167,6 +169,8 @@ tests/unit/                # testes de lógica pura (sem banco)
     `lib/brand-color.ts` (`validateBrandColor`, base da validação do white label).
 - Tema escuro: use os tokens (`surface`, `canvas`, `line`, `ink*`, semânticos). Os tons 50–200 e 700–800
   de emerald/amber/violet/red/teal/sky/rose/orange/zinc seguem remapeados no `.dark` do globals.css (legado/decoração).
+- Ao alterar uma tela do professor, atualizar o tutorial correspondente em `content/tutoriais/` e o campo `updated`
+  (convenções em `content/tutoriais/README.md`; o teste `tests/unit/tutorials.test.ts` valida frontmatter, slug e links).
 - Commits pequenos em conventional commits (`feat:`, `fix:`, `chore:`...).
 - Não instalar dependência sem justificar.
 - Spec ambígua ou em conflito com o código → **parar e perguntar**.

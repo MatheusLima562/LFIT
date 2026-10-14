@@ -1220,6 +1220,16 @@ export const messages = {
       notFound: "Conversa não encontrada.",
     },
   },
+  /** Tutoriais do professor (/ajuda). O conteúdo vem de content/tutoriais/professor/. */
+  help: {
+    title: "Ajuda",
+    subtitle: "Tutoriais passo a passo para usar o LFit no dia a dia.",
+    listLabel: "Tutoriais",
+    empty: "Nenhum tutorial publicado ainda.",
+    updated: (date: string) => `Atualizado em ${date}`,
+    back: "Voltar para a Ajuda",
+    toc: "Neste tutorial",
+  },
   validation: {
     required: "Campo obrigatório.",
     email: "Informe um e-mail válido.",
