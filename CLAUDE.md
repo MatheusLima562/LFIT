@@ -84,6 +84,18 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
 - Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`), idempotentes (limpam o que
   criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
+Vídeos de tutorial **[existe]** (`e2e/tutoriais/NN-nome.roteiro.mjs`; mesma trava do lfit-dev e usuários fictícios do seed):
+
+```bash
+npm run build                                   # o script usa a porta 3100 ou sobe o next start sozinho
+npm run tutoriais:video -- 01-visao-geral       # ou 01 02 03 / todos; --legenda-na-tela escreve a legenda no vídeo
+```
+
+- Saída em `tutoriais-video/` (no `.gitignore`; nada de binário no git): `.webm` 1280×720 + `.srt` sincronizado.
+- Grava com o próprio Chrome (CDP screencast + `MediaRecorder`), sem ffmpeg: o `recordVideo` do Playwright exige baixar o
+  ffmpeg dele fora do projeto. Como gravar, regravar e hospedar (YouTube/Loom): `content/tutoriais/README.md`.
+- Passo que não funciona com o seed: ajuste o roteiro, nunca o código do sistema.
+
 ## Estrutura de pastas
 
 Atual **[existe]**:
@@ -119,6 +131,7 @@ lib/
   phone.ts                 # países (pt-BR), máscara, E.164
 messages/pt-BR.ts          # textos da UI + tradução dos códigos de erro das RPCs
 content/tutoriais/         # tutoriais em Markdown (README = convenções); professor/ → /ajuda no painel, aluno/ reservado
+e2e/tutoriais/             # roteiros dos vídeos de tutorial (npm run tutoriais:video) → tutoriais-video/ (fora do git)
 data/                      # navegação (status de cada módulo), ações rápidas, mocks do dashboard
 supabase/migrations/       # schema, RLS e RPCs
 scripts/                   # seed.mts, bootstrap-owner.mts
@@ -170,7 +183,9 @@ tests/unit/                # testes de lógica pura (sem banco)
 - Tema escuro: use os tokens (`surface`, `canvas`, `line`, `ink*`, semânticos). Os tons 50–200 e 700–800
   de emerald/amber/violet/red/teal/sky/rose/orange/zinc seguem remapeados no `.dark` do globals.css (legado/decoração).
 - Ao alterar uma tela do professor, atualizar o tutorial correspondente em `content/tutoriais/` e o campo `updated`
-  (convenções em `content/tutoriais/README.md`; o teste `tests/unit/tutorials.test.ts` valida frontmatter, slug e links).
+  (convenções em `content/tutoriais/README.md`; o teste `tests/unit/tutorials.test.ts` valida frontmatter, slug e links)
+  e **regravar o vídeo afetado** (`npm run tutoriais:video -- <roteiro>`; tabela vídeo × seção no README dos tutoriais).
+  `video_url` no frontmatter (opcional) só aceita YouTube ou Loom.
 - Commits pequenos em conventional commits (`feat:`, `fix:`, `chore:`...).
 - Não instalar dependência sem justificar.
 - Spec ambígua ou em conflito com o código → **parar e perguntar**.

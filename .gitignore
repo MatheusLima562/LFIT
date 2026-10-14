@@ -49,3 +49,6 @@ e2e/.output/
 
 # Claude Code (config local, por máquina)
 .claude/settings.local.json
+
+# Vídeos de tutorial gerados por npm run tutoriais:video (binários fora do git)
+/tutoriais-video/

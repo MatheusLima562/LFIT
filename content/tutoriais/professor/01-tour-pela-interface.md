@@ -99,7 +99,7 @@ Em [Chat](/chat) ficam as conversas com os seus alunos. As conversas com mensage
 1. Abra [Meus alunos](/alunos) e clique em **Adicionar aluno**.
 2. Preencha **Nome**, **Sobrenome** e **E-mail** (obrigatórios). Os outros campos são opcionais.
 3. Se você é o administrador, escolha o **Professor responsável**. Se você é professor, você será o responsável.
-4. Para o aluno usar o app, marque **Enviar convite de acesso**.
+4. Para o aluno usar o app, deixe ligado **Enviar convite de acesso** (já vem ligado).
 5. Clique em **Cadastrar aluno**.
 
 > Exemplo fictício: Marina Teixeira, marina.teixeira@example.com.

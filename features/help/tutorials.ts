@@ -11,6 +11,8 @@ export interface TutorialMeta {
   order: number;
   /** AAAA-MM-DD */
   updated: string;
+  /** Opcional (`video_url`): vídeo no topo do tutorial; só YouTube ou Loom (ver video.ts), o resto é ignorado. */
+  videoUrl: string | null;
 }
 
 export interface Tutorial extends TutorialMeta {
@@ -71,6 +73,7 @@ export function parseTutorial(slug: string, raw: string, folderAudience?: string
     audience: fields.audience as Audience,
     order: Number(fields.order),
     updated: fields.updated,
+    videoUrl: fields.video_url || null,
     body: text.slice(match[0].length).trim(),
   };
 }

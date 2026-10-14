@@ -1229,6 +1229,12 @@ export const messages = {
     updated: (date: string) => `Atualizado em ${date}`,
     back: "Voltar para a Ajuda",
     toc: "Neste tutorial",
+    withVideo: "Com vídeo",
+    video: {
+      play: "Assistir ao vídeo",
+      title: (tutorial: string) => `Vídeo: ${tutorial}`,
+      privacy: (provider: string) => `O vídeo vem do ${provider} e só carrega quando você clicar. O passo a passo está logo abaixo.`,
+    },
   },
   validation: {
     required: "Campo obrigatório.",

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Markdown } from "@/features/help/components/Markdown";
+import { TutorialVideo } from "@/features/help/components/TutorialVideo";
 import { getTutorial } from "@/features/help/queries";
+import { tutorialVideoEmbed } from "@/features/help/video";
 import { requireStaff } from "@/lib/auth/session";
 import { isoToBR } from "@/lib/dates";
 import { messages } from "@/messages/pt-BR";
@@ -21,6 +23,7 @@ export default async function TutorialPage({ params }: PageProps<"/ajuda/[slug]"
   const { slug } = await params;
   const tutorial = await getTutorial("professor", slug);
   if (!tutorial) notFound();
+  const video = tutorialVideoEmbed(tutorial.videoUrl);
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
@@ -33,6 +36,7 @@ export default async function TutorialPage({ params }: PageProps<"/ajuda/[slug]"
         <p className="mt-1 text-[14px] text-ink-2">{tutorial.summary}</p>
         <p className="mt-1 text-xs text-ink-3">{t.updated(isoToBR(tutorial.updated))}</p>
       </header>
+      {video && <TutorialVideo src={video.src} provider={video.provider} title={tutorial.title} />}
       <Markdown source={tutorial.body} />
     </article>
   );

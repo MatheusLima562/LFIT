@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronRight, CirclePlay } from "lucide-react";
 import { listTutorials } from "@/features/help/queries";
+import { tutorialVideoEmbed } from "@/features/help/video";
 import { requireStaff } from "@/lib/auth/session";
 import { isoToBR } from "@/lib/dates";
 import { messages } from "@/messages/pt-BR";
@@ -37,7 +38,15 @@ export default async function HelpPage() {
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold text-ink">{tut.title}</span>
                   <span className="mt-0.5 block text-[13px] text-ink-2">{tut.summary}</span>
-                  <span className="mt-1 block text-xs text-ink-3">{t.updated(isoToBR(tut.updated))}</span>
+                  <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-3">
+                    {t.updated(isoToBR(tut.updated))}
+                    {tutorialVideoEmbed(tut.videoUrl) && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-0.5 font-medium text-ink-2 ring-1 ring-line">
+                        <CirclePlay aria-hidden className="size-3.5" />
+                        {t.withVideo}
+                      </span>
+                    )}
+                  </span>
                 </span>
                 <ChevronRight aria-hidden className="size-4 shrink-0 text-ink-3" />
               </Link>
