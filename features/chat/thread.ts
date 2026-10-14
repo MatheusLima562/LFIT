@@ -109,6 +109,44 @@ export function normalizeBody(body: string): string {
 
 export type SendFailure = "network" | "rate_limited" | "other";
 
+export const SEND_TIMEOUT_MS = 15_000;
+
+export interface RpcOutcome<T> {
+  data: T | null;
+  error: { code?: string; message?: string } | null;
+}
+
+/**
+ * Executa o envio com prazo: passado o prazo, aborta a requisição e devolve um erro de rede; exceção (inclusive
+ * síncrona) também vira erro de rede. Nunca fica pendente — o envio sempre termina em "enviada" ou "Não enviada"
+ * (e o reenvio usa o mesmo client_msg_id, então uma gravação que chegou ao banco não duplica).
+ */
+export async function runWithTimeout<T>(
+  run: (signal: AbortSignal) => PromiseLike<RpcOutcome<T>>,
+  ms: number = SEND_TIMEOUT_MS,
+): Promise<RpcOutcome<T>> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<RpcOutcome<T>>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve({ data: null, error: { message: "network timeout" } });
+    }, ms);
+  });
+  const attempt = (async () => {
+    try {
+      return await run(controller.signal);
+    } catch (e) {
+      return { data: null, error: { message: `network ${e instanceof Error ? e.name : "error"}` } };
+    }
+  })();
+  try {
+    return await Promise.race([attempt, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Erro de rede (sem resposta do servidor) × recusa do banco. */
 export function classifySendError(error: { code?: string; message?: string } | null | undefined): SendFailure {
   if (!error) return "other";

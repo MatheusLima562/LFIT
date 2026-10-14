@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { messages as m } from "@/messages/pt-BR";
-import { type Attachment, type ChatViewer, useChatThread } from "../hooks";
+import { type Attachment, type ChatViewer, type SendResult, useChatThread } from "../hooks";
 import { CHAT_MAX_LENGTH, type ChatRow, dayLabel, messageKey, type ThreadMessage } from "../thread";
 
 const t = m.chat;
@@ -81,8 +81,15 @@ export function ChatThread(props: ChatThreadProps) {
     stickToBottom.current = true;
     setDraft("");
     setAttachment(null);
-    const result = await thread.send(body, sentAttachment);
-    setBusy(false);
+    let result: SendResult;
+    try {
+      result = await thread.send(body, sentAttachment);
+    } catch {
+      // Nada pode deixar o botão girando: qualquer falha inesperada devolve o texto ao campo.
+      result = "other";
+    } finally {
+      setBusy(false);
+    }
     if (result === "network") setNotice(t.sendFailedNetwork);
     else if (result === "rate_limited" || result === "other") {
       // Recusado pelo banco: o texto volta ao campo (enviar de novo sem editar reusa o mesmo id).
@@ -103,7 +110,12 @@ export function ChatThread(props: ChatThreadProps) {
 
   const retryFailed = async (msg: ThreadMessage) => {
     setNotice(null);
-    const result = await thread.retry(msg);
+    let result: SendResult;
+    try {
+      result = await thread.retry(msg);
+    } catch {
+      result = "network";
+    }
     if (result === "network") setNotice(t.sendFailedNetwork);
     else if (result !== "sent") {
       setDraft(msg.body);

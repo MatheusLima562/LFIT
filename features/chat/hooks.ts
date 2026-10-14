@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/db/client";
+import { uuidV4 } from "@/lib/uuid";
 import {
   addLocal,
   CHAT_PAGE_SIZE,
@@ -13,6 +14,7 @@ import {
   oldestSentAt,
   pickClientMsgId,
   removeLocal,
+  runWithTimeout,
   type SendAttempt,
   type SendFailure,
   setLocalStatus,
@@ -160,12 +162,17 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
   const deliver = useCallback(
     async (m: ThreadMessage): Promise<SendResult> => {
       const key = messageKey(m);
-      const { data, error } = await supabase.rpc("send_chat_message", {
-        p_student_id: studentId,
-        p_body: m.body,
-        p_client_msg_id: m.client_msg_id,
-        ...(m.attached_item_id ? { p_attached_item_id: m.attached_item_id } : {}),
-      });
+      // Prazo de 15 s: sem resposta, aborta e vira "Não enviada" (o reenvio usa o mesmo client_msg_id).
+      const { data, error } = await runWithTimeout((signal) =>
+        supabase
+          .rpc("send_chat_message", {
+            p_student_id: studentId,
+            p_body: m.body,
+            p_client_msg_id: m.client_msg_id,
+            ...(m.attached_item_id ? { p_attached_item_id: m.attached_item_id } : {}),
+          })
+          .abortSignal(signal),
+      );
       if (!error && data) {
         setMessages((cur) => mergeRows(cur, [data]));
         lastAttempt.current = null;
@@ -183,7 +190,7 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
     (rawBody: string, attachment: Attachment | null): Promise<SendResult> => {
       const body = normalizeBody(rawBody);
       const attachedItemId = attachment?.id ?? null;
-      const clientMsgId = pickClientMsgId(lastAttempt.current, body, attachedItemId, () => crypto.randomUUID());
+      const clientMsgId = pickClientMsgId(lastAttempt.current, body, attachedItemId, uuidV4);
       lastAttempt.current = { clientMsgId, body, attachedItemId };
       const local: ThreadMessage = {
         id: null,

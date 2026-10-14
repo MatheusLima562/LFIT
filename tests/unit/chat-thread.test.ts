@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addLocal,
   type ChatRow,
@@ -10,6 +10,8 @@ import {
   oldestSentAt,
   pickClientMsgId,
   removeLocal,
+  runWithTimeout,
+  SEND_TIMEOUT_MS,
   setLocalStatus,
   type ThreadMessage,
 } from "@/features/chat/thread";
@@ -160,5 +162,81 @@ describe("dayLabel (São Paulo) e cursor de mensagens anteriores", () => {
     const a = row({ created_at: "2026-10-09T08:00:00.000Z" });
     expect(oldestSentAt(addLocal([], local()))).toBeNull();
     expect(oldestSentAt(addLocal(mergeRows([], [a]), local()))).toBe(a.created_at);
+  });
+});
+
+describe("runWithTimeout: o envio nunca fica pendente", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("sem resposta em 15 s: aborta a requisição e devolve erro de rede (vira 'Não enviada')", async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    const pending = runWithTimeout<{ id: string }>((s) => {
+      signal = s;
+      return new Promise(() => {});
+    });
+    await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS - 1);
+    expect(signal!.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const out = await pending;
+    expect(signal!.aborted).toBe(true);
+    expect(out.data).toBeNull();
+    expect(classifySendError(out.error)).toBe("network");
+  });
+
+  it("resposta a tempo passa direto e não aborta", async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    const out = await runWithTimeout(async (s) => {
+      signal = s;
+      return { data: { id: "x" }, error: null };
+    });
+    expect(out).toEqual({ data: { id: "x" }, error: null });
+    await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS * 2);
+    expect(signal!.aborted).toBe(false);
+  });
+
+  it("recusa do banco a tempo continua sendo recusa (não vira rede)", async () => {
+    const out = await runWithTimeout(async () => ({ data: null, error: { code: "P0001", message: "RATE_LIMITED" } }));
+    expect(classifySendError(out.error)).toBe("rate_limited");
+  });
+
+  it("exceção (inclusive síncrona) vira erro de rede, nunca rejeição pendurada", async () => {
+    const thrown = await runWithTimeout(() => {
+      throw new TypeError("crypto.randomUUID is not a function");
+    });
+    expect(classifySendError(thrown.error)).toBe("network");
+    const rejected = await runWithTimeout(() => Promise.reject(new TypeError("Load failed")));
+    expect(classifySendError(rejected.error)).toBe("network");
+  });
+});
+
+describe("reenvio depois de falha usa o MESMO client_msg_id", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("timeout → bolha 'Não enviada' → 'Tentar de novo' com o mesmo id e a mesma chave (a RPC idempotente não duplica)", async () => {
+    vi.useFakeTimers();
+    let n = 0;
+    const gen = () => `id-${++n}`;
+    const clientMsgId = pickClientMsgId(null, "oi", null, gen);
+    const attempt = { clientMsgId, body: "oi", attachedItemId: null };
+    const l = local({ client_msg_id: clientMsgId, body: "oi" });
+
+    const pending = runWithTimeout<ChatRow>(() => new Promise(() => {}));
+    await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS);
+    const out = await pending;
+    expect(classifySendError(out.error)).toBe("network");
+    const failed = setLocalStatus(addLocal([], l), messageKey(l), "failed");
+    expect(failed[0].status).toBe("failed");
+
+    // Reenviar o mesmo texto (pelo botão ou digitando igual) reusa o id; a linha gravada substitui a bolha.
+    expect(pickClientMsgId(attempt, "oi", null, gen)).toBe(clientMsgId);
+    const retried = addLocal(failed, l);
+    expect(retried).toHaveLength(1);
+    expect(retried[0]).toMatchObject({ client_msg_id: clientMsgId, status: "sending" });
+    const saved = mergeRows(retried, [row({ client_msg_id: clientMsgId, body: "oi" })]);
+    expect(saved).toHaveLength(1);
+    expect(saved[0].status).toBe("sent");
+    expect(n).toBe(1);
   });
 });

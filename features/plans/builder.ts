@@ -4,6 +4,7 @@
  * payload de save_training_plan. Testada em tests/unit/plan-builder.test.ts.
  */
 import { isoToBR, parseBRDate } from "@/lib/dates";
+import { uuidV4 } from "@/lib/uuid";
 import { messages } from "@/messages/pt-BR";
 import type { QuantityUnit, SpeedPreset } from "./prescription";
 import { planPayloadSchema, type LoadUnit, type PlanLevel, type PlanPayload, type SetType } from "./schemas";
@@ -86,8 +87,8 @@ export interface Block<T extends { key: string; groupKey: string | null } = Item
   items: T[];
 }
 
-export const newKey = () => crypto.randomUUID();
-export const newGroupKey = () => `g${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
+export const newKey = () => uuidV4();
+export const newGroupKey = () => `g${uuidV4().replace(/-/g, "").slice(0, 10)}`;
 
 export function emptyPrescription(): PrescriptionDraft {
   return {

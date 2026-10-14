@@ -28,6 +28,7 @@ import { DateField } from "./form/DateField";
 import { GroupsField, type GroupOption } from "./form/GroupsField";
 import { PhoneField } from "./form/PhoneField";
 import { PHOTO_TYPES, PhotoField, type PhotoValue } from "./form/PhotoField";
+import { uuidV4 } from "@/lib/uuid";
 
 const t = messages.studentForm;
 const NONE = "none";
@@ -118,7 +119,7 @@ export function StudentFormDialog({
       const warnings = [...result.warnings];
       if (photo.file) {
         const ext = PHOTO_TYPES[photo.file.type as keyof typeof PHOTO_TYPES];
-        const path = `${organizationId}/${result.studentId}/${crypto.randomUUID()}.${ext}`;
+        const path = `${organizationId}/${result.studentId}/${uuidV4()}.${ext}`;
         const upload = await createClient().storage.from("student-photos").upload(path, photo.file, {
           contentType: photo.file.type,
         });

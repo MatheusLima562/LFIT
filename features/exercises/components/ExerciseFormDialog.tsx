@@ -24,6 +24,7 @@ import { CONTRAINDICATION_LEVELS, MUSCLE_GROUPS, type ContraindicationLevel } fr
 import type { ConditionOption, ExerciseDetail } from "../queries";
 import { emptyExerciseForm, exerciseFormSchema, type ExerciseFormInput } from "../schemas";
 import { LevelBadge } from "./LevelBadge";
+import { uuidV4 } from "@/lib/uuid";
 
 const t = messages.exercises;
 
@@ -72,12 +73,12 @@ export function ExerciseFormDialog({ exercise, conditions, equipment, closeHref,
       setUploading(true);
       const storage = createClient().storage.from("exercise-media");
       const base = `${organizationId}/${id}/`;
-      const videoPath = `${base}${crypto.randomUUID()}.${VIDEO_TYPES[p.mime]}`;
+      const videoPath = `${base}${uuidV4()}.${VIDEO_TYPES[p.mime]}`;
       const up = await storage.upload(videoPath, p.file, { contentType: p.mime, cacheControl: "604800" });
       if (up.error) return [t.media.errors.upload];
       let posterPath: string | null = null;
       if (p.poster) {
-        const candidate = `${base}${crypto.randomUUID()}.jpg`;
+        const candidate = `${base}${uuidV4()}.jpg`;
         const pu = await storage.upload(candidate, p.poster, { contentType: "image/jpeg", cacheControl: "604800" });
         if (!pu.error) posterPath = candidate;
       }

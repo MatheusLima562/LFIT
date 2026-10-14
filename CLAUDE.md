@@ -418,6 +418,10 @@ effective_status =
   de 16 px, lista com `aria-live`) e `/chat` no painel (caixa `list_chat_inbox` + conversa, `?aluno=<id>`; item "Chat"
   do menu `available`, selo real de `staff_total_unread_count` no lugar do mock). Barra do aluno com **3 abas** (Hoje ·
   Histórico · Chat); Perfil entra na 3.2. Código em `features/chat/`:
+  - **UUID no cliente sempre por `uuidV4()` (`lib/uuid.ts`)**, nunca `crypto.randomUUID` direto: ele não existe fora de
+    contexto seguro (http pelo IP da rede, como o iPhone em teste) e travava o envio. O fallback usa
+    `crypto.getRandomValues`. Envio com prazo de 15 s (`runWithTimeout`, aborta a requisição): estourou ou falhou →
+    "Não enviada · Tentar de novo", reenvio com o mesmo id.
   - Envio **do navegador direto para `send_chat_message`** (nunca server action), sempre com `client_msg_id`: reenviar o
     mesmo texto/anexo reusa o id, texto ou anexo editado gera outro. A mensagem local é deduplicada com o retorno do RPC
     e com o evento do Realtime pela chave remetente + `client_msg_id`. Sem rede → "Não enviada · Tentar de novo /
