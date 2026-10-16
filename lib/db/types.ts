@@ -268,23 +268,33 @@ export type Database = {
       chat_reads: {
         Row: {
           last_read_at: string
+          last_read_message_id: string | null
           reader_id: string
           reader_role: string
           student_id: string
         }
         Insert: {
           last_read_at?: string
+          last_read_message_id?: string | null
           reader_id: string
           reader_role: string
           student_id: string
         }
         Update: {
           last_read_at?: string
+          last_read_message_id?: string | null
           reader_id?: string
           reader_role?: string
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_reads_last_read_message_id_fkey"
+            columns: ["last_read_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_reads_student_id_fkey"
             columns: ["student_id"]
@@ -2506,16 +2516,11 @@ export type Database = {
           created_at: string
           id: string
           organization_id: string
+          sender_first_name: string
           sender_id: string | null
           sender_role: string
           student_id: string
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "chat_messages"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_announcement: {
@@ -2634,7 +2639,10 @@ export type Database = {
         Args: { p_count: number; p_filters: Json; p_format: string }
         Returns: undefined
       }
-      mark_chat_read: { Args: { p_student_id: string }; Returns: undefined }
+      mark_chat_read: {
+        Args: { p_student_id: string; p_until_message_id: string }
+        Returns: undefined
+      }
       organization_plan_usage: {
         Args: never
         Returns: {

@@ -1,7 +1,11 @@
 import { isoToBR, timestampToISODate, todayISO } from "@/lib/dates";
 import type { Database } from "@/lib/db/types";
 
-export type ChatRow = Database["public"]["Tables"]["chat_messages"]["Row"];
+/**
+ * Linha do chat: a da tabela (Realtime, retorno do envio) ou a de get_chat_messages, que traz também o primeiro nome
+ * de quem enviou (staff). O Realtime não traz o nome.
+ */
+export type ChatRow = Database["public"]["Tables"]["chat_messages"]["Row"] & { sender_first_name?: string | null };
 
 export const CHAT_MAX_LENGTH = 2000;
 export const CHAT_PAGE_SIZE = 50;
@@ -16,6 +20,8 @@ export interface ThreadMessage {
   student_id: string;
   sender_role: "student" | "staff";
   sender_id: string | null;
+  /** Primeiro nome do staff (get_chat_messages); nulo nas do aluno e enquanto não se sabe (Realtime). */
+  sender_first_name: string | null;
   body: string;
   attached_item_id: string | null;
   attached_exercise_name: string | null;
@@ -39,6 +45,7 @@ export function fromRow(row: ChatRow): ThreadMessage {
     student_id: row.student_id,
     sender_role: row.sender_role === "staff" ? "staff" : "student",
     sender_id: row.sender_id,
+    sender_first_name: row.sender_role === "staff" ? (row.sender_first_name ?? null) : null,
     body: row.body,
     attached_item_id: row.attached_item_id,
     attached_exercise_name: row.attached_exercise_name,
@@ -62,8 +69,39 @@ function order(list: ThreadMessage[]): ThreadMessage[] {
 export function mergeRows(current: ThreadMessage[], rows: ChatRow[]): ThreadMessage[] {
   if (rows.length === 0) return current;
   const byKey = new Map(current.map((m) => [messageKey(m), m]));
-  for (const row of rows) byKey.set(messageKey(fromRow(row)), fromRow(row));
+  for (const row of rows) {
+    const next = fromRow(row);
+    const key = messageKey(next);
+    // O Realtime não traz o nome: não apaga o que uma busca anterior já trouxe.
+    byKey.set(key, { ...next, sender_first_name: next.sender_first_name ?? byKey.get(key)?.sender_first_name ?? null });
+  }
   return order([...byKey.values()]);
+}
+
+/**
+ * A mensagem mais recente que está na tela (confirmada pelo banco): é até ela que a conversa vira "lida". Envios locais
+ * sem confirmação não têm id e ficam de fora.
+ */
+export function latestShownMessageId(list: ThreadMessage[]): string | null {
+  for (let i = list.length - 1; i >= 0; i--) {
+    const m = list[i];
+    if (m.status === "sent" && m.id) return m.id;
+  }
+  return null;
+}
+
+/** Primeiro nome conhecido de cada membro da equipe na conversa (para mensagens do Realtime, que vêm sem nome). */
+export function staffNamesFrom(list: ThreadMessage[]): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const m of list) if (m.sender_role === "staff" && m.sender_id && m.sender_first_name) names.set(m.sender_id, m.sender_first_name);
+  return names;
+}
+
+/** Na tela do aluno, o nome do professor aparece acima da bolha quando o remetente muda. */
+export function startsSenderRun(prev: ThreadMessage | undefined, cur: ThreadMessage): boolean {
+  if (!prev) return true;
+  if (prev.sender_role !== cur.sender_role) return true;
+  return cur.sender_role === "staff" && prev.sender_id !== cur.sender_id;
 }
 
 /** Envio otimista: entra no fim como "sending" (substitui uma tentativa anterior com a mesma chave). */

@@ -323,14 +323,17 @@ async function seedChat(studentId: string) {
     [camila, "Combinado, obrigada!"],
   ];
   const yesterday = Date.now() - 86_400_000;
+  let lastId = "";
   for (const [i, [client, body]] of conversation.entries()) {
     const msg = must(
       await client.rpc("send_chat_message", { p_student_id: studentId, p_body: body, p_client_msg_id: randomUUID() }),
       "mensagem do chat",
     ) as { id: string };
     ok(await admin.from("chat_messages").update({ created_at: new Date(yesterday + i * 7 * 60_000).toISOString() }).eq("id", msg.id), "datar mensagem");
+    lastId = msg.id;
   }
-  ok(await camila.rpc("mark_chat_read", { p_student_id: studentId }), "chat lido pela aluna");
+  // A aluna leu até a última mensagem (a dela).
+  ok(await camila.rpc("mark_chat_read", { p_student_id: studentId, p_until_message_id: lastId }), "chat lido pela aluna");
 }
 
 async function seed() {

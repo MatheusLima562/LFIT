@@ -129,9 +129,13 @@ try {
   ok("aluno recebe a resposta sem recarregar", await waitText(sp, reply));
   await nav.getByRole("link", { name: "Hoje" }).click();
   await sp.waitForURL(`${BASE}/aluno`);
-  // Ao sair, a conversa marca como lida o que já estava na tela. mark_chat_read não recebe "lida até" (marca até o
-  // horário do servidor): uma mensagem gravada antes dessa marcação também conta como lida. Espera a marcação terminar.
-  await sp.waitForTimeout(2000);
+  // A conversa marca como lida até a última mensagem exibida (mark_chat_read com p_until_message_id). Espera o cursor da
+  // aluna chegar na resposta, em vez de um tempo fixo; a próxima mensagem fica não lida mesmo que a marcação atrase.
+  const { data: replyRow } = await admin.from("chat_messages").select("id, student_id").eq("body", reply).single();
+  ok("cursor da aluna vai até a resposta exibida", await until(async () => {
+    const { data } = await admin.from("chat_reads").select("last_read_message_id").eq("student_id", replyRow.student_id).eq("reader_role", "student").maybeSingle();
+    return data?.last_read_message_id === replyRow.id;
+  }));
   const second = `Outra resposta ${RUN}`;
   await caio.getByRole("textbox", { name: "Mensagem" }).fill(second);
   await caio.getByRole("textbox", { name: "Mensagem" }).press("Enter");

@@ -61,7 +61,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["get_my_active_plan", () => ({ p_student_id: otherId })],
     // 2.12: chat/recado/resumo de OUTRO aluno, e as de staff.
     ["send_chat_message", () => ({ p_student_id: otherId, p_body: "x", p_client_msg_id: randomUUID() })],
-    ["mark_chat_read", () => ({ p_student_id: otherId })],
+    ["mark_chat_read", () => ({ p_student_id: otherId, p_until_message_id: randomUUID() })],
     ["chat_unread_count", () => ({ p_student_id: otherId })],
     ["get_my_announcement", () => ({ p_student_id: otherId })],
     ["get_session_summary", () => ({ p_session_id: randomUUID() })],

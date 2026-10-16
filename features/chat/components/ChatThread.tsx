@@ -9,7 +9,7 @@ import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { messages as m } from "@/messages/pt-BR";
 import { type Attachment, type ChatViewer, type SendResult, useChatThread } from "../hooks";
-import { CHAT_MAX_LENGTH, type ChatRow, dayLabel, messageKey, type ThreadMessage } from "../thread";
+import { CHAT_MAX_LENGTH, type ChatRow, dayLabel, messageKey, staffNamesFrom, startsSenderRun, type ThreadMessage } from "../thread";
 
 const t = m.chat;
 
@@ -123,11 +123,13 @@ export function ChatThread(props: ChatThreadProps) {
     }
   };
 
+  const knownNames = staffNamesFrom(thread.messages);
   const senderLabel = (msg: ThreadMessage): string | null => {
     if (msg.sender_role === viewer.role && (viewer.role === "student" || msg.sender_id === viewer.staffId)) return null;
     if (msg.sender_role === "student") return studentLabel ?? null;
     if (viewer.role === "staff") return (msg.sender_id && staffNames?.[msg.sender_id]) || t.trainer;
-    return null;
+    // Aluno: primeiro nome do professor (get_chat_messages); mensagem do Realtime usa o nome já conhecido do remetente.
+    return msg.sender_first_name ?? (msg.sender_id ? knownNames.get(msg.sender_id) : undefined) ?? t.trainer;
   };
   const isMine = (msg: ThreadMessage) =>
     msg.sender_role === viewer.role && (viewer.role === "student" || msg.sender_id === viewer.staffId);
@@ -158,7 +160,7 @@ export function ChatThread(props: ChatThreadProps) {
             const showDay = msg.status === "sent" && (!prev || prev.status !== "sent" || dayLabel(prev.created_at) !== day);
             const mine = isMine(msg);
             const label = senderLabel(msg);
-            const showLabel = label && (!prev || prev.sender_role !== msg.sender_role || prev.sender_id !== msg.sender_id || showDay);
+            const showLabel = label && (startsSenderRun(prev, msg) || showDay);
             return (
               <Fragment key={messageKey(msg)}>
                 {showDay && (

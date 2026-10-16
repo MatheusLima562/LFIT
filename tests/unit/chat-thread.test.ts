@@ -4,6 +4,7 @@ import {
   type ChatRow,
   classifySendError,
   dayLabel,
+  latestShownMessageId,
   mergeRows,
   messageKey,
   normalizeBody,
@@ -13,6 +14,8 @@ import {
   runWithTimeout,
   SEND_TIMEOUT_MS,
   setLocalStatus,
+  staffNamesFrom,
+  startsSenderRun,
   type ThreadMessage,
 } from "@/features/chat/thread";
 
@@ -44,6 +47,7 @@ function local(over: Partial<ThreadMessage> = {}): ThreadMessage {
     student_id: STUDENT,
     sender_role: "student",
     sender_id: null,
+    sender_first_name: null,
     body: "olá",
     attached_item_id: null,
     attached_exercise_name: null,
@@ -238,5 +242,67 @@ describe("reenvio depois de falha usa o MESMO client_msg_id", () => {
     expect(saved).toHaveLength(1);
     expect(saved[0].status).toBe("sent");
     expect(n).toBe(1);
+  });
+});
+
+describe("leitura só até a mensagem exibida", () => {
+  it("latestShownMessageId: a última confirmada, ignorando envios locais sem id", () => {
+    const a = row({ created_at: "2026-10-09T10:00:00.000Z" });
+    const b = row({ created_at: "2026-10-09T10:00:01.000Z" });
+    const list = addLocal(mergeRows([], [b, a]), local());
+    expect(list.at(-1)?.status).toBe("sending");
+    expect(latestShownMessageId(list)).toBe(b.id);
+    expect(latestShownMessageId([])).toBeNull();
+    expect(latestShownMessageId([local()])).toBeNull();
+  });
+
+  it("empate de created_at: a 'última' segue a mesma ordem (created_at, id) do banco", () => {
+    const ts = "2026-10-09T10:00:00.000000Z";
+    const x = row({ id: "aaaaaaaa-0000-0000-0000-000000000000", created_at: ts });
+    const y = row({ id: "bbbbbbbb-0000-0000-0000-000000000000", created_at: ts });
+    expect(latestShownMessageId(mergeRows([], [y, x]))).toBe(y.id);
+  });
+});
+
+describe("primeiro nome de quem enviou (staff)", () => {
+  it("fromRow guarda o nome só nas mensagens do staff", () => {
+    const list = mergeRows([], [
+      row({ sender_role: "staff", sender_id: STAFF, sender_first_name: "Rafael" }),
+      row({ sender_role: "student", sender_first_name: "Não deveria" }),
+    ]);
+    expect(list.map((m) => m.sender_first_name)).toEqual(["Rafael", null]);
+  });
+
+  it("a mesma mensagem vinda do Realtime (sem nome) não apaga o nome já conhecido", () => {
+    const withName = row({ sender_role: "staff", sender_id: STAFF, sender_first_name: "Rafael" });
+    const { sender_first_name: _omit, ...fromRealtime } = withName;
+    void _omit;
+    const list = mergeRows(mergeRows([], [withName]), [fromRealtime]);
+    expect(list).toHaveLength(1);
+    expect(list[0].sender_first_name).toBe("Rafael");
+  });
+
+  it("staffNamesFrom: nome por remetente, para mensagens novas do Realtime", () => {
+    const list = mergeRows([], [
+      row({ sender_role: "staff", sender_id: STAFF, sender_first_name: "Rafael" }),
+      row({ sender_role: "staff", sender_id: STAFF }),
+    ]);
+    expect(staffNamesFrom(list).get(STAFF)).toBe("Rafael");
+  });
+
+  it("startsSenderRun: rótulo quando muda o remetente (aluno ↔ staff, ou outro membro da equipe)", () => {
+    const OTHER = "33333333-3333-3333-3333-333333333333";
+    const [s1, t1, t2, o1, s2] = mergeRows([], [
+      row({ created_at: "2026-10-09T10:00:00.000Z" }),
+      row({ created_at: "2026-10-09T10:00:01.000Z", sender_role: "staff", sender_id: STAFF }),
+      row({ created_at: "2026-10-09T10:00:02.000Z", sender_role: "staff", sender_id: STAFF }),
+      row({ created_at: "2026-10-09T10:00:03.000Z", sender_role: "staff", sender_id: OTHER }),
+      row({ created_at: "2026-10-09T10:00:04.000Z" }),
+    ]);
+    expect(startsSenderRun(undefined, s1)).toBe(true);
+    expect(startsSenderRun(s1, t1)).toBe(true);
+    expect(startsSenderRun(t1, t2)).toBe(false);
+    expect(startsSenderRun(t2, o1)).toBe(true);
+    expect(startsSenderRun(o1, s2)).toBe(true);
   });
 });

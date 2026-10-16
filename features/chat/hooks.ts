@@ -12,6 +12,7 @@ import {
   messageKey,
   normalizeBody,
   oldestSentAt,
+  latestShownMessageId,
   pickClientMsgId,
   removeLocal,
   runWithTimeout,
@@ -65,9 +66,18 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
     if (!error && data) setMessages((cur) => mergeRows(cur, data));
   }, [supabase, studentId]);
 
+  // Última mensagem confirmada na tela: a leitura vai só até ela (nunca "até agora" — o que chegou depois e ainda não
+  // apareceu continua não lido). Espelhada num ref para as marcações disparadas fora da renderização.
+  const latestShown = latestShownMessageId(messages);
+  const latestShownRef = useRef<string | null>(latestShown);
+  useEffect(() => {
+    latestShownRef.current = latestShown;
+  }, [latestShown]);
+
   const markRead = useCallback(async () => {
-    if (!isVisible()) return;
-    const { error } = await supabase.rpc("mark_chat_read", { p_student_id: studentId });
+    const until = latestShownRef.current;
+    if (!until || !isVisible()) return;
+    const { error } = await supabase.rpc("mark_chat_read", { p_student_id: studentId, p_until_message_id: until });
     if (!error) window.dispatchEvent(new Event(CHAT_READ_EVENT));
   }, [supabase, studentId]);
 
@@ -78,6 +88,11 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
       void markRead();
     }, MARK_READ_DELAY_MS);
   }, [markRead]);
+
+  // Nova mensagem na tela (página inicial, Realtime, recarga ao voltar): marca como lida até ela, com espera curta.
+  useEffect(() => {
+    if (latestShown) scheduleMarkRead();
+  }, [latestShown, scheduleMarkRead]);
 
   useEffect(() => {
     void markRead();
@@ -103,7 +118,8 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
         (payload) => {
           const row = payload.new as ChatRow;
           setMessages((cur) => mergeRows(cur, [row]));
-          if (row.sender_role !== viewer.role) scheduleMarkRead();
+          // O Realtime não traz o primeiro nome: a recarga traz (get_chat_messages) e o merge preserva.
+          if (row.sender_role === "staff" && viewer.role === "student") void refreshLatest();
         },
       )
       .subscribe((status) => {
@@ -123,7 +139,7 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
       if (settle) clearTimeout(settle);
       void supabase.removeChannel(channel);
     };
-  }, [supabase, studentId, viewer.role, refreshLatest, scheduleMarkRead]);
+  }, [supabase, studentId, viewer.role, refreshLatest]);
 
   // Fora do ar: busca periódica, só com a aba visível.
   useEffect(() => {
@@ -198,6 +214,7 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
         student_id: studentId,
         sender_role: viewer.role,
         sender_id: viewer.role === "staff" ? viewer.staffId : null,
+        sender_first_name: null,
         body,
         attached_item_id: attachedItemId,
         attached_exercise_name: attachment?.name ?? null,

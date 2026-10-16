@@ -77,6 +77,12 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
   });
   afterAll(() => fx.cleanup());
 
+  /** Lê até a mensagem mais recente da conversa (o que o cliente faria com tudo na tela). Sem mensagem: nada a marcar. */
+  const markAllRead = async (user: TestUser, studentId: string) => {
+    const [latest] = await rpc<Row[]>(user.client, "get_chat_messages", { p_student_id: studentId });
+    if (latest) await rpc(user.client, "mark_chat_read", { p_student_id: studentId, p_until_message_id: latest.id });
+  };
+
   it("chat: aluno, responsável e owner acessam; professor do plano sem acesso ao aluno não vê nada (tudo-ou-nada)", async () => {
     const m1 = await rpc<Row>(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "Oi, professor!" });
     expect(m1).toMatchObject({ sender_role: "student", sender_id: null, student_id: s1 });
@@ -179,23 +185,23 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
     expect(unreadOwnerBefore).toBeGreaterThan(0);
     expect(unreadTrainerBefore).toBeGreaterThan(0);
 
-    await rpc(owner.client, "mark_chat_read", { p_student_id: s1 });
+    await markAllRead(owner, s1);
     expect(await rpc<number>(owner.client, "chat_unread_count", { p_student_id: s1 })).toBe(0);
     expect(await rpc<number>(trainer.client, "chat_unread_count", { p_student_id: s1 })).toBe(unreadTrainerBefore);
 
-    await rpc(trainer.client, "mark_chat_read", { p_student_id: s1 });
+    await markAllRead(trainer, s1);
     expect(await rpc<number>(trainer.client, "chat_unread_count", { p_student_id: s1 })).toBe(0);
 
     // Lado do aluno: cursor único.
     await rpc(trainer.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "resposta do professor" });
     expect(await rpc<number>(studentUser.client, "chat_unread_count", { p_student_id: s1 })).toBeGreaterThan(0);
-    await rpc(studentUser.client, "mark_chat_read", { p_student_id: s1 });
+    await markAllRead(studentUser, s1);
     expect(await rpc<number>(studentUser.client, "chat_unread_count", { p_student_id: s1 })).toBe(0);
   });
 
   it("list_chat_inbox: não lidas primeiro, inclui aluno sem mensagem; staff_total_unread_count soma tudo; aluno não vê a caixa", async () => {
-    await rpc(owner.client, "mark_chat_read", { p_student_id: s1 });
-    await rpc(owner.client, "mark_chat_read", { p_student_id: s3 });
+    await markAllRead(owner, s1);
+    await markAllRead(owner, s3);
     await rpc(studentUser.client, "send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "não lida para o owner" });
     // Aluno novo, sem mensagem nenhuma (s2 já tem 30 do teste de limite) — prova que a caixa inclui quem nunca escreveu.
     const s4 = (await rpc<{ id: string }>(owner.client, "create_student", { p_data: studentData() })).id;
@@ -365,7 +371,7 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
     for (const [fn, args] of [
       ["send_chat_message", { p_client_msg_id: randomUUID(), p_student_id: s1, p_body: "x" }],
       ["get_chat_messages", { p_student_id: s1 }],
-      ["mark_chat_read", { p_student_id: s1 }],
+      ["mark_chat_read", { p_student_id: s1, p_until_message_id: randomUUID() }],
       ["chat_unread_count", { p_student_id: s1 }],
       ["list_chat_inbox", {}],
       ["staff_total_unread_count", {}],
