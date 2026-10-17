@@ -1,11 +1,7 @@
 import { isoToBR, timestampToISODate, todayISO } from "@/lib/dates";
-import type { Database } from "@/lib/db/types";
+import type { ChatMessage } from "./types";
 
-/**
- * Linha do chat: a da tabela (Realtime, retorno do envio) ou a de get_chat_messages, que traz também o primeiro nome
- * de quem enviou (staff). O Realtime não traz o nome.
- */
-export type ChatRow = Database["public"]["Tables"]["chat_messages"]["Row"] & { sender_first_name?: string | null };
+export type { ChatMessage } from "./types";
 
 export const CHAT_MAX_LENGTH = 2000;
 export const CHAT_PAGE_SIZE = 50;
@@ -38,7 +34,7 @@ export function messageKey(m: Pick<ThreadMessage, "sender_role" | "sender_id" | 
   return `${sender}:${m.client_msg_id}`;
 }
 
-export function fromRow(row: ChatRow): ThreadMessage {
+export function fromRow(row: ChatMessage): ThreadMessage {
   return {
     id: row.id,
     client_msg_id: row.client_msg_id,
@@ -66,7 +62,7 @@ function order(list: ThreadMessage[]): ThreadMessage[] {
  * Junta linhas do banco (página inicial, recarga, Realtime, retorno do envio) com o que está na tela. A linha do banco
  * vence a cópia local de mesma chave (vira "sent"); nada aparece duas vezes, chegue em que ordem chegar.
  */
-export function mergeRows(current: ThreadMessage[], rows: ChatRow[]): ThreadMessage[] {
+export function mergeRows(current: ThreadMessage[], rows: ChatMessage[]): ThreadMessage[] {
   if (rows.length === 0) return current;
   const byKey = new Map(current.map((m) => [messageKey(m), m]));
   for (const row of rows) {

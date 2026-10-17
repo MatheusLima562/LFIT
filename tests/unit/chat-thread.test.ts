@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addLocal,
-  type ChatRow,
+  type ChatMessage,
   classifySendError,
   dayLabel,
   latestShownMessageId,
@@ -23,7 +23,7 @@ const STUDENT = "11111111-1111-1111-1111-111111111111";
 const STAFF = "22222222-2222-2222-2222-222222222222";
 
 let seq = 0;
-function row(over: Partial<ChatRow> = {}): ChatRow {
+function row(over: Partial<ChatMessage> = {}): ChatMessage {
   seq += 1;
   return {
     id: `id-${seq}`,
@@ -226,7 +226,7 @@ describe("reenvio depois de falha usa o MESMO client_msg_id", () => {
     const attempt = { clientMsgId, body: "oi", attachedItemId: null };
     const l = local({ client_msg_id: clientMsgId, body: "oi" });
 
-    const pending = runWithTimeout<ChatRow>(() => new Promise(() => {}));
+    const pending = runWithTimeout<ChatMessage>(() => new Promise(() => {}));
     await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS);
     const out = await pending;
     expect(classifySendError(out.error)).toBe("network");

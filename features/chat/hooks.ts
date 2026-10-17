@@ -6,7 +6,7 @@ import { uuidV4 } from "@/lib/uuid";
 import {
   addLocal,
   CHAT_PAGE_SIZE,
-  type ChatRow,
+  type ChatMessage,
   classifySendError,
   mergeRows,
   messageKey,
@@ -52,7 +52,7 @@ const isVisible = () => typeof document === "undefined" || document.visibilitySt
  * recente ao (re)conectar, ao voltar a internet e ao voltar à aba. Fora do ar, busca a cada 20 s com a aba visível.
  * O corpo das mensagens nunca é registrado em console.
  */
-export function useChatThread({ studentId, viewer, initial }: { studentId: string; viewer: ChatViewer; initial: ChatRow[] }) {
+export function useChatThread({ studentId, viewer, initial }: { studentId: string; viewer: ChatViewer; initial: ChatMessage[] }) {
   const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<ThreadMessage[]>(() => mergeRows([], initial));
   const [connected, setConnected] = useState(true);
@@ -116,7 +116,7 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages", filter: `student_id=eq.${studentId}` },
         (payload) => {
-          const row = payload.new as ChatRow;
+          const row = payload.new as ChatMessage;
           setMessages((cur) => mergeRows(cur, [row]));
           // O Realtime não traz o primeiro nome: a recarga traz (get_chat_messages) e o merge preserva.
           if (row.sender_role === "staff" && viewer.role === "student") void refreshLatest();
@@ -276,7 +276,7 @@ export function useChatUnread({ initial, studentId }: { initial: number; student
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages", ...(studentId ? { filter: `student_id=eq.${studentId}` } : {}) },
         (payload) => {
-          if (!disposed && (payload.new as ChatRow).sender_role === incomingRole) schedule();
+          if (!disposed && (payload.new as ChatMessage).sender_role === incomingRole) schedule();
         },
       )
       .subscribe((status) => {

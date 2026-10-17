@@ -9,7 +9,7 @@ import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { messages as m } from "@/messages/pt-BR";
 import { type Attachment, type ChatViewer, type SendResult, useChatThread } from "../hooks";
-import { CHAT_MAX_LENGTH, type ChatRow, dayLabel, messageKey, staffNamesFrom, startsSenderRun, type ThreadMessage } from "../thread";
+import { CHAT_MAX_LENGTH, type ChatMessage, dayLabel, messageKey, staffNamesFrom, startsSenderRun, type ThreadMessage } from "../thread";
 
 const t = m.chat;
 
@@ -21,7 +21,7 @@ export interface AttachGroup {
 interface ChatThreadProps {
   studentId: string;
   viewer: ChatViewer;
-  initial: ChatRow[];
+  initial: ChatMessage[];
   /** Fica fixo acima da lista (aviso do aluno, nome do aluno no painel). */
   header?: ReactNode;
   emptyText: string;

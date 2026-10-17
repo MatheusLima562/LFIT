@@ -1,10 +1,10 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
 import { signPhotoUrls } from "@/features/students/queries";
-import type { ChatRow } from "./thread";
+import type { ChatMessage } from "./types";
 
 /** Página mais recente da conversa (RLS/RPC: vazia para quem não acessa o aluno). */
-export async function getChatMessages(studentId: string): Promise<ChatRow[]> {
+export async function getChatMessages(studentId: string): Promise<ChatMessage[]> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("get_chat_messages", { p_student_id: studentId });
   return data ?? [];
