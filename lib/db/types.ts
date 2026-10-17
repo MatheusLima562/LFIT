@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -2509,15 +2509,15 @@ export type Database = {
       get_chat_messages: {
         Args: { p_before?: string; p_student_id: string }
         Returns: {
-          attached_exercise_name: string | null
-          attached_item_id: string | null
+          attached_exercise_name: string
+          attached_item_id: string
           body: string
           client_msg_id: string
           created_at: string
           id: string
           organization_id: string
           sender_first_name: string
-          sender_id: string | null
+          sender_id: string
           sender_role: string
           student_id: string
         }[]
