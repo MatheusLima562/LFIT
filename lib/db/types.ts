@@ -1896,6 +1896,7 @@ export type Database = {
           started_at: string
           status: string
           student_id: string
+          student_rating: number | null
           trainer_reviewed_at: string | null
           trainer_reviewed_by: string | null
           workout_id: string | null
@@ -1919,6 +1920,7 @@ export type Database = {
           started_at?: string
           status?: string
           student_id: string
+          student_rating?: number | null
           trainer_reviewed_at?: string | null
           trainer_reviewed_by?: string | null
           workout_id?: string | null
@@ -1942,6 +1944,7 @@ export type Database = {
           started_at?: string
           status?: string
           student_id?: string
+          student_rating?: number | null
           trainer_reviewed_at?: string | null
           trainer_reviewed_by?: string | null
           workout_id?: string | null
@@ -2688,6 +2691,10 @@ export type Database = {
           hidden: boolean
           student_id: string
         }[]
+      }
+      rate_workout_session: {
+        Args: { p_rating: number; p_session_id: string }
+        Returns: undefined
       }
       reactivate_student: {
         Args: { p_student_id: string }

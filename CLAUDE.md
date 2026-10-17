@@ -481,6 +481,8 @@ effective_status =
   (`trainer_announcements.body`) e a **resposta ao feedback** (`workout_sessions.coach_reply`): nunca em
   `audit_logs`, log, e-mail, URL ou (quando existir) conteúdo de notificação push — nenhuma RPC do chat/recado/
   resposta chama `private.audit()` com o texto; se precisar auditar o envio em si, só id/contagem, nunca o corpo.
+- **Nota de satisfação do aluno** (`workout_sessions.student_rating`, 1–5, 3.2): não é dado de saúde, mas também nunca vai
+  para log, URL ou notificação (a RPC `rate_workout_session` não audita; erros só com códigos fixos).
 - **Exceção (a validar com advogado):** a triagem de sinais de alerta + encaminhamento + liberação usa a base legal do
   art. 11, II, "e"/"d" e não depende do consentimento (ver "Base de conhecimento"); a recusa não a apaga. **O chat
   (2.12) segue a mesma base legal e também não depende do consentimento** — é texto livre e o aluno pode descrever
@@ -528,6 +530,7 @@ sem efeitos colaterais).
 | Leitura do chat, sem efeito (2.12) | `get_chat_messages` (aluno ou staff), `list_chat_inbox`, `staff_total_unread_count` (caixa de conversas do professor) | funções `sql` — mesmo padrão "leitura sem efeito": `is_own_student`/`private.can_access_student()`; quem não acessa recebe lista/contagem vazia, nunca erro. `get_chat_messages` devolve `sender_first_name` (só o primeiro nome do staff, nulo nas do aluno; nunca sobrenome/e-mail) |
 | Recado do professor (2.12) | `get_my_announcement`, `set_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor |
 | Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()`; `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
+| **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
