@@ -404,7 +404,7 @@ effective_status =
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 
-### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat pronta — aguardando teste do dono no celular)
+### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat e 3.2 aluno prontas — 3.2 aguarda o push da nota de satisfação)
 - Plano: `docs/planos/etapa-2.12.md` ("Revisão 2", aprovado). Migration
   `20261013120000_humanized_app_chat.sql`: chat aluno ↔ professor responsável/owner (com caixa de conversas do
   professor), recado do professor, resumo humanizado do fim do treino (constância + recorde pessoal) e resposta do
@@ -435,8 +435,9 @@ effective_status =
 - **Páginas** (plano `docs/planos/etapa-2.12-paginas.md`, em 3 entregas). **3.1 chat (pronta):** `/aluno/chat` (aviso fixo
   de emergência + quem vê a conversa + horário do professor; anexo de exercício do plano ativo; altura `100dvh`, campo
   de 16 px, lista com `aria-live`) e `/chat` no painel (caixa `list_chat_inbox` + conversa, `?aluno=<id>`; item "Chat"
-  do menu `available`, selo real de `staff_total_unread_count` no lugar do mock). Barra do aluno com **3 abas** (Hoje ·
-  Histórico · Chat); Perfil entra na 3.2. Código em `features/chat/`:
+  do menu `available`, selo real de `staff_total_unread_count` no lugar do mock). Barra do aluno com 3 abas na 3.1;
+  **4 abas desde a 3.2** (ver abaixo). Código em `features/chat/` (mensagens tipadas por `ChatMessage`, em
+  `features/chat/types.ts`, escrito à mão com os nulos corretos — o gerador marca as colunas de RETURNS TABLE como não nulas):
   - **UUID no cliente sempre por `uuidV4()` (`lib/uuid.ts`)**, nunca `crypto.randomUUID` direto: ele não existe fora de
     contexto seguro (http pelo IP da rede, como o iPhone em teste) e travava o envio. O fallback usa
     `crypto.getRandomValues`. Envio com prazo de 15 s (`runWithTimeout`, aborta a requisição): estourou ou falhou →
@@ -460,9 +461,27 @@ effective_status =
   - Roteiro `e2e/k212-chat.e2e.mjs` (375 px): imprime uma **frase-canário** única por execução para buscar nos logs do
     Supabase; derruba o WebSocket do Realtime por um proxy do Playwright (`routeWebSocket`); limpa as mensagens pelo
     marcador da execução, não por horário (o relógio local não bate com o do banco).
-- **Fora do escopo da 3.1:** notificação push de mensagem nova (depende da etapa de notificações; sem ela, cada lado
-  só vê mensagem nova ao abrir o app/painel); Hoje humanizada, fim de treino, `/aluno/perfil` e barra de 4 abas (3.2);
-  criar/encerrar recado, resposta ao feedback e **tela para o professor editar o próprio horário de atendimento
+- **3.2 aluno (pronta; a nota depende da migration `20261017120000`, ainda não aplicada):**
+  - **Hoje:** saudação pela hora de SP ("Bom dia/Boa tarde/Boa noite"), constância em destaque sem cobrança
+    (`sessions_this_month`/`week_streak`), recado (`get_my_announcement`), aviso "Seu professor respondeu sobre o treino
+    de terça" (resposta dos últimos 14 dias; o texto fica no Histórico) e card do professor (iniciais — a foto chega na
+    3.3 —, nome, horário, "Mandar mensagem"). Lógica pura em `features/student-app/humanize.ts`
+    (`tests/unit/student-humanize.test.ts`).
+  - **Fim de treino** `/aluno/treino/[sessionId]/concluido`: o `SessionRunner` vai para lá (`doneHref`) quando a fila
+    esvazia; sessão concluída aberta pela tela de execução também. Resumo de `get_session_summary`, constância em
+    destaque, recorde como selo discreto (só o nome do exercício: o resumo não traz a unidade), "Seu professor vai ver o
+    seu comentário" e **nota de satisfação 1–5 opcional** (`rate_workout_session`, do navegador direto para a RPC).
+  - **`/aluno/perfil`:** nome, foto (URL assinada com a secret key depois de `get_my_student_profile` autorizar), estúdio,
+    professor, horário, acesso e "Sair da conta". "Sair" saiu do cabeçalho (fica só nas telas de portão, sem abas).
+  - **`StudentNav`:** 4 abas (Hoje · Histórico · Chat · Perfil), `aria-current`, toque de 56 px; **some com o teclado**
+    (campo de texto focado em aparelho de toque, ou `visualViewport` bem menor que a janela).
+  - **Chat do aluno:** cabeçalho com o nome do professor (ou "Equipe do estúdio") e horário; aviso de emergência
+    recolhível — recolhido, a linha "Não é canal de emergência: ligue 192." continua visível (preferência por aparelho).
+  - **Login:** links cruzados "Sou aluno? Entrar no app do aluno" (`/entrar`) e "Sou professor? Entrar no painel do
+    treinador" (`/aluno/entrar`).
+  - Seed: horário do Caio (`preferences.office_hours`) e um recado dele para a Camila. e2e: `e2e/f3-app-aluno.e2e.mjs`.
+- **Fora do escopo da 3.1/3.2:** notificação push de mensagem nova (depende da etapa de notificações; sem ela, cada lado
+  só vê mensagem nova ao abrir o app/painel); criar/encerrar recado, resposta ao feedback e **tela para o professor editar o próprio horário de atendimento
   (`profiles.preferences.office_hours`) e foto (`trainer_avatar_url`)** (3.3) — sem ela, a Hoje humanizada mostra
   esses campos vazios.
 - Testes: `tests/db/chat-humanized.test.ts` (isolamento entre organizações, cursores independentes, rate limit,
@@ -620,13 +639,13 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
 - **2.12 App humanizado:** banco aplicado em lfit-dev (chat aluno ↔ professor/owner com caixa de conversas do
   professor, recado do professor, resumo humanizado do fim do treino com recorde pessoal, resposta do professor ao
-  feedback) — ver "App humanizado — etapa 2.12". **3.1 (chat) pronta**, aguardando teste do dono no celular; 3.2
-  (aluno) e 3.3 (professor) pendentes.
+  feedback) — ver "App humanizado — etapa 2.12". **3.1 (chat) pronta**, aguardando teste do dono no celular; **3.2
+  (aluno) pronta** — a nota de satisfação espera o push de `20261017120000`; 3.3 (professor) pendente.
 - Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
   (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
   aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.12**
-  app humanizado (chat, recado, resumo/recorde, resposta ao feedback — **banco aplicado; 3.1 chat pronta, 3.2/3.3
-  pendentes**, ver "App humanizado — etapa 2.12") → **2.11**
+  app humanizado (chat, recado, resumo/recorde, resposta ao feedback — **banco aplicado; 3.1 chat e 3.2 aluno prontas, 3.3
+  pendente**, ver "App humanizado — etapa 2.12") → **2.11**
   ampliação da biblioteca global → **2.9** página do aluno `/alunos/[id]` (planejar antes) → **Importação do MFIT** (antes
   de alunos reais) → **C1** contas com múltiplos vínculos (antes da C2) → **C2** comercialização
   → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →

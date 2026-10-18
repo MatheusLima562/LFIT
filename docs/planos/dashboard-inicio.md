@@ -44,7 +44,7 @@ Convenções para todos:
 | **Top 5** | Alunos com mais treinos **concluídos nos últimos 30 dias**; desempate pelo concluído mais recente; mínimo 1 treino. | Sim. |
 | **Retenção** (tile) | Base = alunos com ≥ 1 treino concluído nos **dias 31–60**. Retidos = desses, os com ≥ 1 concluído nos **últimos 30 dias**. Retenção = retidos ÷ base. Tooltip com a fórmula. | Sim. **Troca** a fórmula do mock ("ativos ÷ cadastrados"), que mede outra coisa. |
 | **Engajamento** (tile) | **Mantenho a fórmula já aprovada no CLAUDE.md:** % de alunos com `effective_status = 'active'` que têm ≥ 1 sessão registrada nos últimos 7 dias. Tooltip com a fórmula. | **Discordo** de "concluídos ÷ prescritos na semana": o plano **não tem frequência semanal** (só `planned_sessions`, total do plano). Derivar "prescritos" de `planned_sessions ÷ semanas` inventa um denominador. Proponho isso como métrica separada, **"Aderência"**, numa fase futura com coluna nova (seção 2). |
-| **Satisfação** | **Continua escondido.** | Sim (só com nota do aluno). Não existe nota: `rpe` é **esforço** (1–10), não satisfação, e `feedback_note` é texto livre. Usar RPE como "satisfação" seria inventar. |
+| **Satisfação** | **Continua escondido** até haver notas. Fonte nova (entrega 3.2): `workout_sessions.student_rating` (1–5, opcional, só o aluno grava). Proposta: média das notas dos últimos 30 dias + quantas avaliações, com a distribuição 1–5; menos de 3 notas → "Poucas avaliações ainda". | Sim. `rpe` é **esforço** (1–10), não satisfação — continua fora. |
 | **Avaliação física** | Continua escondido (módulo "Em breve"). | Sim. |
 | **Vendas** | Continua escondido (módulo "Em breve", C8). | Sim. |
 
@@ -63,8 +63,8 @@ Convenções para todos:
 **Fora desta fase (não existe; listado para decisão futura):**
 1. **Frequência semanal prescrita** (`training_plans.weekly_frequency`, 1–7) — base da métrica "Aderência"
    (concluídos ÷ prescritos). Precisa de campo no montador e regra para planos sem frequência.
-2. **Nota de satisfação do aluno** (ex.: `workout_sessions.rating` 1–5 no fim do treino) — base do card Satisfação.
-   Decisão de produto (pergunta no fim do treino, opcional?) + tela no app do aluno.
+2. ~~Nota de satisfação do aluno~~ — **feita na entrega 3.2** (`workout_sessions.student_rating`, migration
+   `20261017120000`); falta só a RPC agregada do card (nova linha na migration 2 abaixo).
 3. **Data de entrada original do aluno** (ex.: `students.enrolled_on`) para a Importação do MFIT não inflar "Novos alunos".
 4. Avaliação física e Vendas: módulos inteiros.
 
@@ -180,7 +180,7 @@ atuais (`Promise.all`). Revisar com `explain analyze` no lfit-dev com o seed amp
 | # | Migration (nome proposto) | Resumo |
 |---|---|---|
 | 1 | `<ts>_dashboard_training_stats.sql` | Índice parcial `workout_sessions (student_id, finished_at) where status = 'completed'` + RPC `get_dashboard_training_stats()` (security definer, `require_staff`, `can_access_student` por aluno), grants |
-| 2 | `<ts>_dashboard_engagement_retention.sql` | RPC `get_dashboard_engagement_retention()` (mesmo padrão), grants |
+| 2 | `<ts>_dashboard_engagement_retention.sql` | RPC `get_dashboard_engagement_retention()` (mesmo padrão), grants; inclui o agregado de Satisfação (`student_rating` dos últimos 30 dias: média, total e distribuição 1–5 — só números, nunca a nota de um aluno identificado) |
 
 Fora desta fase (só se aprovado depois): `training_plans_weekly_frequency` (Aderência), `workout_sessions_rating`
 (Satisfação), `students_enrolled_on` (Importação do MFIT).

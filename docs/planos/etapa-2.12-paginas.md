@@ -96,6 +96,30 @@ layout + o mesmo hook escutando a tabela (pelo RLS).
 de recordes); e2e `e2e/k212-aluno.e2e.mjs` (375 px): Hoje com recado e horário, treino até a conclusão (recorde numa
 segunda sessão com carga maior), Perfil, 4 abas por teclado, resposta do professor no Histórico.
 
+### 3.2 — ajustes do dono na implementação (17/10/2026; o prompt da entrega vence este plano)
+
+- **Nota de satisfação** no fim do treino (1 a 5, opcional): coluna `workout_sessions.student_rating` + RPC
+  `rate_workout_session` (só o aluno dono, só sessão concluída; fora de 1–5 ou não concluída → `INVALID_INPUT`; alheia,
+  inexistente, de outro tenant ou chamada pelo staff → `STUDENT_NOT_FOUND`). Migration própria
+  `20261017120000_session_student_rating.sql` (mostrada antes do push). Alimenta o card Satisfação do Início
+  (`docs/planos/dashboard-inicio.md`).
+- **Barra de abas some com o teclado do iOS aberto** (campo de texto focado num aparelho de toque, ou `visualViewport`
+  bem menor que a janela).
+- **Links cruzados** "Sou aluno? Entrar no app do aluno" (`/entrar`) e "Sou professor? Entrar no painel do treinador"
+  (`/aluno/entrar`).
+- **Chat do aluno:** cabeçalho com o nome do professor (ou "Equipe do estúdio") e o horário; aviso de emergência
+  **recolhível** — recolhido, a linha "Não é canal de emergência: ligue 192." continua visível (preferência só do
+  aparelho, em `localStorage`; sem storage, fica aberto).
+- **Tipo próprio `ChatMessage`** (`features/chat/types.ts`), com os nulos corretos (o gerador marca as colunas de RETURNS
+  TABLE como não nulas).
+- **e2e:** os passos da 3.2 entraram no roteiro do aluno existente, `e2e/f3-app-aluno.e2e.mjs` (não num
+  `k212-aluno` novo); o `k212-chat` passou a esperar 4 abas.
+- Decisões de implementação: foto do professor = **iniciais** até a 3.3 (não carregamos `avatar_url` arbitrário); o
+  selo de recorde mostra só o exercício (o resumo não traz a unidade de carga, então nenhum número solto); "Sair" sai do
+  cabeçalho e fica no Perfil (continua no cabeçalho das telas de portão, que não têm abas); sessão concluída aberta
+  pelo endereço de execução vai para o resumo; o aviso "Seu professor respondeu" na Hoje vale para treinos dos últimos
+  14 dias e leva ao Histórico (o texto da resposta fica lá).
+
 ## 3.3 Professor: recado, resposta ao feedback, horário e foto
 
 - **Migration própria** (mostrada antes do push): bucket privado de foto do professor (`<org>/<profile>/<uuid>.jpg`,
