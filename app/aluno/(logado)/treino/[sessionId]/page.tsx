@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { SessionRunnerClient } from "@/features/student-app/components/SessionRunnerClient";
@@ -17,6 +17,8 @@ export default async function StudentSessionPage({ params, searchParams }: PageP
   const [data, sp] = await Promise.all([getTrainingSession(sessionId), searchParams]);
   if (!data) notFound();
 
+  // Concluída: o lugar dela é o resumo (ex.: voltar pelo navegador depois de finalizar).
+  if (data.session.status === "completed") redirect(`/aluno/treino/${sessionId}/concluido`);
   if (data.session.status !== "in_progress") {
     return (
       <section className="flex flex-col items-center gap-4 px-4 pt-14 text-center">
@@ -28,5 +30,11 @@ export default async function StudentSessionPage({ params, searchParams }: PageP
     );
   }
 
-  return <SessionRunnerClient data={data} askCheckin={sp.checkin === "1" && data.session.pain_checkin === null} />;
+  return (
+    <SessionRunnerClient
+      data={data}
+      askCheckin={sp.checkin === "1" && data.session.pain_checkin === null}
+      doneHref={`/aluno/treino/${sessionId}/concluido`}
+    />
+  );
 }

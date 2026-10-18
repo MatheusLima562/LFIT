@@ -21,8 +21,22 @@ import { RestTimer } from "./RestTimer";
 
 const t = messages.aluno;
 
-/** Tela de execução: série a série, com fila local (internet ruim) e descanso. Renderizada só no cliente. */
-export function SessionRunner({ data, askCheckin, backHref = "/aluno" }: { data: AppTrainingSession; askCheckin: boolean; backHref?: string }) {
+/**
+ * Tela de execução: série a série, com fila local (internet ruim) e descanso. Renderizada só no cliente.
+ * `doneHref`: para onde ir quando o treino termina e a fila esvazia (o aluno vai ao resumo do fim de treino); sem ele,
+ * volta para `backHref` com um aviso.
+ */
+export function SessionRunner({
+  data,
+  askCheckin,
+  backHref = "/aluno",
+  doneHref,
+}: {
+  data: AppTrainingSession;
+  askCheckin: boolean;
+  backHref?: string;
+  doneHref?: string;
+}) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const sessionId = data.session.id;
@@ -109,10 +123,14 @@ export function SessionRunner({ data, askCheckin, backHref = "/aluno" }: { data:
   // Finalização só sai da tela quando a fila inteira (inclusive o "finalizar") foi gravada.
   useEffect(() => {
     if (!finishing || pending > 0) return;
-    toast.success(t.run.finished);
-    router.replace(backHref);
+    if (doneHref) {
+      router.replace(doneHref);
+    } else {
+      toast.success(t.run.finished);
+      router.replace(backHref);
+    }
     router.refresh();
-  }, [finishing, pending, router, backHref]);
+  }, [finishing, pending, router, backHref, doneHref]);
 
   const push = (op: QueueOp) => {
     setQueue(enqueue(queueRef.current, op));

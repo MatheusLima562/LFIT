@@ -142,4 +142,6 @@ export interface AppHistoryEntry {
   rpe: number | null;
   by_trainer: boolean;
   exercises_done: number;
+  /** Resposta do professor ao feedback (2.12); nulo se não houve. */
+  coach_reply: string | null;
 }

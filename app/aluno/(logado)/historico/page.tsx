@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { History, UserRound } from "lucide-react";
+import { History, MessageSquareReply, UserRound } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { getMyHistory } from "@/features/student-app/queries";
@@ -56,6 +56,15 @@ export default async function StudentHistoryPage() {
                     </span>
                   )}
                 </p>
+                {h.coach_reply && (
+                  <div className="mt-3 rounded-xl bg-canvas px-3 py-2 ring-1 ring-line">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-2">
+                      <MessageSquareReply aria-hidden className="size-3.5" />
+                      {t.history.coachReply}
+                    </p>
+                    <p className="mt-0.5 text-sm whitespace-pre-line text-ink">{h.coach_reply}</p>
+                  </div>
+                )}
               </>
             );
             return (

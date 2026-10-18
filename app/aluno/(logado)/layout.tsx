@@ -11,17 +11,20 @@ import { messages } from "@/messages/pt-BR";
 
 const t = messages.aluno;
 
-function Header({ name }: { name?: string }) {
+/** Cabeçalho. "Sair" só nas telas de portão (sem a barra de abas); dentro do app ele fica no Perfil. */
+function Header({ name, signOut = false }: { name?: string; signOut?: boolean }) {
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-surface/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-backdrop-filter:bg-surface/80">
       <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
         <StudentBrand />
-        <form action={signOutStudent}>
-          <Button type="submit" variant="ghost" size="sm" className="text-ink-2" aria-label={name ? `${t.nav.signOut} (${name})` : t.nav.signOut}>
-            <LogOut aria-hidden />
-            {t.nav.signOut}
-          </Button>
-        </form>
+        {signOut && (
+          <form action={signOutStudent}>
+            <Button type="submit" variant="ghost" size="sm" className="text-ink-2" aria-label={name ? `${t.nav.signOut} (${name})` : t.nav.signOut}>
+              <LogOut aria-hidden />
+              {t.nav.signOut}
+            </Button>
+          </form>
+        )}
       </div>
     </header>
   );
@@ -39,7 +42,7 @@ export default async function StudentLoggedLayout({ children }: LayoutProps<"/al
   if (!profile || profile.effective_status !== "active") {
     return (
       <>
-        <Header name={name} />
+        <Header name={name} signOut />
         <main className="mx-auto flex max-w-md flex-col items-center px-6 pt-16 text-center">
           <span aria-hidden className="grid size-14 place-items-center rounded-full bg-surface text-ink-2 ring-1 ring-line">
             <PauseCircle className="size-7" />
@@ -57,7 +60,7 @@ export default async function StudentLoggedLayout({ children }: LayoutProps<"/al
     const c = messages.consent;
     return (
       <>
-        <Header name={name} />
+        <Header name={name} signOut />
         <main className="mx-auto flex max-w-md flex-col gap-5 px-5 py-8">
           <span aria-hidden className="grid size-11 place-items-center rounded-full bg-surface text-ink-2 ring-1 ring-line">
             <HeartPulse className="size-5" />
