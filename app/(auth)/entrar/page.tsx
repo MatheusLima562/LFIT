@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AuthHeading } from "@/features/auth/components/AuthHeading";
 import { AuthMessage } from "@/features/auth/components/AuthMessage";
 import { SignInForm } from "@/features/auth/components/SignInForm";
@@ -27,6 +28,12 @@ export default async function SignInPage({ searchParams }: PageProps<"/entrar">)
         </div>
       )}
       <SignInForm next={safeNext(next)} />
+      <p className="mt-6 text-center text-sm text-ink-2">
+        {t.signIn.otherApp}?{" "}
+        <Link href="/aluno/entrar" className="link font-medium">
+          {t.signIn.otherAppLink}
+        </Link>
+      </p>
     </>
   );
 }

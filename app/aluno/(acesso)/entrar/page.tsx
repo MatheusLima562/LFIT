@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { StudentBrand } from "@/features/student-app/components/StudentBrand";
 import { StudentSignInForm } from "@/features/student-app/components/StudentSignInForm";
 import { messages } from "@/messages/pt-BR";
@@ -17,6 +18,12 @@ export default function StudentSignInPage() {
         <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
           <StudentSignInForm />
         </div>
+        <p className="mt-6 text-center text-sm text-ink-2">
+          {t.otherApp}?{" "}
+          <Link href="/entrar" className="link font-medium">
+            {t.otherAppLink}
+          </Link>
+        </p>
       </div>
     </main>
   );

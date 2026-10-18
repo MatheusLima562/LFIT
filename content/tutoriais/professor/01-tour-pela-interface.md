@@ -3,7 +3,7 @@ title: Tour pela interface do professor
 summary: Conheça o painel do LFit — o menu, as telas principais e o caminho para as tarefas do dia a dia.
 audience: professor
 order: 1
-updated: 2026-10-14
+updated: 2026-10-18
 ---
 
 ## Como entrar
@@ -15,6 +15,8 @@ O painel é para o professor e para o administrador da conta. Professores entram
 3. Clique em **Entrar**.
 
 Esqueceu a senha? Clique em **Esqueci minha senha**, informe o e-mail e siga o link que chegar na sua caixa de entrada.
+
+Se um aluno abrir esta tela por engano, o link **Entrar no app do aluno**, no fim da página, leva ao app dele.
 
 > Recebeu um convite por e-mail? Abra o link, defina uma senha com pelo menos 10 caracteres e depois entre normalmente.
 
