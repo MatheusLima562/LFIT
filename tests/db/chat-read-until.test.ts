@@ -64,7 +64,9 @@ describe.runIf(dbTestsEnabled)("chat: leitura até a mensagem exibida e primeiro
   it("empate de created_at: lê só até a mensagem exibida, na ordem (created_at, id)", async () => {
     const x = await send(studentUser, s1, "empate x");
     const y = await send(studentUser, s1, "empate y");
-    const ts = new Date().toISOString();
+    // Horário do banco (o da mensagem mais recente), nunca o relógio desta máquina: ele pode estar atrás do servidor e
+    // jogar o "empate" para antes de mensagens já gravadas.
+    const ts = y.created_at as string;
     await fx.db.from("chat_messages").update({ created_at: ts }).in("id", [x.id as string, y.id as string]);
     const [first, second] = [x.id as string, y.id as string].sort();
     await markUntil(trainer, s1, first);
