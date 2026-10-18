@@ -311,6 +311,22 @@ async function seedTraining(owner: SupabaseClient, orgId: string, [coluna, joelh
 }
 
 /**
+ * App humanizado (3.2): horário de atendimento do Caio (preferences.office_hours, sem apagar as outras preferências) e
+ * um recado dele só para a Camila — a Hoje mostra os dois. Texto fictício, sem dado de saúde.
+ */
+async function seedTrainerTouch(studentId: string) {
+  const caioClient = await signIn(USERS.trainer2.email);
+  const caioId = (await caioClient.auth.getUser()).data.user!.id;
+  const { data: caio } = await admin.from("profiles").select("preferences").eq("id", caioId).single();
+  const prefs = (caio?.preferences ?? {}) as Record<string, unknown>;
+  ok(await admin.from("profiles").update({ preferences: { ...prefs, office_hours: "Seg a sex, 7h às 12h" } }).eq("id", caioId), "horário do Caio");
+  ok(
+    await caioClient.rpc("set_trainer_announcement", { p_student_id: studentId, p_body: "Semana de deload: mantenha as cargas e capriche na execução." }),
+    "recado do Caio para a Camila",
+  );
+}
+
+/**
  * Chat da Camila com o professor responsável (Caio, trainer2): mensagens fictícias, enviadas pelo próprio RPC (com
  * client_msg_id, como o app) e datadas de ontem. A Camila leu tudo; o Caio e o owner têm as 2 da aluna não lidas.
  */
@@ -459,6 +475,7 @@ async function seed() {
   ok(await admin.from("student_groups").insert({ organization_id: org.id, student_id: pendingConsent, group_id: groups[1].id }), "grupo do consentimento pendente");
 
   await seedChat(ids[STUDENT_USERS.aluno.index]);
+  await seedTrainerTouch(ids[STUDENT_USERS.aluno.index]);
 
   const [usage] = must(await owner.rpc("organization_plan_usage"), "uso do plano") as { used: number; student_limit: number }[];
   console.log(`Seed concluído: ${ids.length} alunos (${usage.used}/${usage.student_limit} vagas ocupadas).`);

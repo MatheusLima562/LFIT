@@ -66,12 +66,11 @@ const sidebarChat = (p) => p.locator('nav[aria-label="Menu principal"] a[href="/
 const chatTab = (p) => p.getByRole("navigation", { name: "Navegação do app" }).locator('a[href="/aluno/chat"]');
 
 try {
-  // --- Aluno: barra com 3 abas, nenhum link morto ---------------------------------------------------
+  // --- Aluno: barra com 4 abas (3.2), nenhum link morto ---------------------------------------------
   const sp = await phone("aluno.seed@example.com");
   const nav = sp.getByRole("navigation", { name: "Navegação do app" });
   const tabs = await nav.getByRole("link").allInnerTexts();
-  ok("barra inferior com 3 abas: Hoje · Histórico · Chat", JSON.stringify(tabs.map((x) => x.trim())) === JSON.stringify(["Hoje", "Histórico", "Chat"]), JSON.stringify(tabs));
-  ok("sem aba Perfil nesta entrega", (await sp.getByRole("link", { name: /Perfil/ }).count()) === 0);
+  ok("barra inferior com 4 abas: Hoje · Histórico · Chat · Perfil", JSON.stringify(tabs.map((x) => x.trim())) === JSON.stringify(["Hoje", "Histórico", "Chat", "Perfil"]), JSON.stringify(tabs));
   for (const href of await nav.getByRole("link").evaluateAll((as) => as.map((a) => a.getAttribute("href")))) {
     const res = await sp.request.get(`${BASE}${href}`);
     ok(`aba ${href} abre (sem link morto)`, res.status() === 200, String(res.status()));
@@ -127,6 +126,8 @@ try {
   await caio.getByRole("textbox", { name: "Mensagem" }).fill(reply);
   await caio.getByRole("textbox", { name: "Mensagem" }).press("Enter"); // desktop: Enter envia
   ok("aluno recebe a resposta sem recarregar", await waitText(sp, reply));
+  // Depois de enviar, o foco volta ao campo (teclado aberto): a barra some até o teclado fechar (3.2).
+  await input.blur();
   await nav.getByRole("link", { name: "Hoje" }).click();
   await sp.waitForURL(`${BASE}/aluno`);
   // A conversa marca como lida até a última mensagem exibida (mark_chat_read com p_until_message_id). Espera o cursor da

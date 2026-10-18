@@ -31,11 +31,58 @@ const studentId = async (email) => {
 };
 const camila = await studentId("aluno.seed@example.com");
 
+// --- Login: links cruzados "Sou professor" / "Sou aluno" ------------------------------
+{
+  const anon = await (await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })).newPage();
+  await anon.goto(`${BASE}/aluno/entrar`);
+  ok("login do aluno leva ao painel do treinador", (await anon.getByRole("link", { name: "Entrar no painel do treinador" }).getAttribute("href")) === "/entrar");
+  await anon.goto(`${BASE}/entrar`);
+  ok("login do professor leva ao app do aluno", (await anon.getByRole("link", { name: "Entrar no app do aluno" }).getAttribute("href")) === "/aluno/entrar");
+  await anon.context().close();
+}
+
 // --- Hoje ---------------------------------------------------------------------
 const page = await phone("aluno.seed@example.com");
 ok("login do aluno cai no app (/aluno)", page.url() === `${BASE}/aluno`);
 ok("Hoje: plano ativo e divisão sugerida", (await waitText(page, "Hipertrofia ABC")) && (await waitText(page, "Sugerido para hoje")));
 ok("nenhum alerta de contraindicação no app do aluno", !/Evitar|Cautela|contraindica/i.test(await page.locator("main").innerText()));
+ok("Hoje: saudação pela hora de SP", /^(Bom dia|Boa tarde|Boa noite), Camila!$/.test((await page.getByRole("heading", { level: 1 }).innerText()).trim()));
+ok("Hoje: constância sem cobrança (nenhum treino no mês)", await waitText(page, "Seu primeiro treino do mês está esperando por você."));
+ok("Hoje: recado do professor", (await waitText(page, "Recado do seu professor")) && (await waitText(page, "Semana de deload: mantenha as cargas e capriche na execução.")));
+ok("Hoje: card do professor com horário e atalho", (await waitText(page, "Caio Exemplo")) && (await waitText(page, "Atendimento: Seg a sex, 7h às 12h")) && (await page.getByRole("link", { name: "Mandar mensagem" }).getAttribute("href")) === "/aluno/chat");
+
+// Barra de 4 abas, navegável por teclado, com a aba atual marcada.
+const tabs = page.getByRole("navigation", { name: "Navegação do app" }).getByRole("link");
+ok("barra com 4 abas", (await tabs.allInnerTexts()).map((x) => x.trim()).join("|") === "Hoje|Histórico|Chat|Perfil");
+ok("aba atual marcada (aria-current)", (await tabs.first().getAttribute("aria-current")) === "page");
+const tabBox = await tabs.nth(3).boundingBox();
+ok("área de toque das abas ≥ 44 px", tabBox && tabBox.height >= 44 && tabBox.width >= 44, JSON.stringify(tabBox));
+await tabs.nth(3).focus();
+await page.keyboard.press("Enter");
+await page.waitForURL(`${BASE}/aluno/perfil`, { timeout: 15000 });
+ok("Perfil pelo teclado: nome, estúdio, professor, horário e Sair", (await waitText(page, "Camila Freitas")) && (await waitText(page, "Studio Exemplo (fictício)")) && (await waitText(page, "Caio Exemplo")) && (await waitText(page, "Seg a sex, 7h às 12h")) && (await page.getByRole("button", { name: "Sair da conta" }).count()) === 1);
+ok("cabeçalho sem 'Sair' dentro do app (fica no Perfil)", (await page.locator("header").getByRole("button", { name: /Sair/ }).count()) === 0);
+await page.screenshot({ path: `${OUT}/f3-01b-perfil.png`, fullPage: true });
+
+// Chat: nome do professor no topo, aviso de emergência recolhível, barra some com o teclado.
+await tabs.nth(2).click();
+await page.waitForURL(`${BASE}/aluno/chat`, { timeout: 15000 });
+ok("chat: nome do professor no topo", (await page.getByRole("heading", { level: 1 }).innerText()).trim() === "Caio Exemplo");
+const notice = page.getByRole("button", { name: /Não é canal de emergência/ });
+ok("chat: aviso começa aberto", (await notice.getAttribute("aria-expanded")) === "true" && (await waitText(page, "Sua conversa é vista pelo seu professor")));
+await notice.click();
+ok("chat: aviso recolhido mantém a linha de emergência", (await notice.getAttribute("aria-expanded")) === "false" && (await waitText(page, "Não é canal de emergência: ligue 192.")) && !(await page.getByText("Sua conversa é vista pelo seu professor").isVisible()));
+await page.reload();
+await settle(page);
+ok("chat: aviso continua recolhido neste aparelho", (await page.getByRole("button", { name: /Não é canal de emergência/ }).getAttribute("aria-expanded")) === "false");
+await page.getByRole("button", { name: /Não é canal de emergência/ }).click();
+await page.getByRole("textbox", { name: "Mensagem" }).focus();
+ok("teclado aberto: a barra de abas some", await page.getByRole("navigation", { name: "Navegação do app" }).waitFor({ state: "detached", timeout: 5000 }).then(() => true, () => false));
+await page.getByRole("textbox", { name: "Mensagem" }).blur();
+ok("teclado fechado: a barra volta", await page.getByRole("navigation", { name: "Navegação do app" }).waitFor({ timeout: 5000 }).then(() => true, () => false));
+await tabs.nth(0).click();
+await page.waitForURL(`${BASE}/aluno`, { timeout: 15000 });
+await settle(page);
 const sw = await page.evaluate(() => document.documentElement.scrollWidth);
 ok("sem rolagem horizontal no celular", sw <= 375, String(sw));
 ok("pausa padronizada (até 90 s em segundos)", (await page.getByText(/· 60 s$/).count()) > 0 && (await page.getByText(/· 1 min$/).count()) === 0);
@@ -96,9 +143,26 @@ await page.screenshot({ path: `${OUT}/f3-02b-foco.png`, fullPage: true });
 await page.getByRole("button", { name: "Finalizar treino" }).click();
 await page.getByRole("radio", { name: "Esforço 7 de 10" }).click();
 await page.getByRole("button", { name: "Salvar e finalizar" }).click();
+await page.waitForURL(`${BASE}/aluno/treino/${sessionId}/concluido`, { timeout: 20000 });
+await settle(page);
+ok("fim de treino: resumo com exercícios e séries", (await waitText(page, "Treino concluído!")) && (await waitText(page, /\d+ exercícios? · \d+ séries?/)));
+ok("fim de treino: constância em destaque", await waitText(page, "1 treino este mês"));
+ok("fim de treino: primeira vez não é recorde", (await page.getByText("Recorde pessoal de carga").count()) === 0);
+ok("fim de treino: sem comentário, sem aviso de comentário", (await page.getByText("Seu professor vai ver o seu comentário.").count()) === 0);
+await page.getByRole("radio", { name: "Nota 4 de 5" }).click();
+ok("nota: confirmação na tela", await waitText(page, "Obrigado! Nota registrada."));
+const { data: rated } = await admin.from("workout_sessions").select("student_rating").eq("id", sessionId).single();
+ok("nota gravada no banco (rate_workout_session)", rated?.student_rating === 4, JSON.stringify(rated));
+ok("nota fora da URL", page.url() === `${BASE}/aluno/treino/${sessionId}/concluido`);
+await page.screenshot({ path: `${OUT}/f3-04b-concluido.png`, fullPage: true });
+await page.goto(`${BASE}/aluno/treino/${sessionId}`);
+await page.waitForURL(`${BASE}/aluno/treino/${sessionId}/concluido`, { timeout: 15000 });
+ok("sessão concluída reaberta vai para o resumo", await waitText(page, "Treino concluído!"));
+await page.getByRole("link", { name: "Voltar para o Hoje" }).click();
 await page.waitForURL(`${BASE}/aluno`, { timeout: 20000 });
 await settle(page);
 ok("treino finalizado volta para o Hoje", await waitText(page, "1 sessão concluída"));
+ok("Hoje: constância atualizada", await waitText(page, "1 treino este mês"));
 ok("rodízio: depois da A, sugere a B", await waitText(page, "Costas e bíceps"));
 
 // --- Orientação de cuidado: dor obrigatória na divisão C -------------------------------
@@ -115,8 +179,17 @@ ok("dor acima de 5: orientação de parar", await waitText(page, "Dor acima de 5
 await page.screenshot({ path: `${OUT}/f3-05-dor.png`, fullPage: true });
 await concluir.click();
 await page.getByRole("button", { name: "Finalizar treino" }).click();
+await page.getByLabel("Comentário para o seu personal (opcional)").fill("Senti o treino mais pesado hoje.");
 await page.getByRole("button", { name: "Salvar e finalizar" }).click();
+await page.waitForURL(/\/aluno\/treino\/[0-9a-f-]+\/concluido$/, { timeout: 20000 });
+ok("fim de treino com comentário: aviso de que o professor vai ver", await waitText(page, "Seu professor vai ver o seu comentário."));
+ok("comentário fora da URL e do título", !page.url().includes("pesado") && !(await page.title()).includes("pesado"));
+// Resposta do professor ao 1º treino (a tela do professor chega na 3.3; aqui grava direto, como a RPC faria).
+await admin.from("workout_sessions").update({ coach_reply: "Ótimo começo! Na próxima, suba 2 kg no supino.", coach_reply_at: new Date().toISOString() }).eq("id", sessionId);
+await page.getByRole("link", { name: "Voltar para o Hoje" }).click();
 await page.waitForURL(`${BASE}/aluno`, { timeout: 20000 });
+await settle(page);
+ok("Hoje: aviso da resposta do professor", await waitText(page, "Seu professor respondeu sobre o treino de hoje."));
 
 // --- Próximo treino: pergunta de dor ------------------------------------------------
 await page.getByRole("button", { name: "Iniciar treino" }).first().click();
@@ -134,6 +207,7 @@ await page.waitForURL(`${BASE}/aluno/historico`);
 await settle(page);
 ok("histórico: 2 concluídos e 1 em andamento", (await page.getByText("Concluído", { exact: true }).count()) === 2 && (await page.getByText("Em andamento", { exact: true }).count()) === 1);
 ok("histórico mostra o esforço", await waitText(page, "Esforço 7/10"));
+ok("histórico mostra a resposta do professor", (await waitText(page, "Resposta do seu professor")) && (await waitText(page, "Ótimo começo! Na próxima, suba 2 kg no supino.")));
 await page.screenshot({ path: `${OUT}/f3-07-historico.png`, fullPage: true });
 
 // --- Aluno no painel do treinador → volta para o app -----------------------------------
