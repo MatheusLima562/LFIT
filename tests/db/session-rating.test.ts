@@ -103,6 +103,14 @@ describe.runIf(dbTestsEnabled)("nota de satisfação da sessão (rate_workout_se
     expect(await ratingOf(done)).toBe(5);
   });
 
+  it("professor autenticado não grava a nota por UPDATE direto (erro ou zero linhas)", async () => {
+    for (const staff of [trainer, owner]) {
+      const { data, error } = await staff.client.from("workout_sessions").update({ student_rating: 1 }).eq("id", done).select("id");
+      expect(error !== null || (data ?? []).length === 0, `${staff.role}: ${error?.message ?? JSON.stringify(data)}`).toBe(true);
+    }
+    expect(await ratingOf(done)).toBe(5);
+  });
+
   it("nada da nota em audit_logs", async () => {
     const { data } = await fx.db.from("audit_logs").select("action, diff").eq("organization_id", org.id);
     expect((data ?? []).some((l) => String(l.action).includes("rating") || JSON.stringify(l.diff ?? {}).includes("student_rating"))).toBe(false);
