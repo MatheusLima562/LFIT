@@ -1,6 +1,14 @@
 # Início do professor com dados reais — plano (Fase 1: só plano)
 
-> Status: **proposta, aguardando aprovação do dono.** Nada implementado. Regra que continua valendo: **nunca exibir
+> Status: **aprovado pelo dono em 20/10/2026, com ajustes** (abaixo) — migrations `20261020120000` e
+> `20261020120100` **aplicadas no lfit-dev em 20/10/2026**, cards implementados. Ajustes do dono: "hoje" e "semana" em
+> America/Sao_Paulo, nunca UTC, semana começando na segunda; Engajamento e Retenção já na migration 2; **Satisfação real**
+> (média de `student_rating` em 30 dias com a quantidade de notas, "4,6 · 12 notas"; sem nenhuma nota o card some);
+> Avaliação física e Vendas continuam escondidos. Decisões de implementação: a saída das RPCs não traz foto (o avatar
+> usa iniciais); o card Treinos concluídos perdeu o selo "Ao vivo" (a página é lida ao abrir); o card Satisfação mostra
+> só agregados (sem comentário de aluno nem link "Ver todos feedbacks"). Proposta original abaixo.
+>
+> Status anterior: proposta, aguardando aprovação do dono. Regra que continua valendo: **nunca exibir
 > número de exemplo como se fosse real** (`app/(app)/page.tsx`, `EXAMPLE_ONLY_METRICS` em `lib/dashboard.ts`).
 
 ## 0. Ponto de partida (o que existe hoje)

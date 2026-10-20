@@ -1,5 +1,32 @@
 # LFit — SaaS de gestão para personal trainers
 
+## Modo autônomo (regra permanente, vale para toda sessão)
+O usuário NÃO acompanha a sessão. É PROIBIDO fazer perguntas, de
+qualquer forma: nem texto pedindo confirmação, nem a ferramenta de
+perguntas (AskUserQuestion), nem "quer que eu...?", nem opções
+A/B/C para ele escolher.
+1. Dúvida ou ambiguidade: escolha a opção mais conservadora e
+   reversível, siga em frente e registre em
+   docs/decisoes-autonomas.md (data, dúvida, escolha, motivo, como
+   reverter).
+2. Ação que exige aprovação (supabase db push/reset, git push, rm,
+   leitura de .env, qualquer comando em ask/deny): NÃO peça e NÃO
+   contorne por outro caminho (nada de python, node ou outro
+   comando para o mesmo efeito). Pule a etapa, termine tudo o que
+   não depende dela e liste em "Pendências para você" o comando
+   exato e por que é necessário.
+3. Se algo for impossível sem decisão do usuário (regra de negócio
+   nova, escolha de segurança, privacidade ou cobrança): faça a
+   parte independente, documente o resto em "Pendências" e pare.
+   Nunca invente regra dessas.
+4. Teste falhando: corrija a causa. Nunca afrouxe teste para
+   passar; se não conseguir, relate o que tentou.
+5. Segurança inalterada: nunca ler ou imprimir .env ou chaves;
+   nunca dado de saúde ou texto de chat em log, URL ou
+   notificação; nunca editar migration já aplicada; nunca push.
+6. Relatório final curto: (a) o que foi feito, (b) decisões
+   tomadas sozinho (link para o log), (c) Pendências para você.
+
 Painel web (desktop-first) para o treinador e, no futuro, app PWA (mobile-first) para o aluno.
 Uso inicial interno (substituir o MFIT Personal); objetivo futuro é vender para outros personais,
 por isso tudo é **multi-tenant desde o início**.
@@ -47,6 +74,7 @@ npx supabase link --project-ref <ref>   # uma vez por máquina
 npm run db:push           # aplica supabase/migrations no projeto linkado (confirme antes!)
 npm run db:types          # gera lib/db/types.ts a partir do banco linkado
 npm run db:seed           # dados fictícios (-- --reset para recriar)
+npm run db:seed:demo      # + ~90 dias de sessões fictícias para ver o Início com números (só lfit-dev; separado do seed padrão)
 npm run bootstrap:owner   # cria organização + owner e imprime link de convite (sem e-mail)
 ```
 
@@ -81,6 +109,8 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
 - O executor (`e2e/run.mjs`) limpa `public.rate_limits` antes de cada roteiro e falha se houver qualquer linha "✗".
 - Cadastro público: o `next start` precisa das chaves de TESTE do Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY=
   1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
+- `inicio-professor-cards`: confere os cards do Início (logado como o professor do seed) contra as RPCs e salva o print em
+  `tutoriais-video/inicio-professor.png`; rode depois do f3 ou do `db:seed:demo`, com `--no-reseed`.
 - Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`), idempotentes (limpam o que
   criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
@@ -490,8 +520,8 @@ effective_status =
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
-  últimos 7 dias. A fórmula deve aparecer na UI (tooltip no card). **Escondido até a 1.6** (hoje seria calculado sobre
-  dados de exemplo).
+  últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
+  `get_dashboard_engagement_retention` (migration `20261020120100`; ver "Estado atual" → Dashboard).
 
 ## Segurança e LGPD (obrigatório)
 - Grupos especiais (ex.: "Dor na Coluna"), anamnese e escala de dor são **dados de saúde**
@@ -549,6 +579,7 @@ sem efeitos colaterais).
 | Leitura do chat, sem efeito (2.12) | `get_chat_messages` (aluno ou staff), `list_chat_inbox`, `staff_total_unread_count` (caixa de conversas do professor) | funções `sql` — mesmo padrão "leitura sem efeito": `is_own_student`/`private.can_access_student()`; quem não acessa recebe lista/contagem vazia, nunca erro. `get_chat_messages` devolve `sender_first_name` (só o primeiro nome do staff, nulo nas do aluno; nunca sobrenome/e-mail) |
 | Recado do professor (2.12) | `get_my_announcement`, `set_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor |
 | Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()`; `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
+| **Início com dados reais** | `get_dashboard_training_stats`, `get_dashboard_engagement_retention` | `require_staff()` + `private.dashboard_students()` (alunos não excluídos da org com `can_access_student`: owner = organização, professor = os seus) — conta pelo **acesso ao aluno**, não pelo RLS de `workout_sessions` (que exige `can_view_student_health` e faria o owner contar a menos). Saída só com contagens, datas, nome do aluno e rótulo/nome da divisão; satisfação só agregada (média, quantidade, distribuição). "Hoje"/"semana" em São Paulo (`private.sp_day`, `private.sp_day_start`), semana começando na segunda. Testes em `tests/db/dashboard.test.ts` (fuso, outro tenant, professor só os seus, aluno e anônimo recusados, nenhum dado de saúde) |
 | **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
@@ -589,10 +620,14 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - Dashboard "Início": **regra — nunca exibir número de exemplo como se fosse real.** Só cards com dados reais
   (`features/dashboard/queries.ts`, RLS do usuário): Alunos ativos, Plano, **Acompanhamento** (a vencer/vencidos/sem
   treino — mesmos filtros de Meus alunos `?treino=`), **Novos alunos** (`students.created_at`: hoje em SP, 7 e 30 dias) e
-  **Acesso expirando** (7 dias). Escondidos até ter dados: Treinos registrados, Treinos concluídos, Treinos da semana,
-  Top 5 e Satisfação (Fase 3); Retenção e Engajamento (1.6; `EXAMPLE_ONLY_METRICS`); Avaliação física (módulo); Vendas
-  (C8). Cards ausentes também somem de "Personalizar". Banner de oferta só quando `/vendas/planos` existir.
-  `data/dashboard.ts` segue só como mock desses cards escondidos.
+  **Acesso expirando** (7 dias). **Com as RPCs do dashboard** (`docs/planos/dashboard-inicio.md`, migrations
+  `20261020120000`/`120100`): tiles Treinos registrados (30 dias, variação contra os 30 anteriores), Engajamento e
+  Retenção ("—"/"dados insuficientes" sem base), cards Treinos concluídos (hoje, contra o mesmo dia da semana passada),
+  Treinos da semana (seg–dom em SP, contra a semana passada até o mesmo dia) e Top 5 (30 dias); **Satisfação** = média de
+  `student_rating` em 30 dias com a quantidade ("4,6 · 12 notas"), o card some sem nenhuma nota. Se as RPCs falharem, esses
+  cards somem (nunca outro número). Lógica pura em `features/dashboard/stats.ts`. Continuam escondidos: Avaliação física
+  (módulo) e Vendas (C8). Cards ausentes também somem de "Personalizar". Banner de oferta só quando `/vendas/planos`
+  existir. A página só usa o `banner` de `data/dashboard.ts`; os mocks de lá e de `lib/dashboard.ts` não são mais usados.
 - Schema da Fase 1 em `supabase/migrations/` (tabelas, RLS, status efetivo, RPCs de alunos, cadastro
   público, links de acesso, storage). Regras de negócio vivem nas RPCs (`security definer`).
 - Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
