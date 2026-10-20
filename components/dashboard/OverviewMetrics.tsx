@@ -40,14 +40,14 @@ export function OverviewMetrics({ metrics }: { metrics: OverviewMetric[] }) {
             </span>
             <div className="min-w-0">
               <p className="flex items-center gap-0.5 text-xs font-medium text-ink-2">
-                <span className="truncate">{metric.label}</span>
+                <span className="sm:truncate">{metric.label}</span>
                 {metric.formula && <InfoHint content={metric.formula} />}
               </p>
               <p className="flex items-baseline gap-2">
                 <span className="tabular text-xl font-semibold tracking-tight text-ink">{metric.value}</span>
                 <span className="hidden truncate text-xs text-ink-3 xl:inline">{metric.hint}</span>
               </p>
-              <p className="truncate text-xs text-ink-3 xl:hidden">{metric.hint}</p>
+              <p className="text-xs text-ink-3 sm:truncate xl:hidden">{metric.hint}</p>
             </div>
           </div>
         );

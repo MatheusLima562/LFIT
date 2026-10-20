@@ -58,9 +58,13 @@ function ChartTooltip({ active, payload, label }: TooltipContentProps<ValueType,
   );
 }
 
-export function WeeklyWorkoutsCard({ data }: { data: WeeklyWorkoutsPoint[] }) {
+/**
+ * Treinos concluídos por dia (semana de segunda a domingo, em São Paulo) × as 2 semanas anteriores.
+ * `lastWeekToDate`: semana passada só até o mesmo dia da semana (quarta × quarta), para a comparação ser justa.
+ */
+export function WeeklyWorkoutsCard({ data, lastWeekToDate }: { data: WeeklyWorkoutsPoint[]; lastWeekToDate: number }) {
   const currentTotal = sum(data, "current");
-  const lastTotal = sum(data, "oneWeekAgo");
+  const empty = data.every((d) => !d.current && !d.oneWeekAgo && !d.twoWeeksAgo);
   const max = Math.max(...data.flatMap((d) => [d.current ?? 0, d.oneWeekAgo, d.twoWeeksAgo]));
   const yMax = Math.max(4, Math.ceil(max * 1.25));
 
@@ -74,10 +78,12 @@ export function WeeklyWorkoutsCard({ data }: { data: WeeklyWorkoutsPoint[] }) {
         action={
           <p className="text-xs text-ink-3">
             <span className="tabular font-semibold text-ink">{plural(currentTotal, "treino")}</span>{" "}
-            <span className="hidden sm:inline">· {formatNumber(lastTotal)} na semana passada</span>
+<span className="hidden sm:inline">· {formatNumber(lastWeekToDate)} na semana passada até hoje</span>
           </p>
         }
       />
+
+      {empty && <p className="mb-2 text-sm text-ink-2">Nenhum treino concluído nas últimas 3 semanas.</p>}
 
       <ul aria-label="Legenda" className="mb-3 flex flex-wrap gap-x-4 gap-y-1">
         {series.map((s) => (

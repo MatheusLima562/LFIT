@@ -29,22 +29,18 @@ interface SoonIndicator {
 }
 
 /**
- * Indicadores ainda sem dados reais (regra: nunca exibir número de exemplo como se fosse real —
- * ver `EXAMPLE_ONLY_METRICS` em lib/dashboard.ts e o comentário em app/(app)/page.tsx). Aparecem aqui
- * desabilitados, com a data/condição para ficarem disponíveis, mas nunca no grid do Início.
+ * Indicadores de módulos que ainda não existem (regra: nunca exibir número de exemplo como se fosse real). Aparecem aqui
+ * desabilitados, com a condição para ficarem disponíveis, mas nunca no grid do Início. Os demais cards vêm de dados
+ * reais (docs/planos/dashboard-inicio.md) e só aparecem quando a página os recebe — Satisfação, por exemplo, só com
+ * alguma nota nos últimos 30 dias.
  */
 export const SOON_INDICATORS: SoonIndicator[] = [
-  { id: "retencao", label: "Retenção", reason: "Quando o dashboard usar dados reais de alunos (etapa 1.6)." },
-  { id: "engajamento", label: "Engajamento semanal", reason: "Quando o dashboard usar dados reais de alunos (etapa 1.6)." },
-  { id: "treinos-30", label: "Treinos registrados", reason: "Quando os alunos registrarem treinos no app (Fase 3)." },
-  { id: "completed", label: cardLabels.completed, reason: "Quando os alunos registrarem treinos no app (Fase 3)." },
-  { id: "topStudents", label: cardLabels.topStudents, reason: "Quando os alunos registrarem treinos no app (Fase 3)." },
-  { id: "satisfaction", label: cardLabels.satisfaction, reason: "Quando os alunos avaliarem os treinos no app (Fase 3)." },
   { id: "assessment", label: cardLabels.assessment, reason: "Quando o módulo de Avaliação existir." },
+  { id: "sales", label: cardLabels.sales, reason: "Quando o módulo de Vendas existir." },
 ];
 
 interface CustomizeSheetProps {
-  /** Só os cards disponíveis (os escondidos até a 1.6/Fase 3 não aparecem aqui). */
+  /** Só os cards com dados (os ausentes da página não aparecem aqui). */
   ids: DashboardCardId[];
   open: boolean;
   onOpenChange: (open: boolean) => void;

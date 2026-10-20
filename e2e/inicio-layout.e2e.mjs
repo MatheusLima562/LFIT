@@ -22,8 +22,15 @@ for (const [vp, scheme] of [[{ width: 1440, height: 900 }, "light"], [{ width: 3
   await p.goto(`${BASE}/`); await settle(p);
   ok(`${vp.width}: sem banner de oferta`, (await p.getByText("Conteúdos Prontos + Limite em Dobro").count()) === 0);
   ok(`${vp.width}: cards presentes`, (await p.getByText("Acompanhamento de alunos").count()) >= 1 && (await p.getByText("Novos alunos", { exact: true }).count()) >= 1);
-  // Retenção e Engajamento escondidos até a 1.6 (dados de exemplo) — nem o card nem a fórmula.
-  ok(`${vp.width}: sem Retenção/Engajamento`, (await p.getByText(/^Retenção|Engajamento semanal/).count()) === 0 && (await p.getByRole("button", { name: /^Retenção =/ }).count()) === 0);
+  // Retenção e Engajamento com dados reais (RPCs do dashboard), cada um com a fórmula no tooltip.
+  const overview = p.getByRole("region", { name: "Visão geral" });
+  ok(
+    `${vp.width}: Retenção e Engajamento com fórmula`,
+    (await overview.getByText("Retenção", { exact: true }).count()) === 1 &&
+      (await overview.getByText("Engajamento semanal", { exact: true }).count()) === 1 &&
+      (await p.getByRole("button", { name: /^Retenção =/ }).count()) === 1 &&
+      (await p.getByRole("button", { name: /^Engajamento =/ }).count()) === 1,
+  );
   const sw = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(`${vp.width}: sem rolagem horizontal`, sw <= vp.width, String(sw));
   ok(`${vp.width}: sem erros de página`, p.errors.length === 0, p.errors.join(" | "));

@@ -4,6 +4,7 @@ import { listStudents } from "@/features/students/queries";
 import { studentListHref, type PlanFilter } from "@/features/students/search-params";
 import type { StatTab, StudentRef } from "@/types/dashboard";
 import { dueMeta, sinceMeta, startOfTodaySP } from "./meta";
+import type { EngagementStats, TrainingStats } from "./stats";
 
 /** Quantos nomes cada aba do Início mostra (o total vem à parte). */
 const LIST_LIMIT = 4;
@@ -84,4 +85,21 @@ export async function getExpiringAccess(now = new Date()): Promise<{ items: Stud
       meta: dueMeta(s.access_expires_at!, { future: "expira", past: "expirou" }, now),
     })),
   };
+}
+
+/**
+ * Treinos (registrados, concluídos hoje, semana, Top 5) — RPC `get_dashboard_training_stats` (acesso ao aluno, dias em
+ * São Paulo). Null se a RPC falhar (ex.: migration ainda não aplicada): os cards de treino simplesmente não aparecem.
+ */
+export async function getTrainingStats(): Promise<TrainingStats | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_dashboard_training_stats");
+  return error || !data ? null : (data as unknown as TrainingStats);
+}
+
+/** Engajamento, retenção e satisfação — RPC `get_dashboard_engagement_retention`. Null se falhar (tiles somem). */
+export async function getEngagementStats(): Promise<EngagementStats | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_dashboard_engagement_retention");
+  return error || !data ? null : (data as unknown as EngagementStats);
 }

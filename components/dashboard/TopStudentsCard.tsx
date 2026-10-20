@@ -32,7 +32,7 @@ export function TopStudentsCard({ students }: { students: TopStudent[] }) {
     <Card labelledBy="card-top" className="h-full">
       <CardHeader id="card-top" title="Top 5 alunos" icon={<CardIcon><Trophy /></CardIcon>} />
       {students.length === 0 ? (
-        <EmptyState icon={<Medal />} message="Nenhum treino marcado nos últimos 30 dias." />
+        <EmptyState icon={<Medal />} message="Nenhum treino concluído nos últimos 30 dias." />
       ) : (
         <ol className="flex flex-col gap-0.5">
           {students.map((student, i) => (
@@ -63,7 +63,7 @@ export function TopStudentsCard({ students }: { students: TopStudent[] }) {
         </ol>
       )}
       <CardFooter>
-        <p className="text-xs text-ink-3">Treinos marcados nos últimos 30 dias.</p>
+        <p className="text-xs text-ink-3">Treinos concluídos nos últimos 30 dias.</p>
       </CardFooter>
     </Card>
   );

@@ -1,34 +1,37 @@
 import { CheckCircle2, Dumbbell } from "lucide-react";
 import type { CompletedWorkoutItem } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
-import { Card, CardHeader, CardIcon } from "@/components/ui/Card";
+import { Card, CardFooter, CardHeader, CardIcon } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-function LiveBadge() {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-success-ink uppercase ring-1 ring-success-line">
-      <span aria-hidden className="relative flex size-1.5">
-        <span className="absolute inset-0 animate-live rounded-full bg-success" />
-        <span className="relative size-1.5 rounded-full bg-success" />
-      </span>
-      Ao vivo
-    </span>
-  );
+interface CompletedWorkoutsCardProps {
+  /** Até 8 mais recentes de hoje (dia de São Paulo). */
+  items: CompletedWorkoutItem[];
+  /** Total de hoje (pode ser maior que a lista). */
+  count: number;
+  /** "2 na quarta passada" — mesmo dia da semana passada. */
+  comparison: string;
 }
 
-export function CompletedWorkoutsCard({ items }: { items: CompletedWorkoutItem[] }) {
+/** Treinos concluídos hoje. Lido ao abrir a página (não é ao vivo). */
+export function CompletedWorkoutsCard({ items, count, comparison }: CompletedWorkoutsCardProps) {
   return (
     <Card labelledBy="card-completed" className="h-full">
       <CardHeader
         id="card-completed"
         title="Treinos concluídos"
         icon={<CardIcon><CheckCircle2 /></CardIcon>}
-        action={<LiveBadge />}
+        action={
+          <span className="tabular shrink-0 rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold text-ink ring-1 ring-line">
+            {formatNumber(count)} hoje
+          </span>
+        }
       />
       {items.length === 0 ? (
-        <EmptyState icon={<Dumbbell />} message="Nenhum treino concluído ainda." />
+        <EmptyState icon={<Dumbbell />} message="Nenhum treino concluído hoje." />
       ) : (
-        <ul aria-live="polite" className="flex flex-col divide-y divide-line">
+        <ul className="flex flex-col divide-y divide-line">
           {items.map((item) => (
             <li key={item.id} className="flex items-center gap-2.5 py-2 first:pt-0">
               <Avatar name={item.studentName} size="sm" />
@@ -41,6 +44,12 @@ export function CompletedWorkoutsCard({ items }: { items: CompletedWorkoutItem[]
           ))}
         </ul>
       )}
+      <CardFooter>
+        <p className="text-xs text-ink-3">
+          {count > items.length && `Mostrando os ${items.length} mais recentes · `}
+          {comparison}
+        </p>
+      </CardFooter>
     </Card>
   );
 }

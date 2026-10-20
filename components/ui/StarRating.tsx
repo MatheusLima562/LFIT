@@ -23,7 +23,7 @@ export function StarRating({ value, size = "md", className }: StarRatingProps) {
           aria-hidden
           className={cn(
             sizes[size],
-            n <= rounded ? "fill-amber-400 text-amber-400" : "fill-line text-line",
+            n <= rounded ? "fill-control text-control" : "fill-line text-line",
           )}
         />
       ))}

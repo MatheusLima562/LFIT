@@ -1,27 +1,57 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { CompletedWorkoutsCard } from "@/components/dashboard/CompletedWorkoutsCard";
 import { SatisfactionCard } from "@/components/dashboard/SatisfactionCard";
 import { TopStudentsCard } from "@/components/dashboard/TopStudentsCard";
+import { WeeklyWorkoutsCard } from "@/components/dashboard/WeeklyWorkoutsCard";
+import { satisfaction, trainingMetrics } from "@/features/dashboard/stats";
 
-/** Estados vazios dos cards do Início (sem avaliações / sem treinos marcados). */
-describe("Início: estados vazios", () => {
-  it("Satisfação sem avaliações: mensagem vazia, sem nota, estrelas, veredito ou NaN", () => {
-    const html = renderToStaticMarkup(
-      createElement(SatisfactionCard, {
-        data: { average: 0, total: 0, distribution: [5, 4, 3, 2, 1].map((stars) => ({ stars, count: 0 })), latest: null },
-        referenceDate: "2026-09-25T12:00:00-03:00",
+/** Estados vazios e conteúdo dos cards do Início (dados reais — docs/planos/dashboard-inicio.md). */
+describe("Início: cards com dados reais", () => {
+  it("Satisfação: média com a quantidade de notas, só agregados, sem link morto nem âmbar decorativo", () => {
+    const data = satisfaction({
+      today: "2026-10-21",
+      engagement: { active_students: 1, trained_7d: 1 },
+      retention: { base_31_60: 0, retained_0_30: 0 },
+      history_since: null,
+      satisfaction: { ratings: 12, average: 4.58, distribution: [5, 4, 3, 2, 1].map((stars) => ({ stars, count: stars === 5 ? 8 : stars === 4 ? 4 : 0 })) },
+    });
+    const html = renderToStaticMarkup(createElement(SatisfactionCard, { data: data! }));
+    expect(html).toContain("4,6 · 12 notas");
+    expect(html).not.toMatch(/NaN|Infinity|href="\/feedbacks"|amber/);
+  });
+
+  it("Satisfação sem nenhuma nota: o card não é montado", () => {
+    expect(
+      satisfaction({
+        today: "2026-10-21",
+        engagement: { active_students: 1, trained_7d: 0 },
+        retention: { base_31_60: 0, retained_0_30: 0 },
+        history_since: null,
+        satisfaction: { ratings: 0, average: null, distribution: [] },
       }),
-    );
-    expect(html).toContain("Nenhuma avaliação nos últimos 30 dias.");
-    expect(html).not.toMatch(/NaN|Infinity|Precisa de atenção|Excelente|Baseado em|Distribuição das avaliações/);
-    // O link "Ver todos feedbacks" continua desabilitado ("Em breve"), sem link morto.
-    expect(html).not.toContain('href="/feedbacks"');
+    ).toBeNull();
+  });
+
+  it("Treinos concluídos sem treino hoje: mensagem vazia, zero e a comparação, sem 'Ao vivo'", () => {
+    const html = renderToStaticMarkup(createElement(CompletedWorkoutsCard, { items: [], count: 0, comparison: "2 na quarta passada" }));
+    expect(html).toContain("Nenhum treino concluído hoje.");
+    expect(html).toContain("0 hoje");
+    expect(html).toContain("2 na quarta passada");
+    expect(html).not.toMatch(/Ao vivo|NaN/);
+  });
+
+  it("Treinos da semana sem nenhum treino: aviso de vazio", () => {
+    const data = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((day, i) => ({ day, current: i < 3 ? 0 : null, oneWeekAgo: 0, twoWeeksAgo: 0 }));
+    const html = renderToStaticMarkup(createElement(WeeklyWorkoutsCard, { data, lastWeekToDate: 0 }));
+    expect(html).toContain("Nenhum treino concluído nas últimas 3 semanas.");
+    expect(html).not.toMatch(/NaN|Infinity/);
   });
 
   it("Top 5 sem treinos: mensagem vazia, sem ranking nem posições vazias", () => {
     const html = renderToStaticMarkup(createElement(TopStudentsCard, { students: [] }));
-    expect(html).toContain("Nenhum treino marcado nos últimos 30 dias.");
+    expect(html).toContain("Nenhum treino concluído nos últimos 30 dias.");
     expect(html).not.toMatch(/Posição disponível|NaN|Infinity|<ol/);
   });
 
@@ -42,12 +72,13 @@ describe("Início: banner de oferta", () => {
 });
 
 describe("Início: indicadores só com dados reais", () => {
-  it("Retenção e Engajamento (calculados sobre dados de exemplo) ficam fora até a 1.6", async () => {
-    const { getDashboardSummary, visibleMetrics } = await import("@/lib/dashboard");
-    const ids = visibleMetrics(getDashboardSummary().metrics).map((m) => m.id);
-    expect(ids).not.toContain("retencao");
-    expect(ids).not.toContain("engajamento");
-    expect(ids).not.toContain("treinos-30");
-    expect(ids).toEqual(["ativos"]);
+  it("sem as RPCs do dashboard (ou se falharem), nenhum tile de treino, engajamento ou retenção", () => {
+    expect(trainingMetrics(null, null)).toEqual([]);
+  });
+
+  it("a página não usa mais os mocks de lib/dashboard", async () => {
+    const { readFileSync } = await import("node:fs");
+    const page = readFileSync("app/(app)/page.tsx", "utf8");
+    expect(page).not.toMatch(/lib\/dashboard|getDashboardSummary|visibleMetrics/);
   });
 });
