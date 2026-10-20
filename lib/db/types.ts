@@ -2525,6 +2525,8 @@ export type Database = {
           student_id: string
         }[]
       }
+      get_dashboard_engagement_retention: { Args: never; Returns: Json }
+      get_dashboard_training_stats: { Args: never; Returns: Json }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_announcement: {
         Args: { p_student_id?: string }
