@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
+import { BRAND } from "@/features/brand/config";
 import { getSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/db/server";
 import { ageFrom, formatDate, formatEnrollment } from "@/lib/format";
@@ -60,7 +61,7 @@ function toCsv(rows: StudentRow[], includeHealth: boolean) {
 
 async function toXlsx(rows: StudentRow[], includeHealth: boolean) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "LFit";
+  workbook.creator = BRAND.name;
   const sheet = workbook.addWorksheet(t.title);
   sheet.addRow(headersFor(includeHealth)).font = { bold: true };
   rows.forEach((s) => sheet.addRow(toCells(s, includeHealth)));

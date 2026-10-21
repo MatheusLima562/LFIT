@@ -215,7 +215,7 @@ export async function getStudentName(studentId: string) {
 export interface StudentRuleOtherLayer {
   level: ContraindicationLevel;
   note: string | null;
-  /** true = catálogo LFit; false = regra própria da equipe. */
+  /** true = catálogo global; false = regra própria da equipe. */
   isGlobal: boolean;
 }
 

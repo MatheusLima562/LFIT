@@ -19,7 +19,7 @@ export interface DefaultsDraft {
 }
 
 const s = (n: number | null) => (n === null ? "" : String(n).replace(".", ","));
-/** Sem camada da equipe, a unidade parte da do padrão LFit (ex.: prancha em segundos). */
+/** Sem camada da equipe, a unidade parte da do padrão global (ex.: prancha em segundos). */
 export const defaultsDraft = (d: ExerciseDefaults | null, base: ExerciseDefaults | null = null): DefaultsDraft => ({
   sets: s(d?.sets ?? null),
   quantityUnit: d?.quantityUnit ?? base?.quantityUnit ?? "reps",
@@ -34,7 +34,7 @@ const n = (v: string) => {
   return x === "" ? null : /^\d+(\.\d+)?$/.test(x) ? Number(x) : Number.NaN;
 };
 
-/** Rascunho → payload da action; números vazios = null (volta ao padrão LFit), exceto "até a falha". */
+/** Rascunho → payload da action; números vazios = null (volta ao padrão global), exceto "até a falha". */
 export function defaultsPayload(d: DefaultsDraft) {
   const empty = [d.sets, d.quantityMin, d.quantityMax, d.restMin, d.restMax].every((x) => x.trim() === "") && d.quantityUnit !== "failure";
   if (empty) return null;

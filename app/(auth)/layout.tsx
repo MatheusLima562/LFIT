@@ -1,4 +1,6 @@
 import { Check } from "lucide-react";
+import { BrandGlyph } from "@/features/brand/BrandMark";
+import { BRAND } from "@/features/brand/config";
 import { Logo } from "@/components/layout/Logo";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { messages } from "@/messages/pt-BR";
@@ -9,17 +11,17 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       {/* Painel da marca (desktop) */}
-      <aside className="relative isolate hidden overflow-hidden bg-linear-to-br from-[#9a320e] via-[#c2461a] to-[#e2632c] p-10 text-white lg:flex lg:flex-col">
+      <aside
+        className="relative isolate hidden overflow-hidden p-10 text-white lg:flex lg:flex-col"
+        style={{ backgroundImage: `linear-gradient(to bottom right, ${BRAND.colors.primaryDarker}, ${BRAND.colors.primaryDark}, ${BRAND.colors.primaryLight})` }}
+      >
         <span aria-hidden className="absolute -top-24 -right-24 -z-10 size-96 rounded-full bg-white/10" />
         <span aria-hidden className="absolute -bottom-32 -left-16 -z-10 size-[28rem] rounded-full bg-black/10" />
         <span aria-hidden className="absolute top-1/2 right-16 -z-10 size-3 rounded-full bg-white/40" />
 
         <div className="flex items-center gap-2.5">
           <span aria-hidden className="grid size-9 place-items-center rounded-xl bg-white/15 ring-1 ring-white/25">
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 4v13h10" />
-              <path d="M13 10h4" />
-            </svg>
+            <BrandGlyph className="size-5" />
           </span>
           <span className="text-lg font-bold tracking-tight">{messages.app.name}</span>
         </div>

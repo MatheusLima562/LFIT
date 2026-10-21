@@ -1,4 +1,5 @@
 import "./_guard.mjs";
+import { BRAND } from "../features/brand/config.ts";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
@@ -37,10 +38,10 @@ async function cleanup() {
 await cleanup();
 try {
 const page = await login("owner.seed@example.com");
-// Padrões da equipe num exercício LFit
+// Padrões da equipe num exercício da biblioteca global
 await page.goto(`${BASE}/treinos/exercicios?editar=${await exId("Prancha frontal")}`); await settle(page);
 const dlg = page.getByRole("dialog");
-ok("mostra o padrão LFit", (await dlg.getByText(/Padrão LFit: 3 × 20–40 s/).count()) === 1);
+ok("mostra o padrão da biblioteca", (await dlg.getByText(`Padrão ${BRAND.name}: 3 × 20–40 s`).count()) === 1);
 await dlg.getByLabel("Séries", { exact: true }).fill("4");
 await dlg.getByLabel("Mín.", { exact: true }).fill("30");
 await dlg.getByLabel("Máx.", { exact: true }).fill("45");

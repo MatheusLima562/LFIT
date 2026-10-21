@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og";
+import { BRAND } from "@/features/brand/config";
 
 const SIZES: Record<string, number> = { "icon-192.png": 192, "icon-512.png": 512, "apple-touch-icon.png": 180 };
 
-/** Ícones do PWA gerados a partir da marca (quadrado laranja com o "L"); estáticos e públicos. */
+/** Ícones do PWA gerados a partir da marca (features/brand/config.ts: cores e o "L"); estáticos e públicos. */
 export async function GET(_request: Request, { params }: RouteContext<"/pwa/[file]">) {
   const { file } = await params;
   const size = SIZES[file];
@@ -17,12 +18,13 @@ export async function GET(_request: Request, { params }: RouteContext<"/pwa/[fil
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #f0642d, #c2461a)",
+          background: `linear-gradient(135deg, ${BRAND.colors.primary}, ${BRAND.colors.primaryDark})`,
         }}
       >
         <svg width={size * 0.56} height={size * 0.56} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={24 * (stroke / size) * 1.8} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M7 4v13h10" />
-          <path d="M13 10h4" />
+          {BRAND.logoPaths.map((d) => (
+            <path key={d} d={d} />
+          ))}
         </svg>
       </div>
     ),

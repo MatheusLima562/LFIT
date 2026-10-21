@@ -20,7 +20,7 @@ export class AccountConflictError extends Error {
 
 /**
  * Vincula um usuário recém-criado no Auth ao aluno (perfil `student` + students.user_id).
- * Em conflito (e-mail já usado por outra conta do LFit), desfaz e lança AccountConflictError.
+ * Em conflito (e-mail já usado por outra conta do app), desfaz e lança AccountConflictError.
  */
 export async function linkStudentAccount(admin: Admin, target: StudentAccountTarget, userId: string) {
   const profile = await admin.from("profiles").insert({

@@ -3,6 +3,8 @@
  * Roteiro derivado de content/tutoriais/professor/01-tour-pela-interface.md ("Como entrar", "O menu lateral", "Início").
  * Usuário fictício do seed (Rafael Exemplo, administrador). Não cria nem altera dados.
  */
+import { BRAND } from "../../features/brand/config.ts";
+
 const menu = (v) => v.page.getByRole("navigation", { name: "Menu principal" });
 const regiao = (v, nome) => v.page.getByRole("region", { name: nome });
 
@@ -33,7 +35,7 @@ const roteiro = {
     },
     {
       legenda: "O menu lateral fica à esquerda.",
-      acao: (v) => v.apontar(v.page.getByRole("link", { name: "LFit — Início" })),
+      acao: (v) => v.apontar(v.page.getByRole("link", { name: `${BRAND.name} — Início` })),
     },
     {
       legenda: "Em Alunos: todos os alunos, cadastros públicos e grupos especiais.",

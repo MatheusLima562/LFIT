@@ -56,7 +56,7 @@ export interface PickerExercise {
   muscleGroups: MuscleGroup[];
   equipment: string | null;
   isGlobal: boolean;
-  /** Padrões resolvidos (equipe → LFit → 3 × 10–12, 60 s) para o "+ Rápido". */
+  /** Padrões resolvidos (equipe → global → 3 × 10–12, 60 s) para o "+ Rápido". */
   defaults: ExerciseDefaults;
 }
 

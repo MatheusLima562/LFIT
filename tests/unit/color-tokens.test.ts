@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { contrast, hueDistance } from "@/lib/color";
 import { MIN_HUE_DISTANCE, validateBrandColor } from "@/lib/brand-color";
+import { BRAND as BRAND_CONFIG } from "@/features/brand/config";
 
 const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
 /** Valores hex de um bloco (:root { … } ou .dark { … }). */
@@ -15,7 +16,7 @@ function tokens(selector: ":root" | ".dark") {
 }
 const light = tokens(":root");
 const dark = tokens(".dark");
-const BRAND = "#f0642d";
+const BRAND = BRAND_CONFIG.colors.primary;
 
 describe("tokens de cor: marca × semântica", () => {
   it.each([
@@ -46,7 +47,7 @@ describe("tokens de cor: marca × semântica", () => {
 });
 
 describe("validação da cor de marca (white label)", () => {
-  it("a marca atual do LFit passa e gera as variantes AA", () => {
+  it("a marca atual passa e gera as variantes AA", () => {
     const v = validateBrandColor(BRAND);
     expect(v).toMatchObject({ ok: true, issues: [] });
     expect(contrast("#ffffff", v.primaryBg!)).toBeGreaterThanOrEqual(4.5);

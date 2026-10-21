@@ -1,4 +1,5 @@
 import "./_guard.mjs";
+import { BRAND } from "../features/brand/config.ts";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
@@ -38,7 +39,7 @@ ok("condição criada", await toastWith(page, "Condição criada"));
 await page.getByRole("button", { name: "Nova condição" }).click();
 await d.getByLabel("Nome da condição").fill("coluna LOMBAR");
 await d.getByRole("button", { name: "Criar condição" }).click();
-ok("nome igual ao do catálogo recusado", await d.getByText("já existe no catálogo LFit").waitFor({ timeout: 15000 }).then(() => true, () => false));
+ok("nome igual ao do catálogo recusado", await d.getByText(`já existe no catálogo ${BRAND.name}`).waitFor({ timeout: 15000 }).then(() => true, () => false));
 await d.getByRole("button", { name: "Cancelar" }).click();
 await page.getByRole("button", { name: "Nova condição" }).click();
 await d.getByLabel("Nome da condição").fill(NAME.toUpperCase());

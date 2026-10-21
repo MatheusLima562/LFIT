@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { BRAND, productTitle } from "@/features/brand/config";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -15,16 +16,16 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "LFit — Gestão para personal trainers",
-    template: "%s · LFit",
+    default: productTitle,
+    template: `%s · ${BRAND.name}`,
   },
   description: "Plataforma de gestão de alunos, treinos, avaliações e vendas para personal trainers.",
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f7f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f0e" },
+    { media: "(prefers-color-scheme: light)", color: BRAND.colors.background },
+    { media: "(prefers-color-scheme: dark)", color: BRAND.colors.backgroundDark },
   ],
 };
 

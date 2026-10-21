@@ -2,7 +2,7 @@ import { z } from "zod";
 import { messages } from "@/messages/pt-BR";
 import { INTEGER_UNITS, QUANTITY_UNITS, type QuantityUnit } from "@/features/plans/prescription";
 
-/** Valores padrão de um exercício ("+ Rápido" no montador). Camadas: equipe → LFit → 3 × 10–12, 60 s. */
+/** Valores padrão de um exercício ("+ Rápido" no montador). Camadas: equipe → global → 3 × 10–12, 60 s. */
 export interface ExerciseDefaults {
   sets: number | null;
   quantityUnit: QuantityUnit;

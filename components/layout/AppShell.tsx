@@ -3,6 +3,7 @@
 import { Menu } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { PlanUsage, ShellUser } from "@/types/dashboard";
+import { BRAND } from "@/features/brand/config";
 import { useChatUnread } from "@/features/chat/hooks";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ export function AppShell({ user, plan, chatUnread, children }: AppShellProps) {
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent side="left" showCloseButton={false} className="w-[18rem] max-w-[85vw] gap-0 p-0 lg:hidden">
           <SheetTitle className="sr-only">Menu</SheetTitle>
-          <SheetDescription className="sr-only">Navegação principal do LFit</SheetDescription>
+          <SheetDescription className="sr-only">Navegação principal do {BRAND.name}</SheetDescription>
           <Sidebar user={user} plan={plan} counts={counts} onNavigate={() => setDrawerOpen(false)} />
         </SheetContent>
       </Sheet>

@@ -343,7 +343,7 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
       return;
     }
     if (workout.items.length >= MAX_ITEMS) return void toast.error(t.items.max);
-    // Entra com os valores padrão do exercício (equipe → LFit).
+    // Entra com os valores padrão do exercício (equipe → global).
     const item = emptyItem(e);
     setItems((items) => [...items, item]);
     if (quick) {

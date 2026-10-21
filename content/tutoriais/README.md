@@ -1,6 +1,6 @@
-# Tutoriais do LFit
+# Tutoriais do app
 
-Tutoriais passo a passo para quem usa o LFit. Os do professor aparecem no painel em **Ajuda** (`/ajuda`).
+Tutoriais passo a passo para quem usa o app. Os do professor aparecem no painel em **Ajuda** (`/ajuda`).
 
 ## Pastas
 
@@ -39,6 +39,8 @@ O teste `tests/unit/tutorials.test.ts` valida tudo isso em todos os arquivos (e 
 
 - Leitor: personal trainer **sem perfil técnico**. Português do Brasil, frases curtas, "você".
 - Use os nomes exatos dos botões e menus, em **negrito** (ex.: **Adicionar aluno**).
+- Para o nome do app, escreva `{{marca}}` (nunca o nome em si): ele vem de `features/brand/config.ts`, e trocar o nome
+  não exige editar tutoriais.
 - Passo a passo numerado (`1.`), um passo por linha.
 - Documente **só o que existe e funciona hoje**. Nada de "em breve", módulos marcados "Em breve" ou recursos planejados.
 - Exemplos com nomes **fictícios** (ex.: "Marina Teixeira (fictícia)"). **Nunca** dados reais de alunos nem dados de saúde.

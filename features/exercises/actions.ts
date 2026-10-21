@@ -164,7 +164,7 @@ export async function deleteExercise(exerciseId: string): Promise<ExerciseAction
 
 /**
  * Padrões da equipe para o exercício (camada da org). Tudo vazio = remove a camada da equipe
- * (volta ao padrão LFit). RLS: exercício global → qualquer staff; próprio → owner ou autor.
+ * (volta ao padrão global). RLS: exercício global → qualquer staff; próprio → owner ou autor.
  */
 export async function saveExerciseDefaults(exerciseId: string, input: unknown): Promise<ExerciseActionResult> {
   const session = await staffOrError();

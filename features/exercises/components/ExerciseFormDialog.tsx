@@ -36,7 +36,7 @@ interface Props {
   organizationId: string;
   videoQuotaBytes: number;
   videoUsedBytes: number;
-  /** Padrões atuais (LFit e da equipe) do exercício em edição. */
+  /** Padrões atuais (global e da equipe) do exercício em edição. */
   exerciseDefaults?: { global: ExerciseDefaults | null; team: ExerciseDefaults | null };
 }
 

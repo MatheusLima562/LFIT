@@ -1,4 +1,5 @@
 /** Tutoriais (content/tutoriais/<público>/<slug>.md): leitura do frontmatter e validação — lógica pura. */
+import { withBrand } from "@/features/brand/config";
 
 export const AUDIENCES = ["professor", "aluno"] as const;
 export type Audience = (typeof AUDIENCES)[number];
@@ -41,7 +42,8 @@ function unquote(value: string) {
  */
 export function parseTutorial(slug: string, raw: string, folderAudience?: string): Tutorial {
   const problems: string[] = [];
-  const text = raw.replace(/\r\n/g, "\n");
+  // {{marca}} no texto vira o nome do app (features/brand/config.ts): trocar o nome não exige editar tutoriais.
+  const text = withBrand(raw.replace(/\r\n/g, "\n"));
   const match = /^---\n([\s\S]*?)\n---\n?/.exec(text);
   if (!match) throw new Error(`${slug}: frontmatter ausente (bloco --- no topo do arquivo)`);
 

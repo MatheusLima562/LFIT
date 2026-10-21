@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { BRAND, studentAppTitle } from "@/features/brand/config";
 
 export const metadata: Metadata = {
-  title: { default: "LFit — Meu treino", template: "%s · LFit" },
+  title: { default: studentAppTitle, template: `%s · ${BRAND.name}` },
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "LFit", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: "default" },
   icons: { apple: "/pwa/apple-touch-icon.png" },
   robots: { index: false, follow: false },
 };
@@ -13,8 +14,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f7f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f0e" },
+    { media: "(prefers-color-scheme: light)", color: BRAND.colors.background },
+    { media: "(prefers-color-scheme: dark)", color: BRAND.colors.backgroundDark },
   ],
 };
 

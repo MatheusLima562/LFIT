@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* =============================================================================
- * Tokens do LFit
+ * Tokens da marca e da interface
  * Valores brutos por tema em :root / .dark; utilitários via @theme inline.
  *
  * MARCA × SEMÂNTICA (nunca misturar):
@@ -175,7 +175,7 @@
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);
 
-  /* Tokens do LFit (variam por tema) */
+  /* Tokens da interface (variam por tema) */
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-line: var(--line);
@@ -216,7 +216,7 @@
   --shadow-card: var(--shadow-card);
   --shadow-pop: var(--shadow-pop);
 
-  /* Tokens semânticos do shadcn/ui mapeados para os do LFit */
+  /* Tokens semânticos do shadcn/ui mapeados para os da interface */
   --color-background: var(--canvas);
   --color-foreground: var(--ink);
   --color-card: var(--surface);

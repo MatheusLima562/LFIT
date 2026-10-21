@@ -40,7 +40,7 @@ export async function saveCondition(input: unknown, id?: string): Promise<Condit
     search_terms: searchTerms,
   };
   const supabase = await createClient();
-  // Nome igual ao de uma condição do catálogo LFit confundiria as listas e os alertas.
+  // Nome igual ao de uma condição do catálogo global confundiria as listas e os alertas.
   const { data: catalog } = await supabase.from("health_conditions").select("name").is("organization_id", null);
   if ((catalog ?? []).some((c) => searchKey(c.name) === searchKey(values.name))) return { ok: false, error: t.existsGlobal };
 

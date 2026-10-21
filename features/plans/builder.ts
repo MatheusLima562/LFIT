@@ -111,7 +111,7 @@ export function pickPrescription(d: PrescriptionDraft): PrescriptionDraft {
   return { quantityUnit, qtyMin, qtyMax, qtyNote, intensity, speedMode, speed, tempo, restMin, restMax };
 }
 
-/** Valores padrão de um exercício (camada da equipe → LFit). */
+/** Valores padrão de um exercício (camada da equipe → global). */
 export interface ItemDefaults {
   sets: number | null;
   quantityUnit: QuantityUnit;

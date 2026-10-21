@@ -2,10 +2,12 @@
  * Textos da interface em PT-BR, centralizados para facilitar i18n no futuro.
  * Componentes novos devem buscar textos aqui em vez de escrevê-los inline.
  */
+import { BRAND } from "@/features/brand/config";
+
 export const messages = {
   app: {
-    name: "LFit",
-    tagline: "Gestão para personal trainers",
+    name: BRAND.name,
+    tagline: BRAND.tagline,
     soon: "Em breve",
     soonHint: "Este módulo ainda está em construção.",
   },
@@ -26,12 +28,8 @@ export const messages = {
     settings: "Configurações",
   },
   auth: {
-    brandTitle: "Tudo do seu trabalho como personal, em um só lugar.",
-    brandItems: [
-      "Alunos, treinos e avaliações organizados",
-      "Acompanhamento de frequência e feedbacks",
-      "Dados de saúde protegidos (LGPD)",
-    ],
+    brandTitle: BRAND.pitch.title,
+    brandItems: [...BRAND.pitch.items],
     signIn: {
       title: "Entrar",
       subtitle: "Acesse o painel do treinador.",
@@ -55,7 +53,7 @@ export const messages = {
     newPassword: {
       resetTitle: "Definir nova senha",
       resetSubtitle: "Escolha uma senha com pelo menos 10 caracteres.",
-      inviteTitle: "Boas-vindas ao LFit",
+      inviteTitle: `Boas-vindas ao ${BRAND.name}`,
       inviteSubtitle: "Defina uma senha para acessar sua conta.",
       password: "Nova senha",
       confirm: "Confirmar senha",
@@ -90,7 +88,7 @@ export const messages = {
     exportHealthTitle: "Exportar dados de saúde?",
     exportHealthText:
       "Grupos especiais (ex.: “Dor na Coluna”) são dados de saúde — dados sensíveis pela LGPD. " +
-      "O arquivo sairá do sistema sem as proteções de acesso do LFit. Guarde-o com segurança e não o compartilhe.",
+      `O arquivo sairá do sistema sem as proteções de acesso do ${BRAND.name}. Guarde-o com segurança e não o compartilhe.`,
     exportGroupFilterText:
       "O filtro por grupo especial está ativo: o arquivo revela que todos os alunos listados pertencem a esse grupo " +
       "(dado de saúde, sensível pela LGPD). Guarde-o com segurança e não o compartilhe.",
@@ -183,7 +181,7 @@ export const messages = {
       linkCopyFailed: "Não foi possível copiar. Copie o link manualmente:",
       inviteSent: "E-mail de acesso enviado.",
       emailFailed: "Não foi possível enviar o e-mail. Verifique a configuração de SMTP do Supabase.",
-      emailInUse: "Este e-mail já tem acesso ao LFit em outra conta.",
+      emailInUse: `Este e-mail já tem acesso ao ${BRAND.name} em outra conta.`,
     },
   },
   studentForm: {
@@ -416,7 +414,7 @@ export const messages = {
     trainerFallback: "Seu professor",
   },
   access: {
-    title: "Acessar o LFit",
+    title: `Acessar o ${BRAND.name}`,
     subtitle: "Seu professor enviou um link para você definir sua senha.",
     continue: "Continuar",
     continuing: "Abrindo…",
@@ -427,7 +425,7 @@ export const messages = {
   },
   exercises: {
     title: "Exercícios",
-    subtitle: "Biblioteca global do LFit + exercícios próprios da sua equipe. Contraindicações alimentam os alertas do montador de treino.",
+    subtitle: `Biblioteca global do ${BRAND.name} + exercícios próprios da sua equipe. Contraindicações alimentam os alertas do montador de treino.`,
     new: "Novo exercício",
     edit: "Editar exercício",
     searchLabel: "Buscar exercícios",
@@ -442,12 +440,12 @@ export const messages = {
       anyCondition: "Contraindicações: todas",
       clear: "Limpar filtros",
     },
-    origin: { all: "Todos", global: "Biblioteca LFit", own: "Da equipe", archived: "Arquivados" },
+    origin: { all: "Todos", global: `Biblioteca ${BRAND.name}`, own: "Da equipe", archived: "Arquivados" },
     columns: { name: "Exercício", muscles: "Grupos musculares", equipment: "Equipamento", origin: "Origem", rules: "Contraindicações", actions: "Ações" },
-    globalBadge: "LFit",
+    globalBadge: `${BRAND.name}`,
     ownBadge: "Equipe",
     archivedBadge: "Arquivado",
-    customizedFrom: "Personalizado da biblioteca LFit",
+    customizedFrom: `Personalizado da biblioteca ${BRAND.name}`,
     empty: { all: "Nenhum exercício encontrado.", search: "Nenhum exercício corresponde aos filtros.", archived: "Nenhum exercício arquivado." },
     pagination: (from: number, to: number, total: number) => `${from}–${to} de ${total} exercícios`,
     rulesCount: (n: number) => (n === 1 ? "1 contraindicação" : `${n} contraindicações`),
@@ -473,7 +471,7 @@ export const messages = {
     rulesSaved: "Contraindicações atualizadas.",
     exists: "Já existe um exercício com esse nome.",
     notFound: "Exercício não encontrado.",
-    readOnlyGlobal: "Exercício da biblioteca LFit: os dados são somente leitura. As contraindicações abaixo valem só para a sua equipe.",
+    readOnlyGlobal: `Exercício da biblioteca ${BRAND.name}: os dados são somente leitura. As contraindicações abaixo valem só para a sua equipe.`,
     readOnlyOther: "Só o administrador ou quem criou pode editar este exercício.",
     delete: "Excluir definitivamente",
     deleteTitle: "Excluir exercício definitivamente?",
@@ -495,11 +493,11 @@ export const messages = {
     },
     defaults: {
       title: "Valores padrão (+ Rápido)",
-      hint: "Usados ao adicionar o exercício no montador. Vazio = padrão LFit.",
-      lfit: (text: string) => `Padrão LFit: ${text}`,
+      hint: `Usados ao adicionar o exercício no montador. Vazio = padrão ${BRAND.name}.`,
+      lfit: (text: string) => `Padrão ${BRAND.name}: ${text}`,
       sets: "Séries",
       saved: "Valores padrão salvos.",
-      clear: "Voltar ao padrão LFit",
+      clear: `Voltar ao padrão ${BRAND.name}`,
     },
     media: {
       title: "Vídeo de demonstração",
@@ -522,7 +520,7 @@ export const messages = {
       removed: "Vídeo removido.",
       play: "Reproduzir vídeo",
       needsSave: "Salve o exercício primeiro; o vídeo é enviado junto.",
-      globalHint: "Para usar um vídeo próprio em um exercício da biblioteca LFit, use “Personalizar”.",
+      globalHint: `Para usar um vídeo próprio em um exercício da biblioteca ${BRAND.name}, use “Personalizar”.`,
       usage: "Vídeos da equipe",
       usageText: (used: string, quota: string) => `${used} de ${quota} usados`,
       freePlan: "Seu plano permite apenas links do YouTube/Vimeo. Faça upgrade para enviar vídeos próprios.",
@@ -541,7 +539,7 @@ export const messages = {
     rules: {
       title: "Contraindicações",
       hint: "Quando um aluno estiver em um grupo especial ligado a uma destas condições, o montador de treino mostra um alerta (não bloqueia).",
-      globalTitle: "Regras da biblioteca LFit",
+      globalTitle: `Regras da biblioteca ${BRAND.name}`,
       teamTitle: "Regras da sua equipe",
       add: "Adicionar contraindicação",
       condition: "Condição",
@@ -600,7 +598,7 @@ export const messages = {
   conditions: {
     title: "Condições de saúde",
     subtitle: "Condições usadas nas contraindicações dos exercícios. Ligue-as aos grupos especiais para ativar os alertas no montador de treino.",
-    globalTitle: "Catálogo LFit",
+    globalTitle: `Catálogo ${BRAND.name}`,
     globalHint: "Condições padrão, iguais para todas as equipes (somente leitura).",
     ownTitle: "Condições da sua equipe",
     ownHint: "Crie condições mais específicas (ex.: “Hérnia – intolerância à flexão”, “Estenose”).",
@@ -627,7 +625,7 @@ export const messages = {
     archiveText: (name: string) => `“${name}” deixa de gerar alertas e de aparecer nas listas. Você pode restaurá-la depois.`,
     ownerOnlyArchive: "Só o administrador arquiva condições.",
     exists: "Já existe uma condição com esse nome (verifique também as arquivadas).",
-    existsGlobal: "Essa condição já existe no catálogo LFit. Use a do catálogo ou dê um nome mais específico.",
+    existsGlobal: `Essa condição já existe no catálogo ${BRAND.name}. Use a do catálogo ou dê um nome mais específico.`,
     region: "Região (opcional)",
     regionNone: "Sem região",
     regionHint: "Agrupa a condição sob uma região do catálogo (ex.: Coluna lombar).",
@@ -1050,7 +1048,7 @@ export const messages = {
       columns: { n: "#", exercise: "Exercício", sets: "Séries", quantity: "Quantidade", load: "Carga", rest: "Pausa", intensity: "Intensidade", speed: "Velocidade" },
       setLine: (n: number) => `Série ${n}`,
       emptyWorkout: "Sem exercícios nesta divisão.",
-      generatedAt: (date: string) => `Gerado em ${date} pelo LFit`,
+      generatedAt: (date: string) => `Gerado em ${date} pelo ${BRAND.name}`,
     },
     validation: {
       reps: "Até 20 caracteres.",
@@ -1074,7 +1072,7 @@ export const messages = {
     },
   },
   aluno: {
-    appName: "LFit",
+    appName: BRAND.name,
     signIn: {
       title: "Entrar no app",
       subtitle: "Use o e-mail e a senha que você criou pelo link do seu personal.",
@@ -1267,7 +1265,7 @@ export const messages = {
   /** Tutoriais do professor (/ajuda). O conteúdo vem de content/tutoriais/professor/. */
   help: {
     title: "Ajuda",
-    subtitle: "Tutoriais passo a passo para usar o LFit no dia a dia.",
+    subtitle: `Tutoriais passo a passo para usar o ${BRAND.name} no dia a dia.`,
     listLabel: "Tutoriais",
     empty: "Nenhum tutorial publicado ainda.",
     updated: (date: string) => `Atualizado em ${date}`,

@@ -1,6 +1,6 @@
 ---
 title: Tour pela interface do professor
-summary: Conheça o painel do LFit — o menu, as telas principais e o caminho para as tarefas do dia a dia.
+summary: Conheça o painel do {{marca}} — o menu, as telas principais e o caminho para as tarefas do dia a dia.
 audience: professor
 order: 1
 updated: 2026-10-20
@@ -10,7 +10,7 @@ updated: 2026-10-20
 
 O painel é para o professor e para o administrador da conta. Professores entram por convite do administrador.
 
-1. Abra o endereço do LFit no navegador do computador.
+1. Abra o endereço do {{marca}} no navegador do computador.
 2. Na tela **Entrar**, digite seu **E-mail** e sua **Senha**.
 3. Clique em **Entrar**.
 
@@ -94,7 +94,7 @@ Em [Turmas](/turmas) você organiza alunos que treinam juntos.
 ## Treinos e exercícios
 
 - [Treinos](/treinos): os treinos ativos dos seus alunos, do vencimento mais próximo ao mais distante.
-- [Exercícios](/treinos/exercicios): a biblioteca do LFit mais os exercícios da sua equipe. Dá para buscar, filtrar por grupo muscular e equipamento, ver instruções e vídeo e criar um **Novo exercício**. **Personalizar** cria uma cópia editável de um exercício da biblioteca só para a sua equipe.
+- [Exercícios](/treinos/exercicios): a biblioteca do {{marca}} mais os exercícios da sua equipe. Dá para buscar, filtrar por grupo muscular e equipamento, ver instruções e vídeo e criar um **Novo exercício**. **Personalizar** cria uma cópia editável de um exercício da biblioteca só para a sua equipe.
 - [Modelos prontos](/treinos/modelos): treinos reutilizáveis. Crie com **Novo modelo** ou salve um treino de aluno como modelo.
 - [Condições de saúde](/treinos/condicoes): o catálogo de condições usado nos alertas, com um **Guia** de apoio para cada uma.
 - [Métodos e objetivos](/treinos/listas): listas usadas nos exercícios do treino. Somente o administrador altera.

@@ -211,7 +211,7 @@ export async function getVideoUsage(): Promise<VideoUsage> {
   return { usedBytes: Number(data?.used_bytes ?? 0), quotaBytes: Number(data?.quota_bytes ?? 0) };
 }
 
-/** Padrões do exercício: camada LFit (só leitura) e da equipe (editável). */
+/** Padrões do exercício: camada global (só leitura) e da equipe (editável). */
 export async function getExerciseDefaults(exerciseId: string) {
   const supabase = await createClient();
   const { data } = await supabase
