@@ -609,6 +609,14 @@ Checklist para toda função `SECURITY DEFINER` nova:
   atualizada — revise sua cópia" quando uma regra global do exercício de origem mudar depois da personalização.
 - **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
   `npm run bootstrap:owner` e trainers de teste existem só no seed. O item "Equipe" segue "Em breve".
+- **Dashboard — retenção superestimada:** `private.dashboard_students()` exclui alunos arquivados/excluídos
+  (`deleted_at`). Quem treinou nos dias 31–60 e depois foi excluído sai da base, então a Retenção fica maior do que é.
+  Corrigir contando a base pelas sessões (inclusive de alunos excluídos depois), sem expor nomes deles.
+- **Dashboard — fuso fixo:** "hoje", "semana" e os dias do Início usam `America/Sao_Paulo` fixo
+  (`private.today_br()`, `private.sp_day`, `private.sp_day_start`). Antes de vender fora desse fuso, virar coluna por
+  organização (`organizations.time_zone`) e passar para as RPCs.
+- **Código sem uso:** `lib/dashboard.ts` (inteiro) e os mocks de `data/dashboard.ts` (tudo menos `banner`) não são mais
+  usados pelo Início. Apagar (exige `rm`; pedir na sessão).
 
 ## Decisões pendentes (rever antes de comercializar)
 - **"1 e-mail = 1 conta"**: cada usuário do Auth tem um único `profile` (uma organização). Um aluno que
@@ -622,9 +630,9 @@ Checklist para toda função `SECURITY DEFINER` nova:
   treino — mesmos filtros de Meus alunos `?treino=`), **Novos alunos** (`students.created_at`: hoje em SP, 7 e 30 dias) e
   **Acesso expirando** (7 dias). **Com as RPCs do dashboard** (`docs/planos/dashboard-inicio.md`, migrations
   `20261020120000`/`120100`): tiles Treinos registrados (30 dias, variação contra os 30 anteriores), Engajamento e
-  Retenção ("—"/"dados insuficientes" sem base), cards Treinos concluídos (hoje, contra o mesmo dia da semana passada),
+  Retenção ("—" e "dados insuficientes até dd/mm" com menos de 60 dias desde o primeiro treino concluído), cards Treinos concluídos (hoje, contra o mesmo dia da semana passada),
   Treinos da semana (seg–dom em SP, contra a semana passada até o mesmo dia) e Top 5 (30 dias); **Satisfação** = média de
-  `student_rating` em 30 dias com a quantidade ("4,6 · 12 notas"), o card some sem nenhuma nota. Se as RPCs falharem, esses
+  `student_rating` em 30 dias com a quantidade ("4,6 · 12 notas"), o card some sem nenhuma nota e mostra "Dados insuficientes" com menos de 60 dias de histórico. Treinos registrados e Engajamento contam treinos INICIADOS (concluídos ou não). Se as RPCs falharem, esses
   cards somem (nunca outro número). Lógica pura em `features/dashboard/stats.ts`. Continuam escondidos: Avaliação física
   (módulo) e Vendas (C8). Cards ausentes também somem de "Personalizar". Banner de oferta só quando `/vendas/planos`
   existir. A página só usa o `banner` de `data/dashboard.ts`; os mocks de lá e de `lib/dashboard.ts` não são mais usados.
