@@ -4,8 +4,24 @@ import { anon, dbTestsEnabled, Fixture, rpc, spDateDaysAgo, studentData, type Te
 
 const BUCKET = "exercise-media";
 const bytes = (n: number) => new Uint8Array(n).fill(7);
+/** Prazo por chamada ao Storage: uma requisição que não responde falha em segundos, com o nome da operação. */
+const STORAGE_CALL_MS = 45_000;
+/** Prazo explícito de cada teste e gancho deste arquivo (abaixo de 2 min, mesmo com várias chamadas). */
+const TEST_MS = 90_000;
 
-describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, políticas, cota", () => {
+async function within<T>(p: PromiseLike<T>, what: string, ms = STORAGE_CALL_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what}: o Storage não respondeu em ${ms / 1000} s`)), ms);
+  });
+  try {
+    return await Promise.race([p, deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, políticas, cota", { timeout: TEST_MS }, () => {
   const fx = new Fixture();
   let org: TestOrg, orgB: TestOrg;
   let owner: TestUser, trainer: TestUser, trainer2: TestUser, student: TestUser, ownerB: TestUser;
@@ -13,14 +29,14 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
   const paths: string[] = [];
 
   const upload = async (user: TestUser, path: string, size = 2000, contentType = "video/mp4") => {
-    const r = await user.client.storage.from(BUCKET).upload(path, bytes(size), { contentType });
+    const r = await within(user.client.storage.from(BUCKET).upload(path, bytes(size), { contentType }), `upload ${path}`);
     if (!r.error) paths.push(path);
     return r;
   };
   const vid = (orgId: string, exId: string, ext = "mp4") => `${orgId}/${exId}/${randomUUID()}.${ext}`;
   const canRead = async (user: TestUser | null, path: string) => {
     const client = user ? user.client : anon();
-    const { data } = await client.storage.from(BUCKET).download(path);
+    const { data } = await within(client.storage.from(BUCKET).download(path), `download ${path}`);
     return Boolean(data && data.size > 0);
   };
 
@@ -38,11 +54,11 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
     exB = await rpc<string>(ownerB.client, "save_exercise", { p_id: null, p_data: { name: "Da org B", muscle_groups: ["abdomen"] }, p_rules: [] });
     studentId = (await rpc<{ id: string }>(owner.client, "create_student", { p_data: studentData() })).id;
     await fx.db.from("students").update({ user_id: student.id }).eq("id", studentId);
-  });
+  }, TEST_MS);
   afterAll(async () => {
-    if (paths.length) await fx.db.storage.from(BUCKET).remove(paths);
+    if (paths.length) await within(fx.db.storage.from(BUCKET).remove(paths), "limpeza do Storage");
     await fx.cleanup();
-  });
+  }, TEST_MS);
 
   it("upload: só na pasta de exercício próprio editável; tipo e tamanho validados pelo bucket", async () => {
     expect((await upload(trainer, vid(org.id, ex))).error).toBeNull();
@@ -54,7 +70,7 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
     expect((await upload(trainer, vid(org.id, ex, "mp4"), 100, "application/octet-stream")).error).not.toBeNull();
     expect((await upload(trainer, `${org.id}/${ex}/video.mp4`)).error).not.toBeNull(); // nome fora do padrão
     expect((await upload(student, vid(org.id, ex))).error).not.toBeNull();
-    expect((await anon().storage.from(BUCKET).upload(vid(org.id, ex), bytes(10), { contentType: "video/mp4" })).error).not.toBeNull();
+    expect((await within(anon().storage.from(BUCKET).upload(vid(org.id, ex), bytes(10), { contentType: "video/mp4" }), "upload anônimo")).error).not.toBeNull();
   });
 
   it("recusa arquivo acima de 15 MB", async () => {
@@ -84,8 +100,8 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
     const video = data!.video_path!;
     const who = { owner: await canRead(owner, video), trainer2: await canRead(trainer2, video), ownerB: await canRead(ownerB, video), anon: await canRead(null, video), student: await canRead(student, video) };
     expect(who).toEqual({ owner: true, trainer2: true, ownerB: false, anon: false, student: false });
-    expect((await ownerB.client.storage.from(BUCKET).createSignedUrl(video, 60)).error).not.toBeNull();
-    expect((await ownerB.client.storage.from(BUCKET).list(org.id)).data ?? []).toHaveLength(0);
+    expect((await within(ownerB.client.storage.from(BUCKET).createSignedUrl(video, 60), "assinar (outra org)")).error).not.toBeNull();
+    expect((await within(ownerB.client.storage.from(BUCKET).list(org.id), "listar (outra org)")).data ?? []).toHaveLength(0);
 
     const planId = await rpc<string>(owner.client, "save_training_plan", {
       p_plan: { student_id: studentId, name: "Plano", starts_on: spDateDaysAgo(5), ends_on: spDateDaysAgo(-60), workouts: [{ label: "A", items: [{ exercise_id: ex, sets: 3, reps: "10" }] }] },
@@ -96,7 +112,7 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
     expect(await canRead(student, data!.poster_path!)).toBe(true);
     await rpc(owner.client, "archive_plan", { p_plan_id: planId });
     // A política é avaliada no banco a cada assinatura: nega na hora.
-    expect((await student.client.storage.from(BUCKET).createSignedUrl(video, 60)).error, "assinar após arquivar").not.toBeNull();
+    expect((await within(student.client.storage.from(BUCKET).createSignedUrl(video, 60), "assinar (aluno)")).error, "assinar após arquivar").not.toBeNull();
     // Obs.: um download direto já feito pelo aluno pode continuar servido pelo cache do Storage por
     // um tempo (medido > 90 s), assim como uma URL assinada já emitida vale até expirar. Ver CLAUDE.md.
   });
@@ -104,9 +120,9 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
   it("remover/excluir arquivo: só quem edita o exercício", async () => {
     const extra = vid(org.id, ex, "webm");
     await upload(trainer, extra, 100, "video/webm");
-    const { data: byOther } = await trainer2.client.storage.from(BUCKET).remove([extra]);
+    const { data: byOther } = await within(trainer2.client.storage.from(BUCKET).remove([extra]), "remover (outro professor)");
     expect(byOther ?? []).toHaveLength(0);
-    const { data: byOwner } = await owner.client.storage.from(BUCKET).remove([extra]);
+    const { data: byOwner } = await within(owner.client.storage.from(BUCKET).remove([extra]), "remover (owner)");
     expect(byOwner).toHaveLength(1);
   });
 
@@ -127,7 +143,7 @@ describe.runIf(dbTestsEnabled)("Vídeo próprio do exercício: bucket, política
     await fx.db.from("organizations").update({ video_quota_bytes: null }).eq("id", org.id);
 
     const pathB = `${orgB.id}/${exB}/${randomUUID()}.mp4`;
-    const up = await ownerB.client.storage.from(BUCKET).upload(pathB, bytes(100), { contentType: "video/mp4" });
+    const up = await within(ownerB.client.storage.from(BUCKET).upload(pathB, bytes(100), { contentType: "video/mp4" }), "upload (outra org)");
     if (!up.error) paths.push(pathB);
     const free = await ownerB.client.from("exercises").update({ video_path: pathB }).eq("id", exB);
     expect(free.error?.message).toBe("VIDEO_QUOTA_EXCEEDED");
