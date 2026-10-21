@@ -54,19 +54,24 @@ describe("tiles da visão geral", () => {
   it("com dados: treinos, engajamento e retenção com fórmula", () => {
     const m = trainingMetrics(training(), engagement());
     expect(m.map((x) => [x.id, x.value])).toEqual([["treinos-30", "12"], ["engajamento", "65%"], ["retencao", "75%"]]);
-    expect(m[0].hint).toBe("nos últimos 30 dias · +20% vs. 30 dias anteriores");
-    expect(m[1].hint).toBe("13 de 20 treinaram em 7 dias");
+    expect(m[0].hint).toBe("iniciados nos últimos 30 dias · +20% vs. 30 dias anteriores");
+    expect(m[1].hint).toBe("13 de 20 iniciaram em 7 dias");
     expect(m[2].hint).toBe("6 de 8 voltaram a treinar");
     expect(m.every((x) => x.formula)).toBe(true);
   });
   it("sem período anterior, sem variação; sem alunos ativos, '—'", () => {
     const m = trainingMetrics(training({ registered_prev_30d: 0 }), engagement({ engagement: { active_students: 0, trained_7d: 0 } }));
-    expect(m[0].hint).toBe("nos últimos 30 dias");
+    expect(m[0].hint).toBe("iniciados nos últimos 30 dias");
     expect(m[1]).toMatchObject({ value: "—", hint: "nenhum aluno ativo" });
   });
-  it("retenção sem base: dados insuficientes e a data em que passa a existir", () => {
+  it("retenção com menos de 60 dias de histórico: dados insuficientes (nunca 0%) e a data em que passa a valer", () => {
     const r = trainingMetrics(null, engagement({ retention: { base_31_60: 0, retained_0_30: 0 }, history_since: "2026-10-10" }));
-    expect(r[1]).toMatchObject({ id: "retencao", value: "—", hint: "dados insuficientes até 09/11" });
+    expect(r[1]).toMatchObject({ id: "retencao", value: "—", hint: "dados insuficientes até 09/12" });
+    // Base parcial (primeiro treino há 40 dias): já há alunos na janela de 31 a 60 dias, mas ela não está completa.
+    const partial = trainingMetrics(null, engagement({ retention: { base_31_60: 3, retained_0_30: 0 }, history_since: "2026-09-11" }));
+    expect(partial[1]).toMatchObject({ value: "—", hint: "dados insuficientes até 10/11" });
+    // 60 dias exatos: vale.
+    expect(trainingMetrics(null, engagement({ history_since: "2026-08-22" }))[1]).toMatchObject({ value: "75%" });
     const none = trainingMetrics(null, engagement({ retention: { base_31_60: 0, retained_0_30: 0 }, history_since: null }));
     expect(none[1].hint).toBe("dados insuficientes");
   });
@@ -102,6 +107,11 @@ describe("satisfação", () => {
   });
   it("uma nota só: singular", () => {
     expect(satisfaction(engagement({ satisfaction: { ratings: 1, average: 5, distribution: [] } }))?.headline).toBe("5,0 · 1 nota");
+  });
+  it("com menos de 60 dias de histórico: 'Dados insuficientes', sem média", () => {
+    const s = satisfaction(engagement({ history_since: "2026-10-10" }));
+    expect(s).toMatchObject({ headline: "Dados insuficientes", insufficient: "12 notas até agora · média a partir de 09/12" });
+    expect(satisfaction(engagement({ history_since: "2026-08-01" }))?.insufficient).toBeNull();
   });
   it("sem nenhuma nota (ou sem a RPC), o card some", () => {
     expect(satisfaction(engagement({ satisfaction: { ratings: 0, average: null, distribution: [] } }))).toBeNull();

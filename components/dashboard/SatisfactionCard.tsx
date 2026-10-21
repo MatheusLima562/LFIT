@@ -25,28 +25,36 @@ export function SatisfactionCard({ data }: { data: SatisfactionView }) {
         </span>
       </header>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-6">
-        <div className="flex flex-col items-start">
-          <p className="tabular text-3xl leading-none font-semibold tracking-tight text-ink">{data.headline}</p>
-          <StarRating value={data.average} size="lg" className="mt-2.5" />
+      {data.insufficient ? (
+        // Histórico curto: nada de média (enganaria) — só quantas notas já chegaram e quando a média passa a valer.
+        <div className="flex flex-col items-start gap-1">
+          <p className="text-xl font-semibold tracking-tight text-ink">{data.headline}</p>
+          <p className="text-[13px] text-ink-2">{data.insufficient}</p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-6">
+          <div className="flex flex-col items-start">
+            <p className="tabular text-3xl leading-none font-semibold tracking-tight text-ink">{data.headline}</p>
+            <StarRating value={data.average} size="lg" className="mt-2.5" />
+          </div>
 
-        <ul aria-label="Distribuição das notas" className="flex flex-col gap-1.5">
-          {data.distribution.map(({ stars, count }) => (
-            <li key={stars} className="grid grid-cols-[2.25rem_1fr_1.5rem] items-center gap-2.5 text-xs">
-              <span className="inline-flex items-center gap-1 font-medium text-ink-2">
-                {stars}
-                <Star aria-hidden className="size-3 fill-ink-3 text-ink-3" />
-                <span className="sr-only">{stars === 1 ? "estrela" : "estrelas"}</span>
-              </span>
-              <span aria-hidden className="h-2 overflow-hidden rounded-full bg-canvas ring-1 ring-line ring-inset">
-                <span className="block h-full rounded-full bg-ink-3" style={{ width: `${(count / max) * 100}%` }} />
-              </span>
-              <span className="tabular text-right font-medium text-ink-2">{formatNumber(count)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+          <ul aria-label="Distribuição das notas" className="flex flex-col gap-1.5">
+            {data.distribution.map(({ stars, count }) => (
+              <li key={stars} className="grid grid-cols-[2.25rem_1fr_1.5rem] items-center gap-2.5 text-xs">
+                <span className="inline-flex items-center gap-1 font-medium text-ink-2">
+                  {stars}
+                  <Star aria-hidden className="size-3 fill-ink-3 text-ink-3" />
+                  <span className="sr-only">{stars === 1 ? "estrela" : "estrelas"}</span>
+                </span>
+                <span aria-hidden className="h-2 overflow-hidden rounded-full bg-canvas ring-1 ring-line ring-inset">
+                  <span className="block h-full rounded-full bg-ink-3" style={{ width: `${(count / max) * 100}%` }} />
+                </span>
+                <span className="tabular text-right font-medium text-ink-2">{formatNumber(count)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <CardFooter>
         <p className="text-xs text-ink-3">Notas de 1 a 5 que os alunos dão, se quiserem, ao terminar o treino.</p>

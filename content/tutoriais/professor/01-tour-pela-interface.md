@@ -44,9 +44,9 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
 - **Buscar aluno**: digite um nome e tecle Enter para abrir a lista de alunos já filtrada.
 - **Novo**: atalho para cadastrar um aluno.
 - **Alunos ativos**: quantos alunos ocupam vaga no seu plano.
-- **Treinos registrados**: treinos iniciados pelos seus alunos nos últimos 30 dias, comparados com os 30 dias anteriores.
-- **Engajamento semanal**: quantos dos seus alunos ativos treinaram nos últimos 7 dias. Passe o mouse no ícone de informação para ver a fórmula.
-- **Retenção**: dos alunos que treinaram entre 31 e 60 dias atrás, quantos voltaram a treinar nos últimos 30 dias. Com menos de um mês de treinos registrados, aparece **dados insuficientes**.
+- **Treinos registrados**: treinos **iniciados** pelos seus alunos nos últimos 30 dias (concluídos ou não), comparados com os 30 dias anteriores.
+- **Engajamento semanal**: quantos dos seus alunos ativos **iniciaram** pelo menos um treino nos últimos 7 dias. Passe o mouse no ícone de informação para ver a fórmula.
+- **Retenção**: dos alunos que treinaram entre 31 e 60 dias atrás, quantos voltaram a treinar nos últimos 30 dias. Com menos de 60 dias desde o primeiro treino concluído, aparece **dados insuficientes**.
 - **Acompanhamento de alunos**: abas **A vencer**, **Vencidos** e **Sem treino**, com os primeiros alunos de cada situação. Quando há mais alunos, o link **nesta lista** abre a lista completa já filtrada.
 - **Plano**: vagas usadas e disponíveis.
 - **Novos alunos**: cadastrados **Hoje**, em **7 dias** e em **30 dias**.
@@ -54,7 +54,7 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
 - **Treinos concluídos**: quem terminou um treino hoje, com a divisão e a hora, comparado com o mesmo dia da semana passada.
 - **Treinos da semana**: treinos concluídos por dia, de segunda a domingo, nesta semana e nas duas anteriores.
 - **Top 5 alunos**: quem mais concluiu treinos nos últimos 30 dias.
-- **Satisfação dos alunos**: a média das notas de 1 a 5 que os alunos dão ao terminar o treino, com a quantidade de notas. O card só aparece quando há alguma nota nos últimos 30 dias.
+- **Satisfação dos alunos**: a média das notas de 1 a 5 que os alunos dão ao terminar o treino, com a quantidade de notas. O card só aparece quando há alguma nota nos últimos 30 dias; com menos de 60 dias desde o primeiro treino concluído, mostra **Dados insuficientes** no lugar da média.
 
 > O administrador vê os números de todos os alunos da conta; o professor, só dos alunos pelos quais é responsável. Os dias seguem o horário de Brasília.
 - **Personalizar**: escolha quais cards aparecem.

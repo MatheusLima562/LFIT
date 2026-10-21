@@ -14,12 +14,26 @@ describe("Início: cards com dados reais", () => {
       today: "2026-10-21",
       engagement: { active_students: 1, trained_7d: 1 },
       retention: { base_31_60: 0, retained_0_30: 0 },
-      history_since: null,
+      history_since: "2026-08-01",
       satisfaction: { ratings: 12, average: 4.58, distribution: [5, 4, 3, 2, 1].map((stars) => ({ stars, count: stars === 5 ? 8 : stars === 4 ? 4 : 0 })) },
     });
     const html = renderToStaticMarkup(createElement(SatisfactionCard, { data: data! }));
     expect(html).toContain("4,6 · 12 notas");
     expect(html).not.toMatch(/NaN|Infinity|href="\/feedbacks"|amber/);
+  });
+
+  it("Satisfação com menos de 60 dias de histórico: 'Dados insuficientes', sem média nem estrelas", () => {
+    const data = satisfaction({
+      today: "2026-10-21",
+      engagement: { active_students: 1, trained_7d: 1 },
+      retention: { base_31_60: 0, retained_0_30: 0 },
+      history_since: "2026-10-20",
+      satisfaction: { ratings: 1, average: 4, distribution: [5, 4, 3, 2, 1].map((stars) => ({ stars, count: stars === 4 ? 1 : 0 })) },
+    });
+    const html = renderToStaticMarkup(createElement(SatisfactionCard, { data: data! }));
+    expect(html).toContain("Dados insuficientes");
+    expect(html).toContain("1 nota até agora · média a partir de 19/12");
+    expect(html).not.toMatch(/4,0|de 5 estrelas|Distribuição das notas|0%/);
   });
 
   it("Satisfação sem nenhuma nota: o card não é montado", () => {

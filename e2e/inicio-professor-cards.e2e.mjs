@@ -36,8 +36,11 @@ const overview = page.getByRole("region", { name: "Visão geral" });
 const text = (await overview.innerText()).replace(/\s+/g, " ");
 ok("tile Treinos registrados = banco", text.includes(`Treinos registrados ${training.registered_30d}`), text);
 const pct = (a, b) => (b > 0 ? `${Math.round((a / b) * 100)}%` : "—");
+// Retenção e Satisfação só valem com 60 dias de histórico (desde o primeiro treino concluído); antes, "dados insuficientes".
+const historyDays = eng.history_since ? Math.round((Date.parse(eng.today) - Date.parse(eng.history_since)) / 86_400_000) : 0;
+const shortHistory = historyDays < 60;
 ok("tile Engajamento = banco", text.includes(`Engajamento semanal ${pct(eng.engagement.trained_7d, eng.engagement.active_students)}`), text);
-ok("tile Retenção = banco", text.includes(`Retenção ${pct(eng.retention.retained_0_30, eng.retention.base_31_60)}`), text);
+ok("tile Retenção = banco", shortHistory ? text.includes("Retenção — dados insuficientes") && !/Retenção 0%/.test(text) : text.includes(`Retenção ${pct(eng.retention.retained_0_30, eng.retention.base_31_60)}`), text);
 const done = page.getByRole("region", { name: "Treinos concluídos" });
 ok("card Treinos concluídos = banco", (await done.getByText(`${training.completed_today_count} hoje`).count()) === 1);
 ok("card Treinos da semana", (await page.getByRole("region", { name: "Treinos da semana" }).count()) === 1);
@@ -45,7 +48,9 @@ const top = page.getByRole("region", { name: "Top 5 alunos" });
 for (const t of training.top5) ok(`Top 5: ${t.student_name}`, (await top.getByText(t.student_name).count()) === 1);
 const rated = eng.satisfaction.ratings;
 ok("Satisfação só com notas", (await page.getByRole("region", { name: "Satisfação dos alunos" }).count()) === (rated > 0 ? 1 : 0));
-if (rated > 0) {
+if (rated > 0 && shortHistory) {
+  ok("Satisfação com histórico curto: dados insuficientes, sem média", (await page.getByRole("region", { name: "Satisfação dos alunos" }).getByText("Dados insuficientes").count()) === 1);
+} else if (rated > 0) {
   const avg = Number(eng.satisfaction.average).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   ok("Satisfação = banco (média · notas)", (await page.getByText(`${avg} · ${rated} ${rated === 1 ? "nota" : "notas"}`).count()) === 1);
 }

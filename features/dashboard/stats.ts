@@ -51,6 +51,18 @@ export function percent(part: number, whole: number): number | null {
   return whole > 0 ? Math.round((part / whole) * 100) : null;
 }
 
+/** Dias de histórico (desde o primeiro treino concluído) para a Retenção ter a janela de 31 a 60 dias completa. */
+export const RETENTION_HISTORY_DAYS = 60;
+
+/** Dias entre duas datas ISO (AAAA-MM-DD). */
+function daysBetween(fromIso: string, toIso: string): number {
+  const toUtc = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((toUtc(toIso) - toUtc(fromIso)) / 86_400_000);
+}
+
 /** Data ISO (AAAA-MM-DD) + n dias, em dd/mm. */
 function addDaysBR(isoDay: string, n: number): string {
   const [y, m, d] = isoDay.split("-").map(Number);
@@ -67,7 +79,7 @@ export function trainingMetrics(training: TrainingStats | null, engagement: Enga
       id: "treinos-30",
       label: "Treinos registrados",
       value: formatNumber(training.registered_30d),
-      hint: v ? `nos últimos 30 dias · ${v} vs. 30 dias anteriores` : "nos últimos 30 dias",
+      hint: v ? `iniciados nos últimos 30 dias · ${v} vs. 30 dias anteriores` : "iniciados nos últimos 30 dias",
       formula: "Treinos iniciados nos últimos 30 dias (concluídos ou não), contando os registrados pelo professor.",
       tone: "neutral",
     });
@@ -79,12 +91,15 @@ export function trainingMetrics(training: TrainingStats | null, engagement: Enga
       id: "engajamento",
       label: "Engajamento semanal",
       value: e === null ? "—" : `${e}%`,
-      hint: active_students === 0 ? "nenhum aluno ativo" : `${trained_7d} de ${active_students} treinaram em 7 dias`,
-      formula: "Engajamento = alunos ativos com pelo menos 1 treino registrado nos últimos 7 dias ÷ alunos ativos × 100.",
+      hint: active_students === 0 ? "nenhum aluno ativo" : `${trained_7d} de ${active_students} iniciaram em 7 dias`,
+      formula: "Engajamento = alunos ativos que iniciaram pelo menos 1 treino (concluído ou não) nos últimos 7 dias ÷ alunos ativos × 100.",
       tone: "violet",
     });
     const { base_31_60, retained_0_30 } = engagement.retention;
-    const r = percent(retained_0_30, base_31_60);
+    // A janela de 31 a 60 dias só está completa com 60 dias de histórico: antes disso, a base é parcial e o percentual
+    // enganaria — "dados insuficientes" (nunca 0%).
+    const enoughHistory = engagement.history_since !== null && daysBetween(engagement.history_since, engagement.today) >= RETENTION_HISTORY_DAYS;
+    const r = enoughHistory ? percent(retained_0_30, base_31_60) : null;
     metrics.push({
       id: "retencao",
       label: "Retenção",
@@ -92,8 +107,8 @@ export function trainingMetrics(training: TrainingStats | null, engagement: Enga
       hint:
         r !== null
           ? `${retained_0_30} de ${base_31_60} voltaram a treinar`
-          : engagement.history_since
-            ? `dados insuficientes até ${addDaysBR(engagement.history_since, 30)}`
+          : engagement.history_since && !enoughHistory
+            ? `dados insuficientes até ${addDaysBR(engagement.history_since, RETENTION_HISTORY_DAYS)}`
             : "dados insuficientes",
       formula:
         "Retenção = dos alunos que concluíram treino entre 31 e 60 dias atrás, quantos concluíram de novo nos últimos 30 dias.",
@@ -135,20 +150,30 @@ export function topStudents(training: TrainingStats): TopStudent[] {
 export interface SatisfactionView {
   average: number;
   ratings: number;
-  /** "4,6 · 12 notas" */
+  /** "4,6 · 12 notas" — ou "Dados insuficientes" com menos de 60 dias de histórico. */
   headline: string;
+  /** Com histórico curto: "1 nota até agora · média a partir de dd/mm"; senão null. */
+  insufficient: string | null;
   distribution: { stars: number; count: number }[];
 }
 
-/** Satisfação: só com pelo menos uma nota nos últimos 30 dias; sem nenhuma, null (o card some). */
+/**
+ * Satisfação: só com pelo menos uma nota nos últimos 30 dias; sem nenhuma, null (o card some). Com menos de 60 dias de
+ * histórico (mesma regra da Retenção), mostra "Dados insuficientes" em vez da média.
+ */
 export function satisfaction(engagement: EngagementStats | null): SatisfactionView | null {
   const s = engagement?.satisfaction;
-  if (!s || s.ratings === 0 || s.average === null) return null;
+  if (!engagement || !s || s.ratings === 0 || s.average === null) return null;
   const average = Number(s.average);
+  const since = engagement.history_since;
+  const short = since === null || daysBetween(since, engagement.today) < RETENTION_HISTORY_DAYS;
   return {
     average,
     ratings: s.ratings,
-    headline: `${formatDecimal(average)} · ${plural(s.ratings, "nota")}`,
+    headline: short ? "Dados insuficientes" : `${formatDecimal(average)} · ${plural(s.ratings, "nota")}`,
+    insufficient: short
+      ? `${plural(s.ratings, "nota")} até agora${since ? ` · média a partir de ${addDaysBR(since, RETENTION_HISTORY_DAYS)}` : ""}`
+      : null,
     distribution: [...s.distribution].sort((a, b) => b.stars - a.stars),
   };
 }
