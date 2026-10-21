@@ -4,8 +4,9 @@
  *   npm run db:seed:demo        cria ~90 dias de sessões de treino na organização de exemplo
  *
  * Separado do `npm run db:seed` de propósito: os roteiros e2e (ex.: f3, que espera a Camila sem treinos) dependem do seed
- * padrão. Rode DEPOIS do seed. Idempotente: apaga as sessões de demonstração anteriores (marcadas no `snapshot`) e cria
- * de novo. Nunca toca nas contas de app (Camila, Ana, Diego) nem em sessões que não sejam de demonstração.
+ * padrão. Rode DEPOIS do seed. Repetível sem apagar nada: se a demonstração já existir (sessões marcadas no `snapshot`),
+ * não faz nada — para recriar, refaça o seed (`npm run db:seed -- --reset`, que recria a organização) e rode de novo.
+ * Nunca toca nas contas de app (Camila, Ana, Diego) nem em sessões que não sejam de demonstração.
  *
  * Perfis: assíduos (3×/semana nos 90 dias), irregulares (1×/semana), parados (só entre 45 e 90 dias atrás) e quem
  * voltou depois de uma pausa; ~40% das sessões concluídas com nota de satisfação (1 a 5).
@@ -77,8 +78,16 @@ async function main() {
   if (error) throw error;
   const eligible = (students ?? []).filter((s) => !s.user_id || !appUserIds.has(s.user_id)).slice(0, 16);
 
-  const removed = await admin.from("workout_sessions").delete().eq("organization_id", org.id).contains("snapshot", DEMO).select("id");
-  if (removed.error) throw removed.error;
+  const existing = await admin
+    .from("workout_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", org.id)
+    .contains("snapshot", DEMO);
+  if (existing.error) throw existing.error;
+  if (existing.count) {
+    console.log(`A demonstração já existe (${existing.count} sessões): nada a fazer. Para recriar, rode npm run db:seed -- --reset e depois este comando.`);
+    return;
+  }
 
   const rand = rng(20261020);
   const rows: Record<string, unknown>[] = [];
@@ -112,7 +121,7 @@ async function main() {
   }
   const done = rows.filter((r) => r.status === "completed").length;
   const rated = rows.filter((r) => r.student_rating !== null).length;
-  console.log(`Demo do Início: ${rows.length} sessões em ${eligible.length} alunos (${done} concluídas, ${rated} com nota); ${removed.data?.length ?? 0} anteriores removidas.`);
+  console.log(`Demo do Início: ${rows.length} sessões em ${eligible.length} alunos (${done} concluídas, ${rated} com nota).`);
 }
 
 main().catch((e) => {
