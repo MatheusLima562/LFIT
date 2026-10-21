@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LinkIcon } from "lucide-react";
 import { Logo } from "@/components/layout/Logo";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { LegalFooter } from "@/features/legal/LegalPage";
 import { PublicSignupForm } from "@/features/signup/components/PublicSignupForm";
 import { getPublicSignupForm } from "@/features/signup/queries";
 import { turnstileReady, turnstileSiteKey } from "@/features/signup/turnstile";
@@ -41,6 +42,7 @@ export default async function PublicSignupPage({ params }: PageProps<"/cadastro/
           </div>
         )}
       </main>
+      <LegalFooter className="mx-auto mt-6 max-w-xl" />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LegalFooter } from "@/features/legal/LegalPage";
 import { StudentBrand } from "@/features/student-app/components/StudentBrand";
 import { StudentSignInForm } from "@/features/student-app/components/StudentSignInForm";
 import { messages } from "@/messages/pt-BR";
@@ -25,6 +26,7 @@ export default function StudentSignInPage() {
           </Link>
         </p>
       </div>
+      <LegalFooter />
     </main>
   );
 }

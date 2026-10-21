@@ -3,6 +3,7 @@ import { BrandGlyph } from "@/features/brand/BrandMark";
 import { BRAND } from "@/features/brand/config";
 import { Logo } from "@/components/layout/Logo";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { LegalFooter } from "@/features/legal/LegalPage";
 import { messages } from "@/messages/pt-BR";
 
 const t = messages.auth;
@@ -54,6 +55,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           <ThemeToggle />
         </div>
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">{children}</div>
+        <LegalFooter className="pb-2" />
       </main>
     </div>
   );

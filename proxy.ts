@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 /** Rotas acessíveis sem sessão. */
 const PUBLIC_PATHS = [
   "/entrar", "/esqueci-senha", "/redefinir-senha", "/convite", "/criar-conta", "/auth", "/cadastro", "/acesso",
-  "/aluno/entrar", "/manifest.webmanifest", "/pwa",
+  "/aluno/entrar", "/manifest.webmanifest", "/pwa", "/privacidade", "/termos",
 ];
 /** Rotas de autenticação: quem já está logado vai para o início. */
 const AUTH_ONLY_PATHS = ["/entrar", "/esqueci-senha", "/criar-conta", "/aluno/entrar"];
