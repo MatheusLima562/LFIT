@@ -5,7 +5,8 @@
  *   npm run db:seed -- --reset apaga a organização/usuários de exemplo e recria
  *
  * Requer em .env.local: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
- * SUPABASE_SECRET_KEY, SEED_USER_PASSWORD (senha dos usuários de exemplo) e ALLOW_DB_TESTS=true.
+ * SUPABASE_SECRET_KEY, SEED_USER_PASSWORD (senha dos usuários de exemplo, 12+ caracteres, só na variável — nunca no
+ * código nem na documentação) e ALLOW_DB_TESTS=true.
  * Recusa rodar fora do lfit-dev (ver scripts/dev-guard.mts).
  *
  * Os alunos são criados pelas mesmas RPCs do app (logado como o owner de
@@ -13,7 +14,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { assertDevProject } from "./dev-guard.mts";
+import { assertDevProject, seedPasswordProblem } from "./dev-guard.mts";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -26,6 +27,12 @@ if (!url || !anonKey || !serviceKey || !password) {
 }
 
 assertDevProject(url);
+
+const passwordProblem = seedPasswordProblem(password);
+if (passwordProblem) {
+  console.error(`Recusado: ${passwordProblem}`);
+  process.exit(1);
+}
 
 const SLUG = "studio-exemplo";
 const USERS = {

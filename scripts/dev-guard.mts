@@ -60,3 +60,15 @@ export function assertDevProject(url: string | undefined) {
     process.exit(1);
   }
 }
+
+/** Tamanho mínimo da senha das contas fictícias do seed (nunca escrita no código: vem de SEED_USER_PASSWORD). */
+export const SEED_PASSWORD_MIN_LENGTH = 12;
+
+/** Por que a senha do seed não serve (null = serve). Nunca devolve a senha nem parte dela. */
+export function seedPasswordProblem(password: string | undefined): string | null {
+  if (!password) return "defina SEED_USER_PASSWORD (variável de ambiente; nunca no código).";
+  if (password.length < SEED_PASSWORD_MIN_LENGTH) {
+    return `SEED_USER_PASSWORD é fraca: use pelo menos ${SEED_PASSWORD_MIN_LENGTH} caracteres.`;
+  }
+  return null;
+}

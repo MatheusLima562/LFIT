@@ -70,3 +70,34 @@ describe("seed e seed de demonstração recusam outro projeto (processo real, se
     expect(r.stderr).toMatch(/Recusado: .*abcdefghijklmnopqrst.*não está na lista/);
   });
 });
+
+describe("senha do seed (SEED_USER_PASSWORD)", () => {
+  it("obrigatória e com pelo menos 12 caracteres; a mensagem nunca mostra a senha", async () => {
+    const { seedPasswordProblem, SEED_PASSWORD_MIN_LENGTH } = await import("../../scripts/dev-guard.mts");
+    expect(SEED_PASSWORD_MIN_LENGTH).toBe(12);
+    expect(seedPasswordProblem(undefined)).toMatch(/defina SEED_USER_PASSWORD/);
+    expect(seedPasswordProblem("")).toMatch(/defina SEED_USER_PASSWORD/);
+    const weak = seedPasswordProblem("curta-11ch!");
+    expect(weak).toMatch(/fraca/);
+    expect(weak).not.toContain("curta-11ch!");
+    expect(seedPasswordProblem("doze-chars-ok")).toBeNull();
+  });
+
+  it("o seed recusa senha fraca antes de qualquer acesso ao banco", () => {
+    const r = spawnSync(process.execPath, ["scripts/seed.mts"], {
+      encoding: "utf8",
+      env: {
+        PATH: process.env.PATH,
+        NEXT_PUBLIC_SUPABASE_URL: DEV,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "chave-falsa",
+        SUPABASE_SECRET_KEY: "chave-falsa",
+        SEED_USER_PASSWORD: "curta",
+        ALLOW_DB_TESTS: "true",
+        NODE_ENV: "test",
+      },
+    });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/SEED_USER_PASSWORD é fraca/);
+    expect(r.stderr).not.toContain("curta\n");
+  });
+});

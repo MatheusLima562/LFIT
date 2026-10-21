@@ -104,7 +104,8 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
 - Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
 - `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
   `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
-  `trainer1/2.seed@example.com`) e a senha de `SEED_USER_PASSWORD` do `.env.local` — **nunca credenciais reais no
+  `trainer1/2.seed@example.com`) e a senha de `SEED_USER_PASSWORD` do `.env.local` (12+ caracteres; o seed recusa senha
+  ausente ou fraca) — **nunca credenciais reais no
   repositório**. Senhas de contas de aluno criadas no roteiro são geradas a cada execução.
 - O executor (`e2e/run.mjs`) limpa `public.rate_limits` antes de cada roteiro e falha se houver qualquer linha "✗".
 - Cadastro público: o `next start` precisa das chaves de TESTE do Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY=
