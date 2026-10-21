@@ -82,10 +82,12 @@ npm run bootstrap:owner   # cria organização + owner e imprime link de convite
 > Ambos apagam dados. Antes de rodar, confirme o projeto linkado (`supabase/.temp/project-ref`)
 > e o `NEXT_PUBLIC_SUPABASE_URL` do `.env.local`. O mesmo vale para `npm run test:db`
 > (cria e apaga organizações; só roda com `ALLOW_DB_TESTS=true`).
-> **Trava no seed:** `scripts/seed.mts` chama `assertDevProject()` (`scripts/dev-guard.mts`) e se recusa a
-> rodar se `ALLOW_DB_TESTS` não for `true`, se `NEXT_PUBLIC_SUPABASE_URL` não for
-> `https://<ref do lfit-dev>.supabase.co` ou se o CLI estiver linkado a outro projeto. O ref do lfit-dev
-> fica fixo no código (não é segredo); trocar o projeto de dev exige mudar esse arquivo em um commit.
+> **Trava de ambiente:** `db:seed` (inclusive `--reset`), `db:seed:demo`, os testes de banco e os roteiros e2e chamam
+> `scripts/dev-guard.mts` e **recusam** rodar se `ALLOW_DB_TESTS` não for `true`, se o project ref de
+> `NEXT_PUBLIC_SUPABASE_URL` não estiver em `ALLOWED_DEV_PROJECT_REFS` (lista única; hoje só o lfit-dev) ou se o CLI
+> estiver linkado a outro projeto. Os testes de banco **falham** (não pulam) nesse caso. Trocar/adicionar projeto de dev
+> = editar a lista num commit; nunca incluir o prod. Testado sem banco em `tests/unit/dev-guard.test.ts`. O seed exige
+> `SEED_USER_PASSWORD` com 12+ caracteres (só na variável; nunca no código ou na documentação).
 > **Trava adicional no `--reset`:** só apaga a organização se `organizations.is_seed = true` (coluna sem grant
 > de escrita para `authenticated`; só `service_role`/o script muda). Isso protege qualquer organização "de
 > verdade" no mesmo projeto — incluindo a sua, criada por `npm run bootstrap:owner` — mesmo que reuse por
@@ -144,6 +146,8 @@ features/
   auth/                    # schemas.ts (Zod), actions.ts (server actions), components/
   organizations/queries.ts # uso do plano (RPC organization_plan_usage)
   chat/                    # thread.ts (lógica pura), hooks.ts (Realtime, selos), queries.ts, components/ (conversa, caixa)
+  brand/                   # MARCA: config.ts (nome, logo, cores, textos) + BrandMark.tsx
+  legal/                   # /privacidade e /termos (rascunho): texts.ts + LegalPage.tsx
   help/                    # tutoriais: tutorials.ts (frontmatter), markdown.ts (Markdown mínimo, sem dependência), queries.ts
   students/                # search-params.ts (estado da URL), schemas.ts (form Zod), queries.ts, actions.ts,
                            # account.ts, access-actions.ts (link do aluno), components/ (lista, form/, modal)
@@ -157,6 +161,7 @@ lib/
   db/                      # server.ts, client.ts, admin.ts (service_role, server-only), types.ts (gerado)
   auth/session.ts          # getSession / requireStaff
   security/rate-limit.ts   # rate limit via RPC hit_rate_limit
+  security/headers.ts      # CSP e headers de segurança (usado no next.config.ts)
   text.ts, format.ts, utils.ts
   dates.ts                 # dd/mm/aaaa ↔ ISO, fim do dia em SP, máscara
   phone.ts                 # países (pt-BR), máscara, E.164
@@ -217,6 +222,14 @@ tests/unit/                # testes de lógica pura (sem banco)
   (convenções em `content/tutoriais/README.md`; o teste `tests/unit/tutorials.test.ts` valida frontmatter, slug e links)
   e **regravar o vídeo afetado** (`npm run tutoriais:video -- <roteiro>`; tabela vídeo × seção no README dos tutoriais).
   `video_url` no frontmatter (opcional) só aceita YouTube ou Loom.
+- **Marca:** nome do app (provisório), logo, cores e textos de marca só em `features/brand/config.ts`. Em texto de
+  arquivo (tutoriais), use `{{marca}}`. `tests/unit/brand.test.ts` falha se o nome aparecer escrito em outro lugar do
+  app e se `colors.primary` divergir do token `--color-brand-500` do CSS.
+- **Headers de segurança** (CSP, nosniff, Referrer-Policy, frame-ancestors none) em `lib/security/headers.ts`, aplicados
+  em `next.config.ts`. Nova origem externa (script, iframe, API, mídia) precisa entrar na CSP, com teste.
+- **Produção:** passos que dependem do dono em `docs/producao-checklist.md`; variáveis (só nomes) em
+  `docs/vercel-variaveis.md`. Páginas legais `/privacidade` e `/termos` são RASCUNHO (texto em
+  `features/legal/texts.ts`, bases legais em aberto) até a revisão do advogado.
 - Commits pequenos em conventional commits (`feat:`, `fix:`, `chore:`...).
 - Não instalar dependência sem justificar.
 - Spec ambígua ou em conflito com o código → **parar e perguntar**.
@@ -618,6 +631,11 @@ Checklist para toda função `SECURITY DEFINER` nova:
   organização (`organizations.time_zone`) e passar para as RPCs.
 - **Código sem uso:** `lib/dashboard.ts` (inteiro) e os mocks de `data/dashboard.ts` (tudo menos `banner`) não são mais
   usados pelo Início. Apagar (exige `rm`; pedir na sessão).
+- **CSP com nonce:** hoje `script-src` tem `'unsafe-inline'` (scripts de hidratação do Next sem nonce). Passar para nonce
+  no `proxy.ts` exige render dinâmico em todas as páginas; avaliar antes de abrir para clientes.
+- **Links montados pelo cabeçalho Host:** sem `NEXT_PUBLIC_SITE_URL`, convites/links de acesso usam o `Host` da
+  requisição (no `next start -H 0.0.0.0` local, `/auth/confirm` chega a redirecionar para `0.0.0.0`). Em produção,
+  definir a variável e restringir as Redirect URLs do Supabase Auth.
 
 ## Decisões pendentes (rever antes de comercializar)
 - **"1 e-mail = 1 conta"**: cada usuário do Auth tem um único `profile` (uma organização). Um aluno que
