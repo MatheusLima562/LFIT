@@ -1,32 +1,62 @@
 /**
- * Trava para scripts destrutivos (seed, --reset): só rodam no projeto Supabase de
- * DESENVOLVIMENTO (lfit-dev). O project ref abaixo NÃO é segredo (aparece na URL).
- * Para trocar o projeto de dev, altere-o aqui conscientemente, em um commit.
+ * Trava de ambiente para tudo que cria ou apaga dados (seed, seed --reset, seed de demonstração, testes de banco,
+ * roteiros e2e): só rodam nos projetos Supabase de DESENVOLVIMENTO listados abaixo — hoje só o lfit-dev. O project ref
+ * NÃO é segredo (aparece na URL). Para trocar/adicionar um projeto de dev, altere a lista aqui, conscientemente, num
+ * commit. NUNCA inclua o projeto de produção.
  */
 import { existsSync, readFileSync } from "node:fs";
 
-export const LFIT_DEV_PROJECT_REF = "fwbpazxawtxuppuczijd";
+/** Única fonte dos projetos onde é permitido criar/apagar dados de teste. */
+export const ALLOWED_DEV_PROJECT_REFS: readonly string[] = ["fwbpazxawtxuppuczijd"];
 
-export function assertDevProject(url: string | undefined) {
-  const fail = (msg: string): never => {
-    console.error(`Recusado: ${msg}\nEste script apaga/cria dados e só roda no lfit-dev (${LFIT_DEV_PROJECT_REF}).`);
-    process.exit(1);
-  };
+/** Compatibilidade: o projeto de dev principal (lfit-dev). */
+export const LFIT_DEV_PROJECT_REF = ALLOWED_DEV_PROJECT_REFS[0];
 
-  if (process.env.ALLOW_DB_TESTS !== "true") fail("ALLOW_DB_TESTS precisa ser \"true\".");
-
-  let host = "";
+/** Project ref de uma URL do Supabase (`https://<ref>.supabase.co`), ou null se a URL não for desse formato. */
+export function projectRefFromUrl(url: string | undefined): string | null {
+  let host: string;
   try {
     host = new URL(url ?? "").hostname;
   } catch {
-    fail("NEXT_PUBLIC_SUPABASE_URL inválida.");
+    return null;
   }
-  if (host !== `${LFIT_DEV_PROJECT_REF}.supabase.co`) fail(`NEXT_PUBLIC_SUPABASE_URL aponta para "${host}".`);
+  const match = /^([a-z0-9]+)\.supabase\.co$/.exec(host);
+  return match ? match[1] : null;
+}
 
-  // Se o CLI estiver linkado, também precisa ser o lfit-dev.
+/**
+ * Por que este ambiente NÃO pode rodar scripts/testes que mexem em dados (null = pode). Lógica pura: recebe a URL, a
+ * flag e o ref linkado no CLI, sem tocar em banco nenhum (testada em tests/unit/dev-guard.test.ts).
+ */
+export function devProjectProblem(input: { url: string | undefined; allowDbTests: string | undefined; linkedRef?: string | null }): string | null {
+  if (input.allowDbTests !== "true") return 'ALLOW_DB_TESTS precisa ser "true".';
+  const ref = projectRefFromUrl(input.url);
+  if (!ref) return "NEXT_PUBLIC_SUPABASE_URL inválida (esperado https://<ref>.supabase.co).";
+  if (!ALLOWED_DEV_PROJECT_REFS.includes(ref)) {
+    return `NEXT_PUBLIC_SUPABASE_URL aponta para o projeto "${ref}", que não está na lista de projetos de desenvolvimento (${ALLOWED_DEV_PROJECT_REFS.join(", ")}).`;
+  }
+  if (input.linkedRef && input.linkedRef !== ref) return `o Supabase CLI está linkado a "${input.linkedRef}", não a "${ref}".`;
+  return null;
+}
+
+function linkedRef(): string | null {
   const linked = "supabase/.temp/project-ref";
-  if (existsSync(linked)) {
-    const ref = readFileSync(linked, "utf8").trim();
-    if (ref !== LFIT_DEV_PROJECT_REF) fail(`o Supabase CLI está linkado a "${ref}".`);
+  return existsSync(linked) ? readFileSync(linked, "utf8").trim() : null;
+}
+
+/** Mensagem completa de recusa, ou null se o ambiente é de desenvolvimento. */
+export function devGuardMessage(url: string | undefined): string | null {
+  const problem = devProjectProblem({ url, allowDbTests: process.env.ALLOW_DB_TESTS, linkedRef: linkedRef() });
+  return problem
+    ? `Recusado: ${problem}\nEste comando cria/apaga dados e só roda nos projetos de desenvolvimento (${ALLOWED_DEV_PROJECT_REFS.join(", ")}).`
+    : null;
+}
+
+/** Para scripts (seed, seed:demo, e2e): encerra o processo com a mensagem se o ambiente não for de dev. */
+export function assertDevProject(url: string | undefined) {
+  const message = devGuardMessage(url);
+  if (message) {
+    console.error(message);
+    process.exit(1);
   }
 }

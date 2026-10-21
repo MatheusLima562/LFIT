@@ -7,12 +7,20 @@
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
+import { devGuardMessage } from "../../scripts/dev-guard.mts";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const serviceKey = process.env.SUPABASE_SECRET_KEY;
 
 export const dbTestsEnabled = Boolean(url && anonKey && serviceKey && process.env.ALLOW_DB_TESTS === "true");
+
+// Trava de ambiente: com ALLOW_DB_TESTS=true, a URL TEM de ser de um projeto de desenvolvimento (lista única em
+// scripts/dev-guard.mts). Falha alto — nunca "pula" em silêncio — para ninguém achar que os testes passaram em produção.
+if (dbTestsEnabled) {
+  const refusal = devGuardMessage(url);
+  if (refusal) throw new Error(`[tests/db] ${refusal}`);
+}
 
 if (!dbTestsEnabled) {
   console.warn(
