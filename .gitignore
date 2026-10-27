@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +40,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# capturas de checkpoint (locais)
+.screenshots/
+
+# Capturas dos roteiros e2e
+e2e/.output/
+
+# Claude Code (config local, por máquina)
+.claude/settings.local.json
+
+# Vídeos de tutorial gerados por npm run tutoriais:video (binários fora do git)
+/tutoriais-video/

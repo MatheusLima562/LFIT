@@ -1,0 +1,578 @@
+/**
+ * Lógica pura do montador de treino (sem React): rascunho editável em strings,
+ * blocos (agrupamentos movem juntos), agrupar/desagrupar e conversão para o
+ * payload de save_training_plan. Testada em tests/unit/plan-builder.test.ts.
+ */
+import { isoToBR, parseBRDate } from "@/lib/dates";
+import { uuidV4 } from "@/lib/uuid";
+import { messages } from "@/messages/pt-BR";
+import type { QuantityUnit, SpeedPreset } from "./prescription";
+import { planPayloadSchema, type LoadUnit, type PlanLevel, type PlanPayload, type SetType } from "./schemas";
+
+/** Prescrição comum ao resumo do item e às séries detalhadas (strings do formulário). */
+export interface PrescriptionDraft {
+  quantityUnit: QuantityUnit;
+  qtyMin: string;
+  qtyMax: string;
+  /** Complemento da quantidade (ex.: "por lado"). */
+  qtyNote: string;
+  /** Texto livre curto: "RPE 8", "RIR 2", "70%". */
+  intensity: string;
+  /** Velocidade por preset OU cadência numérica (nunca os dois). */
+  speedMode: "preset" | "tempo";
+  speed: SpeedPreset | "";
+  tempo: string;
+  restMin: string;
+  restMax: string;
+}
+
+export interface SetDraft extends PrescriptionDraft {
+  key: string;
+  setType: SetType;
+  loadValue: string;
+  loadUnit: LoadUnit;
+  loadText: string;
+}
+
+export interface ItemDraft extends PrescriptionDraft {
+  key: string;
+  exerciseId: string;
+  exerciseName: string;
+  groupKey: string | null;
+  sets: string;
+  loadValue: string;
+  loadUnit: LoadUnit;
+  loadText: string;
+  /** Dica (negrito e lista; substitui a antiga observação). */
+  tip: string;
+  /** Orientação de cuidado ao aluno (≤ 300): o único texto ligado a alertas que chega ao app do aluno. */
+  careNote: string;
+  /** Até 3 exercícios alternativos (falta de equipamento); também passam pelos alertas. */
+  substitutes: { id: string; name: string }[];
+  methodId: string;
+  objectiveId: string;
+  setsDetail: SetDraft[];
+}
+
+export interface WorkoutDraft {
+  key: string;
+  label: string;
+  name: string;
+  notes: string;
+  items: ItemDraft[];
+}
+
+export interface PlanDraft {
+  id: string | null;
+  studentId: string | null;
+  name: string;
+  goal: string;
+  level: PlanLevel | "";
+  /** dd/mm/aaaa */
+  startsOn: string;
+  endsOn: string;
+  /** Sem data de expiração (o Fim fica vazio). */
+  noEnd: boolean;
+  plannedSessions: string;
+  /** Professor do plano; "" = padrão do servidor (professor responsável pelo aluno). */
+  trainerId: string;
+  notes: string;
+  workouts: WorkoutDraft[];
+}
+
+export interface Block<T extends { key: string; groupKey: string | null } = ItemDraft> {
+  /** groupKey do agrupamento ou key do item isolado. */
+  id: string;
+  groupKey: string | null;
+  items: T[];
+}
+
+export const newKey = () => uuidV4();
+export const newGroupKey = () => `g${uuidV4().replace(/-/g, "").slice(0, 10)}`;
+
+export function emptyPrescription(): PrescriptionDraft {
+  return {
+    quantityUnit: "reps",
+    qtyMin: "10",
+    qtyMax: "12",
+    qtyNote: "",
+    intensity: "",
+    speedMode: "preset",
+    speed: "",
+    tempo: "",
+    restMin: "60",
+    restMax: "",
+  };
+}
+
+/** Só os campos de prescrição (para copiar do resumo para as séries e vice-versa). */
+export function pickPrescription(d: PrescriptionDraft): PrescriptionDraft {
+  const { quantityUnit, qtyMin, qtyMax, qtyNote, intensity, speedMode, speed, tempo, restMin, restMax } = d;
+  return { quantityUnit, qtyMin, qtyMax, qtyNote, intensity, speedMode, speed, tempo, restMin, restMax };
+}
+
+/** Valores padrão de um exercício (camada da equipe → global). */
+export interface ItemDefaults {
+  sets: number | null;
+  quantityUnit: QuantityUnit;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  restMin: number | null;
+  restMax: number | null;
+}
+
+export function emptyItem(exercise: { id: string; name: string; defaults?: ItemDefaults }): ItemDraft {
+  const d = exercise.defaults;
+  const fromDefaults: Partial<PrescriptionDraft> = d
+    ? {
+        quantityUnit: d.quantityUnit,
+        qtyMin: d.quantityMin === null ? "" : String(d.quantityMin).replace(".", ","),
+        qtyMax: d.quantityMax === null ? "" : String(d.quantityMax).replace(".", ","),
+        restMin: d.restMin === null ? "" : String(d.restMin),
+        restMax: d.restMax === null ? "" : String(d.restMax),
+      }
+    : {};
+  return {
+    key: newKey(),
+    exerciseId: exercise.id,
+    exerciseName: exercise.name,
+    groupKey: null,
+    sets: d?.sets ? String(d.sets) : "3",
+    ...emptyPrescription(),
+    ...fromDefaults,
+    loadValue: "",
+    loadUnit: "kg",
+    loadText: "",
+    tip: "",
+    careNote: "",
+    substitutes: [],
+    methodId: "",
+    objectiveId: "",
+    setsDetail: [],
+  };
+}
+
+/** "3×10–12", "3×20–40 s", "3× até a falha" — resumo curto do toast do "+ Rápido" (null sem quantidade). */
+export function shortPrescription(it: Pick<ItemDraft, "sets" | "quantityUnit" | "qtyMin" | "qtyMax">): string | null {
+  const sets = it.sets.trim() ? `${it.sets.trim()}×` : "";
+  if (it.quantityUnit === "failure") return `${sets} ${messages.plans.prescription.units.failure.toLowerCase()}`.trim();
+  const min = it.qtyMin.trim();
+  const max = it.qtyMax.trim();
+  if (!min) return null;
+  const range = max && max !== min ? `${min}–${max}` : min;
+  const suffix = it.quantityUnit === "reps" ? "" : ` ${messages.plans.prescription.suffix[it.quantityUnit]}`;
+  return `${sets}${range}${suffix}`;
+}
+
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export function nextLabel(workouts: WorkoutDraft[]) {
+  const used = new Set(workouts.map((w) => w.label.trim().toUpperCase()));
+  return [...LETTERS].find((l) => !used.has(l)) ?? String(workouts.length + 1);
+}
+
+export function emptyWorkout(workouts: WorkoutDraft[]): WorkoutDraft {
+  return { key: newKey(), label: nextLabel(workouts), name: "", notes: "", items: [] };
+}
+
+export function groupLabel(size: number) {
+  return messages.plans.groupLabel(size);
+}
+
+/** Itens consecutivos com o mesmo groupKey formam um bloco. */
+export function toBlocks<T extends { key: string; groupKey: string | null }>(items: T[]): Block<T>[] {
+  const blocks: Block<T>[] = [];
+  for (const item of items) {
+    const last = blocks.at(-1);
+    if (item.groupKey && last?.groupKey === item.groupKey) last.items.push(item);
+    else blocks.push({ id: item.groupKey ?? item.key, groupKey: item.groupKey, items: [item] });
+  }
+  return blocks;
+}
+
+const flatten = (blocks: Block[]) => blocks.flatMap((b) => b.items);
+
+/** Move um bloco inteiro (item isolado ou agrupamento) para outra posição de bloco. */
+export function moveBlockTo(items: ItemDraft[], fromId: string, toId: string) {
+  const blocks = toBlocks(items);
+  const from = blocks.findIndex((b) => b.id === fromId);
+  const to = blocks.findIndex((b) => b.id === toId);
+  if (from < 0 || to < 0 || from === to) return items;
+  const [moved] = blocks.splice(from, 1);
+  blocks.splice(to, 0, moved);
+  return flatten(blocks);
+}
+
+export function moveBlock(items: ItemDraft[], blockId: string, delta: -1 | 1) {
+  const blocks = toBlocks(items);
+  const i = blocks.findIndex((b) => b.id === blockId);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= blocks.length) return items;
+  return moveBlockTo(items, blockId, blocks[j].id);
+}
+
+/** Reordena um item dentro do próprio agrupamento. */
+export function moveWithinGroup(items: ItemDraft[], itemKey: string, delta: -1 | 1) {
+  const i = items.findIndex((it) => it.key === itemKey);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= items.length || !items[i].groupKey || items[j].groupKey !== items[i].groupKey) return items;
+  const next = [...items];
+  [next[i], next[j]] = [next[j], next[i]];
+  return next;
+}
+
+/**
+ * Garante agrupamentos válidos: cada groupKey forma uma única sequência contígua
+ * de 2+ itens. Sequências repetidas ganham chave nova; sequências de 1 item são desfeitas.
+ */
+export function normalizeGroups(items: ItemDraft[]): ItemDraft[] {
+  const seen = new Set<string>();
+  const out = items.map((it) => ({ ...it }));
+  let i = 0;
+  while (i < out.length) {
+    const g = out[i].groupKey;
+    let j = i + 1;
+    while (g && j < out.length && out[j].groupKey === g) j++;
+    if (g) {
+      if (j - i < 2) out[i].groupKey = null;
+      else if (seen.has(g)) {
+        const fresh = newGroupKey();
+        for (let k = i; k < j; k++) out[k].groupKey = fresh;
+        seen.add(fresh);
+      } else seen.add(g);
+    }
+    i = j;
+  }
+  return out;
+}
+
+export type GroupResult = { ok: true; items: ItemDraft[] } | { ok: false; error: string };
+
+/** Agrupa itens selecionados (precisam estar em sequência). */
+export function groupItems(items: ItemDraft[], selected: Set<string>): GroupResult {
+  const idx = items.map((it, i) => (selected.has(it.key) ? i : -1)).filter((i) => i >= 0);
+  if (idx.length < 2) return { ok: false, error: messages.plans.groups.needTwo };
+  if (idx.at(-1)! - idx[0] + 1 !== idx.length) return { ok: false, error: messages.plans.groups.notContiguous };
+  const key = newGroupKey();
+  return { ok: true, items: normalizeGroups(items.map((it) => (selected.has(it.key) ? { ...it, groupKey: key } : it))) };
+}
+
+export function ungroup(items: ItemDraft[], groupKey: string) {
+  return items.map((it) => (it.groupKey === groupKey ? { ...it, groupKey: null } : it));
+}
+
+/** Séries detalhadas a partir do resumo: N séries de trabalho com a mesma prescrição e carga. */
+export function setsFromSummary(item: ItemDraft): SetDraft[] {
+  const n = Math.min(Math.max(Number.parseInt(item.sets, 10) || 3, 1), 20);
+  return Array.from({ length: n }, () => ({
+    key: newKey(),
+    setType: "work" as const,
+    ...pickPrescription(item),
+    loadValue: item.loadValue,
+    loadUnit: item.loadUnit,
+    loadText: item.loadText,
+  }));
+}
+
+/** Menu da série: duplicar (logo abaixo), mover e remover. */
+export function duplicateSet(sets: SetDraft[], key: string): SetDraft[] {
+  const i = sets.findIndex((s) => s.key === key);
+  if (i < 0 || sets.length >= 20) return sets;
+  return [...sets.slice(0, i + 1), { ...sets[i], key: newKey() }, ...sets.slice(i + 1)];
+}
+
+export function moveSet(sets: SetDraft[], key: string, delta: -1 | 1): SetDraft[] {
+  const i = sets.findIndex((s) => s.key === key);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= sets.length) return sets;
+  const next = [...sets];
+  [next[i], next[j]] = [next[j], next[i]];
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Conversão rascunho ⇄ payload
+// ---------------------------------------------------------------------------
+
+const text = (s: string) => (s.trim() === "" ? null : s.trim());
+/** "12,5" → 12.5 · "" → null · inválido → NaN (o schema acusa). */
+export function parseNumber(s: string): number | null {
+  const t = s.trim().replace(",", ".");
+  if (t === "") return null;
+  return /^-?\d+(\.\d+)?$/.test(t) ? Number(t) : Number.NaN;
+}
+const date = (s: string) => (s.trim() === "" ? null : (parseBRDate(s) ?? "invalida"));
+
+function prescriptionPayload(d: PrescriptionDraft) {
+  const failure = d.quantityUnit === "failure";
+  return {
+    quantity_unit: d.quantityUnit,
+    quantity_min: failure ? null : parseNumber(d.qtyMin),
+    quantity_max: failure ? null : parseNumber(d.qtyMax),
+    quantity_note: text(d.qtyNote),
+    intensity: text(d.intensity),
+    speed: d.speedMode === "preset" ? d.speed || null : null,
+    tempo: d.speedMode === "tempo" ? (text(d.tempo)?.toUpperCase() ?? null) : null,
+    rest_min: parseNumber(d.restMin),
+    rest_max: parseNumber(d.restMax),
+  };
+}
+
+export function toPayload(draft: PlanDraft): unknown {
+  const load = (value: string, unit: LoadUnit) => {
+    const n = parseNumber(value);
+    return { load_value: n, load_unit: n === null ? null : unit };
+  };
+  return {
+    id: draft.id,
+    student_id: draft.studentId,
+    name: draft.name.trim(),
+    goal: text(draft.goal),
+    level: draft.level || null,
+    starts_on: date(draft.startsOn),
+    ends_on: draft.noEnd ? null : date(draft.endsOn),
+    no_end: draft.noEnd,
+    planned_sessions: parseNumber(draft.plannedSessions),
+    trainer_id: draft.trainerId || null,
+    notes: text(draft.notes),
+    // Os keys são UUIDs: viram os ids de divisões/itens (o servidor preserva os que já são do plano).
+    workouts: draft.workouts.map((w) => ({
+      id: w.key,
+      label: w.label.trim(),
+      name: text(w.name),
+      notes: text(w.notes),
+      items: w.items.map((it) => ({
+        id: it.key,
+        exercise_id: it.exerciseId,
+        group_key: it.groupKey,
+        sets: parseNumber(it.sets),
+        ...prescriptionPayload(it),
+        ...load(it.loadValue, it.loadUnit),
+        load_text: text(it.loadText),
+        tip: text(it.tip),
+        care_note: text(it.careNote),
+        substitutes: it.substitutes.map((s) => s.id),
+        method_id: it.methodId || null,
+        objective_id: it.objectiveId || null,
+        sets_detail: it.setsDetail.map((s) => ({
+          set_type: s.setType,
+          ...prescriptionPayload(s),
+          ...load(s.loadValue, s.loadUnit),
+          load_text: text(s.loadText),
+        })),
+      })),
+    })),
+  };
+}
+
+/** Campo do payload → campo do rascunho (para destacar o erro no lugar certo). */
+const FIELD: Record<string, string> = {
+  sets: "sets",
+  load_value: "loadValue",
+  load_unit: "loadValue",
+  load_text: "loadText",
+  quantity_unit: "quantityUnit",
+  quantity_min: "qtyMin",
+  quantity_max: "qtyMax",
+  quantity_note: "qtyNote",
+  intensity: "intensity",
+  speed: "speed",
+  tempo: "tempo",
+  rest_min: "restMin",
+  rest_max: "restMax",
+  notes: "notes",
+  tip: "tip",
+  care_note: "careNote",
+  substitutes: "substitutes",
+  method_id: "methodId",
+  objective_id: "objectiveId",
+  group_key: "groupKey",
+  set_type: "setType",
+  label: "label",
+  name: "name",
+  goal: "goal",
+  level: "level",
+  starts_on: "startsOn",
+  ends_on: "endsOn",
+  planned_sessions: "plannedSessions",
+  trainer_id: "trainerId",
+};
+
+export type DraftErrors = Record<string, string>;
+
+/**
+ * Valida o rascunho com o mesmo schema do servidor. Chaves de erro:
+ * "plan.<campo>", "<workoutKey>.<campo>", "<itemKey>.<campo>", "<setKey>.<campo>".
+ */
+export function validateDraft(draft: PlanDraft): { ok: true; payload: PlanPayload } | { ok: false; errors: DraftErrors } {
+  const parsed = planPayloadSchema.safeParse(toPayload(draft));
+  if (parsed.success) return { ok: true, payload: parsed.data };
+  const errors: DraftErrors = {};
+  for (const issue of parsed.error.issues) {
+    const p = issue.path;
+    let owner = "plan";
+    let field = String(p.at(-1));
+    if (p[0] === "workouts" && typeof p[1] === "number") {
+      const w = draft.workouts[p[1]];
+      owner = w?.key ?? "plan";
+      if (p[2] === "items" && typeof p[3] === "number") {
+        const it = w?.items[p[3]];
+        owner = it?.key ?? owner;
+        if (p[4] === "sets_detail" && typeof p[5] === "number") owner = it?.setsDetail[p[5]]?.key ?? owner;
+      }
+    }
+    field = FIELD[field] ?? field;
+    const key = `${owner}.${field}`;
+    errors[key] ??= issue.message;
+  }
+  return { ok: false, errors };
+}
+
+// ---------------------------------------------------------------------------
+// Plano salvo → rascunho
+// ---------------------------------------------------------------------------
+
+export interface SavedPlan {
+  id: string;
+  studentId: string | null;
+  name: string;
+  goal: string | null;
+  level: PlanLevel | null;
+  startsOn: string | null;
+  endsOn: string | null;
+  noEnd: boolean;
+  plannedSessions: number | null;
+  trainerId: string | null;
+  notes: string | null;
+  workouts: {
+    id: string;
+    label: string;
+    name: string | null;
+    notes: string | null;
+    items: {
+      id: string;
+      exerciseId: string;
+      exerciseName: string;
+      groupKey: string | null;
+      sets: number | null;
+      loadValue: number | null;
+      loadUnit: LoadUnit | null;
+      loadText: string | null;
+      prescription: SavedPrescription;
+      tip: string | null;
+      careNote: string | null;
+      substitutes: { id: string; name: string }[];
+      methodId: string | null;
+      objectiveId: string | null;
+      /** Só exibição (impressão). */
+      methodName?: string | null;
+      objectiveName?: string | null;
+      setsDetail: {
+        setType: SetType;
+        loadValue: number | null;
+        loadUnit: LoadUnit | null;
+        loadText: string | null;
+        prescription: SavedPrescription;
+      }[];
+    }[];
+  }[];
+}
+
+export interface SavedPrescription {
+  quantityUnit: QuantityUnit;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  quantityNote: string | null;
+  intensity: string | null;
+  speed: SpeedPreset | null;
+  tempo: string | null;
+  restMin: number | null;
+  restMax: number | null;
+}
+
+const str = (v: string | number | null) => (v === null ? "" : String(v).replace(".", ","));
+
+function prescriptionDraft(p: SavedPrescription): PrescriptionDraft {
+  return {
+    quantityUnit: p.quantityUnit,
+    qtyMin: str(p.quantityMin),
+    qtyMax: str(p.quantityMax),
+    qtyNote: p.quantityNote ?? "",
+    intensity: p.intensity ?? "",
+    speedMode: p.tempo && !p.speed ? "tempo" : "preset",
+    speed: p.speed ?? "",
+    tempo: p.tempo ?? "",
+    restMin: str(p.restMin),
+    restMax: str(p.restMax),
+  };
+}
+
+export function fromSaved(plan: SavedPlan): PlanDraft {
+  return {
+    id: plan.id,
+    studentId: plan.studentId,
+    name: plan.name,
+    goal: plan.goal ?? "",
+    level: plan.level ?? "",
+    startsOn: plan.startsOn ? isoToBR(plan.startsOn) : "",
+    endsOn: plan.endsOn ? isoToBR(plan.endsOn) : "",
+    noEnd: plan.noEnd,
+    plannedSessions: plan.plannedSessions === null ? "" : String(plan.plannedSessions),
+    trainerId: plan.trainerId ?? "",
+    notes: plan.notes ?? "",
+    // O id salvo vira o key: salvar de novo preserva divisões e itens (sessões e evolução dependem disso).
+    workouts: plan.workouts.map((w) => ({
+      key: w.id,
+      label: w.label,
+      name: w.name ?? "",
+      notes: w.notes ?? "",
+      items: w.items.map((it) => ({
+        key: it.id,
+        exerciseId: it.exerciseId,
+        exerciseName: it.exerciseName,
+        groupKey: it.groupKey,
+        sets: str(it.sets),
+        ...prescriptionDraft(it.prescription),
+        loadValue: str(it.loadValue),
+        loadUnit: it.loadUnit ?? "kg",
+        loadText: it.loadText ?? "",
+        tip: it.tip ?? "",
+        careNote: it.careNote ?? "",
+        substitutes: it.substitutes,
+        methodId: it.methodId ?? "",
+        objectiveId: it.objectiveId ?? "",
+        setsDetail: it.setsDetail.map((s) => ({
+          key: newKey(),
+          setType: s.setType,
+          ...prescriptionDraft(s.prescription),
+          loadValue: str(s.loadValue),
+          loadUnit: s.loadUnit ?? "kg",
+          loadText: s.loadText ?? "",
+        })),
+      })),
+    })),
+  };
+}
+
+/**
+ * Importa itens (de outra divisão, plano ou modelo) para o fim da divisão: chaves novas para
+ * itens e séries, agrupamentos re-chaveados (nunca colidem com os existentes) e grupos que
+ * vieram incompletos (1 item) desfeitos. Séries detalhadas e substitutos são mantidos.
+ */
+export function importItems(target: ItemDraft[], picked: ItemDraft[]): ItemDraft[] {
+  const remap = new Map<string, string>();
+  const copies = picked.map((it) => {
+    let groupKey: string | null = null;
+    if (it.groupKey) {
+      if (!remap.has(it.groupKey)) remap.set(it.groupKey, newGroupKey());
+      groupKey = remap.get(it.groupKey)!;
+    }
+    return {
+      ...it,
+      key: newKey(),
+      groupKey,
+      substitutes: it.substitutes.map((s) => ({ ...s })),
+      setsDetail: it.setsDetail.map((s) => ({ ...s, key: newKey() })),
+    };
+  });
+  return normalizeGroups([...target, ...copies]);
+}

@@ -1,0 +1,3132 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.17"
+  }
+  public: {
+    Tables: {
+      access_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          organization_id: string
+          student_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          organization_id: string
+          student_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          student_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_links_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "access_links_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      anamnesis_requests: {
+        Row: {
+          completed_at: string | null
+          id: string
+          organization_id: string
+          requested_at: string
+          requested_by: string | null
+          student_id: string
+          template_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          organization_id: string
+          requested_at?: string
+          requested_by?: string | null
+          student_id: string
+          template_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          organization_id?: string
+          requested_at?: string
+          requested_by?: string | null
+          student_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_requests_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "anamnesis_requests_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "anamnesis_requests_template_id_organization_id_fkey"
+            columns: ["template_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "anamnesis_templates"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      anamnesis_templates: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          questions: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          questions?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          questions?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          diff: Json | null
+          entity: string
+          entity_id: string | null
+          id: number
+          organization_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          diff?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: never
+          organization_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          diff?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: never
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          attached_exercise_name: string | null
+          attached_item_id: string | null
+          body: string
+          client_msg_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          sender_id: string | null
+          sender_role: string
+          student_id: string
+        }
+        Insert: {
+          attached_exercise_name?: string | null
+          attached_item_id?: string | null
+          body: string
+          client_msg_id: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          sender_id?: string | null
+          sender_role: string
+          student_id: string
+        }
+        Update: {
+          attached_exercise_name?: string | null
+          attached_item_id?: string | null
+          body?: string
+          client_msg_id?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          sender_id?: string | null
+          sender_role?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_attached_item_id_fkey"
+            columns: ["attached_item_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_reads: {
+        Row: {
+          last_read_at: string
+          last_read_message_id: string | null
+          reader_id: string
+          reader_role: string
+          student_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          last_read_message_id?: string | null
+          reader_id: string
+          reader_role: string
+          student_id: string
+        }
+        Update: {
+          last_read_at?: string
+          last_read_message_id?: string | null
+          reader_id?: string
+          reader_role?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_reads_last_read_message_id_fkey"
+            columns: ["last_read_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_reads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_reads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_students: {
+        Row: {
+          class_id: string
+          organization_id: string
+          student_id: string
+        }
+        Insert: {
+          class_id: string
+          organization_id: string
+          student_id: string
+        }
+        Update: {
+          class_id?: string
+          organization_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_students_class_id_organization_id_fkey"
+            columns: ["class_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "class_students_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "class_students_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          trainer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          trainer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          trainer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classes_trainer_id_organization_id_fkey"
+            columns: ["trainer_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      exercise_contraindications: {
+        Row: {
+          condition_id: string
+          created_at: string
+          created_by: string | null
+          exercise_id: string
+          id: string
+          level: Database["public"]["Enums"]["contraindication_level"]
+          note: string | null
+          organization_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          condition_id: string
+          created_at?: string
+          created_by?: string | null
+          exercise_id: string
+          id?: string
+          level: Database["public"]["Enums"]["contraindication_level"]
+          note?: string | null
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          condition_id?: string
+          created_at?: string
+          created_by?: string | null
+          exercise_id?: string
+          id?: string
+          level?: Database["public"]["Enums"]["contraindication_level"]
+          note?: string | null
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_contraindications_condition_id_fkey"
+            columns: ["condition_id"]
+            isOneToOne: false
+            referencedRelation: "health_conditions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_contraindications_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_contraindications_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_contraindications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercise_defaults: {
+        Row: {
+          exercise_id: string
+          id: string
+          organization_id: string | null
+          quantity_max: number | null
+          quantity_min: number | null
+          quantity_unit: Database["public"]["Enums"]["quantity_unit"]
+          rest_max: number | null
+          rest_min: number | null
+          sets: number | null
+          updated_at: string
+        }
+        Insert: {
+          exercise_id: string
+          id?: string
+          organization_id?: string | null
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          sets?: number | null
+          updated_at?: string
+        }
+        Update: {
+          exercise_id?: string
+          id?: string
+          organization_id?: string | null
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          sets?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_defaults_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_defaults_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_defaults_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercises: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          equipment: string | null
+          id: string
+          instructions: string | null
+          media_bytes: number
+          muscle_groups: string[]
+          name: string
+          organization_id: string | null
+          poster_path: string | null
+          source_exercise_id: string | null
+          updated_at: string
+          video_path: string | null
+          video_url: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment?: string | null
+          id?: string
+          instructions?: string | null
+          media_bytes?: number
+          muscle_groups?: string[]
+          name: string
+          organization_id?: string | null
+          poster_path?: string | null
+          source_exercise_id?: string | null
+          updated_at?: string
+          video_path?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment?: string | null
+          id?: string
+          instructions?: string | null
+          media_bytes?: number
+          muscle_groups?: string[]
+          name?: string
+          organization_id?: string | null
+          poster_path?: string | null
+          source_exercise_id?: string | null
+          updated_at?: string
+          video_path?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_conditions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          key: string | null
+          name: string
+          organization_id: string | null
+          parent_id: string | null
+          search_terms: string[]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          key?: string | null
+          name: string
+          organization_id?: string | null
+          parent_id?: string | null
+          search_terms?: string[]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          key?: string | null
+          name?: string
+          organization_id?: string | null
+          parent_id?: string | null
+          search_terms?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_conditions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_conditions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "health_conditions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_counters: {
+        Row: {
+          last_enrollment_number: number
+          organization_id: string
+        }
+        Insert: {
+          last_enrollment_number?: number
+          organization_id: string
+        }
+        Update: {
+          last_enrollment_number?: number
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          is_seed: boolean
+          name: string
+          overdue_grace_days: number
+          plan: Database["public"]["Enums"]["plan_tier"]
+          slug: string
+          student_limit: number
+          updated_at: string
+          video_quota_bytes: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_seed?: boolean
+          name: string
+          overdue_grace_days?: number
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          slug: string
+          student_limit?: number
+          updated_at?: string
+          video_quota_bytes?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_seed?: boolean
+          name?: string
+          overdue_grace_days?: number
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          slug?: string
+          student_limit?: number
+          updated_at?: string
+          video_quota_bytes?: number | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          due_date: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"] | null
+          organization_id: string
+          paid_at: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          due_date: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"] | null
+          organization_id: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"] | null
+          organization_id?: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "payments_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      pending_signups: {
+        Row: {
+          consent_at: string | null
+          created_at: string
+          id: string
+          link_id: string
+          organization_id: string
+          payload: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["signup_status"]
+          student_id: string | null
+        }
+        Insert: {
+          consent_at?: string | null
+          created_at?: string
+          id?: string
+          link_id: string
+          organization_id: string
+          payload: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["signup_status"]
+          student_id?: string | null
+        }
+        Update: {
+          consent_at?: string | null
+          created_at?: string
+          id?: string
+          link_id?: string
+          organization_id?: string
+          payload?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["signup_status"]
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_signups_link_id_organization_id_fkey"
+            columns: ["link_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "public_signup_links"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "pending_signups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_signups_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_signups_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_item_sets: {
+        Row: {
+          id: string
+          intensity: string | null
+          intensity_type: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value: number | null
+          item_id: string
+          load_text: string | null
+          load_unit: Database["public"]["Enums"]["load_unit"] | null
+          load_value: number | null
+          organization_id: string
+          position: number
+          quantity_max: number | null
+          quantity_min: number | null
+          quantity_note: string | null
+          quantity_unit: Database["public"]["Enums"]["quantity_unit"]
+          rest_max: number | null
+          rest_min: number | null
+          set_type: Database["public"]["Enums"]["set_type"]
+          speed: Database["public"]["Enums"]["speed_preset"] | null
+          tempo: string | null
+        }
+        Insert: {
+          id?: string
+          intensity?: string | null
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
+          item_id: string
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          organization_id: string
+          position: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          set_type?: Database["public"]["Enums"]["set_type"]
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
+          tempo?: string | null
+        }
+        Update: {
+          id?: string
+          intensity?: string | null
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
+          item_id?: string
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          organization_id?: string
+          position?: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          set_type?: Database["public"]["Enums"]["set_type"]
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
+          tempo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_item_sets_item_id_organization_id_fkey"
+            columns: ["item_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      plan_item_substitutes: {
+        Row: {
+          exercise_id: string
+          item_id: string
+          organization_id: string
+          position: number
+        }
+        Insert: {
+          exercise_id: string
+          item_id: string
+          organization_id: string
+          position: number
+        }
+        Update: {
+          exercise_id?: string
+          item_id?: string
+          organization_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_item_substitutes_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_item_substitutes_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_item_substitutes_item_id_organization_id_fkey"
+            columns: ["item_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      plan_tier_limits: {
+        Row: {
+          plan: Database["public"]["Enums"]["plan_tier"]
+          updated_at: string
+          video_quota_bytes: number
+        }
+        Insert: {
+          plan: Database["public"]["Enums"]["plan_tier"]
+          updated_at?: string
+          video_quota_bytes: number
+        }
+        Update: {
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          updated_at?: string
+          video_quota_bytes?: number
+        }
+        Relationships: []
+      }
+      plan_workout_items: {
+        Row: {
+          care_note: string | null
+          exercise_id: string
+          group_key: string | null
+          id: string
+          intensity: string | null
+          intensity_type: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value: number | null
+          load_text: string | null
+          load_unit: Database["public"]["Enums"]["load_unit"] | null
+          load_value: number | null
+          method_id: string | null
+          objective_id: string | null
+          organization_id: string
+          position: number
+          quantity_max: number | null
+          quantity_min: number | null
+          quantity_note: string | null
+          quantity_unit: Database["public"]["Enums"]["quantity_unit"]
+          rest_max: number | null
+          rest_min: number | null
+          sets: number | null
+          speed: Database["public"]["Enums"]["speed_preset"] | null
+          tempo: string | null
+          tip: string | null
+          workout_id: string
+        }
+        Insert: {
+          care_note?: string | null
+          exercise_id: string
+          group_key?: string | null
+          id?: string
+          intensity?: string | null
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          method_id?: string | null
+          objective_id?: string | null
+          organization_id: string
+          position: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          sets?: number | null
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
+          tempo?: string | null
+          tip?: string | null
+          workout_id: string
+        }
+        Update: {
+          care_note?: string | null
+          exercise_id?: string
+          group_key?: string | null
+          id?: string
+          intensity?: string | null
+          intensity_type?: Database["public"]["Enums"]["intensity_type"] | null
+          intensity_value?: number | null
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          method_id?: string | null
+          objective_id?: string | null
+          organization_id?: string
+          position?: number
+          quantity_max?: number | null
+          quantity_min?: number | null
+          quantity_note?: string | null
+          quantity_unit?: Database["public"]["Enums"]["quantity_unit"]
+          rest_max?: number | null
+          rest_min?: number | null
+          sets?: number | null
+          speed?: Database["public"]["Enums"]["speed_preset"] | null
+          tempo?: string | null
+          tip?: string | null
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_workout_items_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_workout_items_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_workout_items_method_fkey"
+            columns: ["method_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "training_methods"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "plan_workout_items_objective_fkey"
+            columns: ["objective_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "training_objectives"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "plan_workout_items_workout_id_organization_id_fkey"
+            columns: ["workout_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workouts"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      plan_workouts: {
+        Row: {
+          id: string
+          label: string
+          name: string | null
+          notes: string | null
+          organization_id: string
+          plan_id: string
+          position: number
+        }
+        Insert: {
+          id?: string
+          label: string
+          name?: string | null
+          notes?: string | null
+          organization_id: string
+          plan_id: string
+          position: number
+        }
+        Update: {
+          id?: string
+          label?: string
+          name?: string | null
+          notes?: string | null
+          organization_id?: string
+          plan_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_workouts_plan_id_organization_id_fkey"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string
+          id: string
+          organization_id: string
+          preferences: Json
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name: string
+          id: string
+          organization_id: string
+          preferences?: Json
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          organization_id?: string
+          preferences?: Json
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_signup_links: {
+        Row: {
+          created_at: string
+          form_config: Json
+          id: string
+          is_active: boolean
+          organization_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          form_config?: Json
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          form_config?: Json
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_signup_links_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rate_limits: {
+        Row: {
+          hits: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          hits?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          hits?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      session_item_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          exercise_id: string | null
+          exercise_name: string
+          id: string
+          item_id: string | null
+          organization_id: string
+          pain_required: boolean
+          pain_score: number | null
+          session_id: string
+          substitute: boolean
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          exercise_id?: string | null
+          exercise_name: string
+          id?: string
+          item_id?: string | null
+          organization_id: string
+          pain_required?: boolean
+          pain_score?: number | null
+          session_id: string
+          substitute?: boolean
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          exercise_id?: string | null
+          exercise_name?: string
+          id?: string
+          item_id?: string | null
+          organization_id?: string
+          pain_required?: boolean
+          pain_score?: number | null
+          session_id?: string
+          substitute?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_item_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_item_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_item_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_item_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_set_logs: {
+        Row: {
+          exercise_id: string | null
+          id: string
+          item_log_id: string
+          load_text: string | null
+          load_unit: Database["public"]["Enums"]["load_unit"] | null
+          load_value: number | null
+          logged_at: string
+          organization_id: string
+          quantity_value: number | null
+          set_index: number
+        }
+        Insert: {
+          exercise_id?: string | null
+          id?: string
+          item_log_id: string
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          logged_at?: string
+          organization_id: string
+          quantity_value?: number | null
+          set_index: number
+        }
+        Update: {
+          exercise_id?: string | null
+          id?: string
+          item_log_id?: string
+          load_text?: string | null
+          load_unit?: Database["public"]["Enums"]["load_unit"] | null
+          load_value?: number | null
+          logged_at?: string
+          organization_id?: string
+          quantity_value?: number | null
+          set_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_set_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_set_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_set_logs_item_log_id_fkey"
+            columns: ["item_log_id"]
+            isOneToOne: false
+            referencedRelation: "session_item_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_set_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      special_group_conditions: {
+        Row: {
+          condition_id: string
+          group_id: string
+          organization_id: string
+        }
+        Insert: {
+          condition_id: string
+          group_id: string
+          organization_id: string
+        }
+        Update: {
+          condition_id?: string
+          group_id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_group_conditions_condition_id_fkey"
+            columns: ["condition_id"]
+            isOneToOne: false
+            referencedRelation: "health_conditions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "special_group_conditions_group_id_organization_id_fkey"
+            columns: ["group_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "special_groups"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      special_groups: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_groups: {
+        Row: {
+          group_id: string
+          organization_id: string
+          student_id: string
+        }
+        Insert: {
+          group_id: string
+          organization_id: string
+          student_id: string
+        }
+        Update: {
+          group_id?: string
+          organization_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_groups_group_id_organization_id_fkey"
+            columns: ["group_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "special_groups"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "student_groups_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "student_groups_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      student_red_flag_checks: {
+        Row: {
+          clearance_kind: string | null
+          clearance_name: string | null
+          clearance_note: string | null
+          clearance_on: string | null
+          clearance_recorded_at: string | null
+          clearance_recorded_by: string | null
+          id: string
+          items: string[]
+          note: string | null
+          organization_id: string
+          recorded_at: string
+          recorded_by: string | null
+          referred: boolean
+          source: string
+          student_id: string
+        }
+        Insert: {
+          clearance_kind?: string | null
+          clearance_name?: string | null
+          clearance_note?: string | null
+          clearance_on?: string | null
+          clearance_recorded_at?: string | null
+          clearance_recorded_by?: string | null
+          id?: string
+          items?: string[]
+          note?: string | null
+          organization_id: string
+          recorded_at?: string
+          recorded_by?: string | null
+          referred?: boolean
+          source?: string
+          student_id: string
+        }
+        Update: {
+          clearance_kind?: string | null
+          clearance_name?: string | null
+          clearance_note?: string | null
+          clearance_on?: string | null
+          clearance_recorded_at?: string | null
+          clearance_recorded_by?: string | null
+          id?: string
+          items?: string[]
+          note?: string | null
+          organization_id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          referred?: boolean
+          source?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_red_flag_checks_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "student_red_flag_checks_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        Insert: {
+          access_expires_at?: string | null
+          birth_date?: string | null
+          block_if_overdue?: boolean
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
+          health_data_consent_at?: string | null
+          id?: string
+          last_name: string
+          notes?: string | null
+          organization_id: string
+          photo_path?: string | null
+          sex?: Database["public"]["Enums"]["sex"] | null
+          source?: Database["public"]["Enums"]["student_source"]
+          status?: Database["public"]["Enums"]["student_status"]
+          trainer_id?: string | null
+          training_location?: string | null
+          updated_at?: string
+          user_id?: string | null
+          whatsapp_e164?: string | null
+          workout_plan_ends_at?: string | null
+        }
+        Update: {
+          access_expires_at?: string | null
+          birth_date?: string | null
+          block_if_overdue?: boolean
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          email?: string
+          enrollment_number?: number
+          first_name?: string
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
+          health_data_consent_at?: string | null
+          id?: string
+          last_name?: string
+          notes?: string | null
+          organization_id?: string
+          photo_path?: string | null
+          sex?: Database["public"]["Enums"]["sex"] | null
+          source?: Database["public"]["Enums"]["student_source"]
+          status?: Database["public"]["Enums"]["student_status"]
+          trainer_id?: string | null
+          training_location?: string | null
+          updated_at?: string
+          user_id?: string | null
+          whatsapp_e164?: string | null
+          workout_plan_ends_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_trainer_id_organization_id_fkey"
+            columns: ["trainer_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      trainer_announcements: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          student_id: string | null
+          trainer_id: string
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id: string
+          student_id?: string | null
+          trainer_id: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          student_id?: string | null
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_announcements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_announcements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_announcements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_announcements_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_methods: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          position: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          position?: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_methods_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_objectives: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          position: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          position?: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_objectives_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_plans: {
+        Row: {
+          activated_at: string | null
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          ends_on: string | null
+          goal: string | null
+          id: string
+          level: string | null
+          name: string
+          no_end: boolean
+          notes: string | null
+          organization_id: string
+          planned_sessions: number | null
+          source_plan_id: string | null
+          starts_on: string | null
+          status: Database["public"]["Enums"]["plan_status"]
+          student_id: string | null
+          trainer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string | null
+          goal?: string | null
+          id?: string
+          level?: string | null
+          name: string
+          no_end?: boolean
+          notes?: string | null
+          organization_id: string
+          planned_sessions?: number | null
+          source_plan_id?: string | null
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["plan_status"]
+          student_id?: string | null
+          trainer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string | null
+          goal?: string | null
+          id?: string
+          level?: string | null
+          name?: string
+          no_end?: boolean
+          notes?: string | null
+          organization_id?: string
+          planned_sessions?: number | null
+          source_plan_id?: string | null
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["plan_status"]
+          student_id?: string | null
+          trainer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_plans_source_plan_id_fkey"
+            columns: ["source_plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_plans_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "training_plans_student_id_organization_id_fkey"
+            columns: ["student_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "training_plans_trainer_fkey"
+            columns: ["trainer_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      workout_sessions: {
+        Row: {
+          coach_reply: string | null
+          coach_reply_at: string | null
+          coach_reply_by: string | null
+          created_at: string
+          feedback_note: string | null
+          finished_at: string | null
+          id: string
+          organization_id: string
+          pain_checkin: string | null
+          plan_id: string | null
+          recorded_by: string | null
+          rpe: number | null
+          snapshot: Json
+          started_at: string
+          status: string
+          student_id: string
+          student_rating: number | null
+          trainer_reviewed_at: string | null
+          trainer_reviewed_by: string | null
+          workout_id: string | null
+          workout_label: string
+          workout_name: string | null
+        }
+        Insert: {
+          coach_reply?: string | null
+          coach_reply_at?: string | null
+          coach_reply_by?: string | null
+          created_at?: string
+          feedback_note?: string | null
+          finished_at?: string | null
+          id?: string
+          organization_id: string
+          pain_checkin?: string | null
+          plan_id?: string | null
+          recorded_by?: string | null
+          rpe?: number | null
+          snapshot: Json
+          started_at?: string
+          status?: string
+          student_id: string
+          student_rating?: number | null
+          trainer_reviewed_at?: string | null
+          trainer_reviewed_by?: string | null
+          workout_id?: string | null
+          workout_label: string
+          workout_name?: string | null
+        }
+        Update: {
+          coach_reply?: string | null
+          coach_reply_at?: string | null
+          coach_reply_by?: string | null
+          created_at?: string
+          feedback_note?: string | null
+          finished_at?: string | null
+          id?: string
+          organization_id?: string
+          pain_checkin?: string | null
+          plan_id?: string | null
+          recorded_by?: string | null
+          rpe?: number | null
+          snapshot?: Json
+          started_at?: string
+          status?: string
+          student_id?: string
+          student_rating?: number | null
+          trainer_reviewed_at?: string | null
+          trainer_reviewed_by?: string | null
+          workout_id?: string | null
+          workout_label?: string
+          workout_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sessions_coach_reply_by_fkey"
+            columns: ["coach_reply_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_trainer_reviewed_by_fkey"
+            columns: ["trainer_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      exercise_library: {
+        Row: {
+          archived_at: string | null
+          created_at: string | null
+          created_by: string | null
+          customized: boolean | null
+          equipment: string | null
+          has_video: boolean | null
+          id: string | null
+          instructions: string | null
+          is_global: boolean | null
+          muscle_groups: string[] | null
+          name: string | null
+          organization_id: string | null
+          search_text: string | null
+          source_exercise_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customized?: never
+          equipment?: string | null
+          has_video?: never
+          id?: string | null
+          instructions?: string | null
+          is_global?: never
+          muscle_groups?: string[] | null
+          name?: string | null
+          organization_id?: string | null
+          search_text?: never
+          source_exercise_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customized?: never
+          equipment?: string | null
+          has_video?: never
+          id?: string | null
+          instructions?: string | null
+          is_global?: never
+          muscle_groups?: string[] | null
+          name?: string | null
+          organization_id?: string | null
+          search_text?: never
+          source_exercise_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students_with_status: {
+        Row: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          effective_status:
+            | Database["public"]["Enums"]["effective_status"]
+            | null
+          email: string | null
+          enrollment_number: number | null
+          first_name: string | null
+          full_name: string | null
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string | null
+          last_name: string | null
+          notes: string | null
+          organization_id: string | null
+          photo_path: string | null
+          search_text: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"] | null
+          status: Database["public"]["Enums"]["student_status"] | null
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string | null
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        Insert: {
+          access_expires_at?: string | null
+          birth_date?: string | null
+          block_if_overdue?: boolean | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          effective_status?: never
+          email?: string | null
+          enrollment_number?: number | null
+          first_name?: string | null
+          full_name?: never
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
+          health_data_consent_at?: string | null
+          id?: string | null
+          last_name?: string | null
+          notes?: string | null
+          organization_id?: string | null
+          photo_path?: string | null
+          search_text?: never
+          sex?: Database["public"]["Enums"]["sex"] | null
+          source?: Database["public"]["Enums"]["student_source"] | null
+          status?: Database["public"]["Enums"]["student_status"] | null
+          trainer_id?: string | null
+          training_location?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp_e164?: string | null
+          workout_plan_ends_at?: string | null
+        }
+        Update: {
+          access_expires_at?: string | null
+          birth_date?: string | null
+          block_if_overdue?: boolean | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          effective_status?: never
+          email?: string | null
+          enrollment_number?: number | null
+          first_name?: string | null
+          full_name?: never
+          health_consent_declared_at?: string | null
+          health_consent_declared_by?: string | null
+          health_data_consent_at?: string | null
+          id?: string | null
+          last_name?: string | null
+          notes?: string | null
+          organization_id?: string | null
+          photo_path?: string | null
+          search_text?: never
+          sex?: Database["public"]["Enums"]["sex"] | null
+          source?: Database["public"]["Enums"]["student_source"] | null
+          status?: Database["public"]["Enums"]["student_status"] | null
+          trainer_id?: string | null
+          training_location?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp_e164?: string | null
+          workout_plan_ends_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_trainer_id_organization_id_fkey"
+            columns: ["trainer_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+    }
+    Functions: {
+      acknowledge_session_alert: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      activate_plan: {
+        Args: { p_plan_id: string }
+        Returns: Database["public"]["Enums"]["plan_status"]
+      }
+      admin_activate_due_plans: { Args: never; Returns: number }
+      apply_plan_to_students: {
+        Args: {
+          p_activate: boolean
+          p_ends_on: string
+          p_no_end: boolean
+          p_source: string
+          p_starts_on: string
+          p_students: string[]
+        }
+        Returns: {
+          error: string
+          plan_id: string
+          status: Database["public"]["Enums"]["plan_status"]
+          student_id: string
+        }[]
+      }
+      apply_template_to_student: {
+        Args: {
+          p_ends_on?: string
+          p_starts_on?: string
+          p_student_id: string
+          p_template_id: string
+        }
+        Returns: string
+      }
+      approve_signup: {
+        Args: { p_group_ids?: string[]; p_id: string; p_trainer_id?: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      approve_signups: {
+        Args: { p_ids: string[]; p_trainer_id?: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      archive_plan: { Args: { p_plan_id: string }; Returns: undefined }
+      can_view_student_health: {
+        Args: { p_student_id: string }
+        Returns: boolean
+      }
+      chat_unread_count: { Args: { p_student_id: string }; Returns: number }
+      clear_student_expiration: {
+        Args: { p_student_id: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_session_item: {
+        Args: {
+          p_item_id: string
+          p_pain_score: number
+          p_session_id: string
+          p_substitute_exercise_id?: string
+        }
+        Returns: undefined
+      }
+      consume_access_link: {
+        Args: { p_token: string }
+        Returns: {
+          email: string
+          first_name: string
+          organization_id: string
+          student_id: string
+          user_id: string
+        }[]
+      }
+      create_access_link: { Args: { p_student_id: string }; Returns: string }
+      create_student: {
+        Args: { p_data: Json }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      customize_exercise: { Args: { p_id: string }; Returns: string }
+      deactivate_student: {
+        Args: { p_student_id: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      duplicate_plan: { Args: { p_plan_id: string }; Returns: string }
+      ensure_signup_link: {
+        Args: never
+        Returns: {
+          created_at: string
+          form_config: Json
+          id: string
+          is_active: boolean
+          organization_id: string
+          token: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "public_signup_links"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      expire_student: {
+        Args: { p_student_id: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      finish_workout_session: {
+        Args: { p_feedback?: string; p_rpe?: number; p_session_id: string }
+        Returns: undefined
+      }
+      get_chat_messages: {
+        Args: { p_before?: string; p_student_id: string }
+        Returns: {
+          attached_exercise_name: string
+          attached_item_id: string
+          body: string
+          client_msg_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          sender_first_name: string
+          sender_id: string
+          sender_role: string
+          student_id: string
+        }[]
+      }
+      get_dashboard_engagement_retention: { Args: never; Returns: Json }
+      get_dashboard_training_stats: { Args: never; Returns: Json }
+      get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
+      get_my_announcement: {
+        Args: { p_student_id?: string }
+        Returns: {
+          active: boolean
+          body: string
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          student_id: string | null
+          trainer_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trainer_announcements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_my_health_consent_request: {
+        Args: never
+        Returns: {
+          declared_at: string
+          group_names: string[]
+          organization_name: string
+          student_id: string
+          trainer_name: string
+        }[]
+      }
+      get_my_student_profile: {
+        Args: never
+        Returns: {
+          effective_status: Database["public"]["Enums"]["effective_status"]
+          first_name: string
+          last_name: string
+          organization_name: string
+          photo_path: string
+          sessions_this_month: number
+          student_id: string
+          trainer_avatar_url: string
+          trainer_name: string
+          trainer_office_hours: string
+          week_streak: number
+        }[]
+      }
+      get_my_workout_history: {
+        Args: { p_student_id?: string }
+        Returns: {
+          by_trainer: boolean
+          coach_reply: string
+          exercises_done: number
+          finished_at: string
+          plan_id: string
+          plan_name: string
+          rpe: number
+          session_id: string
+          started_at: string
+          status: string
+          workout_label: string
+          workout_name: string
+        }[]
+      }
+      get_plan_header: {
+        Args: { p_plan_id: string }
+        Returns: {
+          student_id: string
+          student_name: string
+          trainer_id: string
+          trainer_name: string
+        }[]
+      }
+      get_public_signup_form: {
+        Args: { p_token: string }
+        Returns: {
+          form_config: Json
+          organization_name: string
+        }[]
+      }
+      get_session_summary: { Args: { p_session_id: string }; Returns: Json }
+      get_training_session: { Args: { p_session_id: string }; Returns: Json }
+      hard_delete_student: {
+        Args: { p_confirm_name: string; p_student_id: string }
+        Returns: {
+          photo_path: string
+          user_id: string
+        }[]
+      }
+      hit_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_seconds: number }
+        Returns: boolean
+      }
+      list_chat_inbox: {
+        Args: never
+        Returns: {
+          last_message: string
+          last_message_at: string
+          last_sender_role: string
+          photo_path: string
+          student_id: string
+          student_name: string
+          unread_count: number
+        }[]
+      }
+      log_set: {
+        Args: {
+          p_data: Json
+          p_item_id: string
+          p_session_id: string
+          p_set_index: number
+        }
+        Returns: undefined
+      }
+      log_students_export: {
+        Args: { p_count: number; p_filters: Json; p_format: string }
+        Returns: undefined
+      }
+      mark_chat_read: {
+        Args: { p_student_id: string; p_until_message_id: string }
+        Returns: undefined
+      }
+      organization_plan_usage: {
+        Args: never
+        Returns: {
+          inactive: number
+          plan: Database["public"]["Enums"]["plan_tier"]
+          remaining: number
+          student_limit: number
+          used: number
+        }[]
+      }
+      organization_video_usage: {
+        Args: never
+        Returns: {
+          quota_bytes: number
+          used_bytes: number
+        }[]
+      }
+      plan_contraindication_alerts: {
+        Args: { p_plan_id: string }
+        Returns: {
+          condition_name: string
+          exercise_id: string
+          group_name: string
+          hidden: boolean
+          is_global: boolean
+          item_id: string
+          level: Database["public"]["Enums"]["contraindication_level"]
+          note: string
+          other_is_global: boolean
+          other_level: Database["public"]["Enums"]["contraindication_level"]
+          other_note: string
+          restricted: boolean
+          substitute: boolean
+        }[]
+      }
+      plan_red_flag_pending: { Args: { p_plan_id: string }; Returns: boolean }
+      preview_plan_alerts_for_students: {
+        Args: { p_source: string; p_students: string[] }
+        Returns: {
+          avoid: number
+          caution: number
+          error: string
+          hidden: boolean
+          student_id: string
+        }[]
+      }
+      rate_workout_session: {
+        Args: { p_rating: number; p_session_id: string }
+        Returns: undefined
+      }
+      reactivate_student: {
+        Args: { p_student_id: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_pain_checkin: {
+        Args: { p_answer: string; p_session_id: string }
+        Returns: undefined
+      }
+      record_red_flag_check: {
+        Args: {
+          p_items: string[]
+          p_note?: string
+          p_referred?: boolean
+          p_student_id: string
+        }
+        Returns: string
+      }
+      record_red_flag_clearance: {
+        Args: {
+          p_check_id: string
+          p_kind: string
+          p_name: string
+          p_note?: string
+          p_on: string
+        }
+        Returns: undefined
+      }
+      record_student_access_email: {
+        Args: { p_student_id: string }
+        Returns: {
+          email: string
+          first_name: string
+          organization_id: string
+          student_id: string
+          user_id: string
+        }[]
+      }
+      regenerate_signup_token: {
+        Args: never
+        Returns: {
+          created_at: string
+          form_config: Json
+          id: string
+          is_active: boolean
+          organization_id: string
+          token: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "public_signup_links"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reject_signups: { Args: { p_ids: string[] }; Returns: number }
+      reply_to_session: {
+        Args: { p_reply: string; p_session_id: string }
+        Returns: undefined
+      }
+      request_anamnesis: {
+        Args: { p_student_id: string; p_template_id: string }
+        Returns: string
+      }
+      respond_my_health_consent: {
+        Args: { p_accept: boolean }
+        Returns: undefined
+      }
+      save_exercise: {
+        Args: { p_data: Json; p_id: string; p_rules: Json }
+        Returns: string
+      }
+      save_plan_as_template: {
+        Args: { p_name: string; p_plan_id: string }
+        Returns: string
+      }
+      save_training_plan: { Args: { p_plan: Json }; Returns: string }
+      send_chat_message: {
+        Args: {
+          p_attached_item_id?: string
+          p_body: string
+          p_client_msg_id: string
+          p_student_id: string
+        }
+        Returns: {
+          attached_exercise_name: string | null
+          attached_item_id: string | null
+          body: string
+          client_msg_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          sender_id: string | null
+          sender_role: string
+          student_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      session_effective_status: {
+        Args: { w: Database["public"]["Tables"]["workout_sessions"]["Row"] }
+        Returns: string
+      }
+      set_trainer_announcement: {
+        Args: { p_body: string; p_student_id?: string }
+        Returns: string
+      }
+      soft_delete_student: {
+        Args: { p_confirm_name: string; p_student_id: string }
+        Returns: undefined
+      }
+      staff_total_unread_count: { Args: never; Returns: number }
+      start_workout_session: {
+        Args: { p_plan_id: string; p_student_id?: string; p_workout_id: string }
+        Returns: {
+          ask_pain_checkin: boolean
+          resumed: boolean
+          session_id: string
+        }[]
+      }
+      student_contraindication_rules: {
+        Args: { p_student_id: string }
+        Returns: {
+          condition_name: string
+          exercise_id: string
+          group_name: string
+          hidden: boolean
+          is_global: boolean
+          level: Database["public"]["Enums"]["contraindication_level"]
+          note: string
+          other_is_global: boolean
+          other_level: Database["public"]["Enums"]["contraindication_level"]
+          other_note: string
+          restricted: boolean
+        }[]
+      }
+      student_effective_status: {
+        Args: { s: Database["public"]["Tables"]["students"]["Row"] }
+        Returns: Database["public"]["Enums"]["effective_status"]
+      }
+      student_plan_counts: {
+        Args: never
+        Returns: {
+          expired: number
+          expiring: number
+          no_plan: number
+        }[]
+      }
+      student_session_alerts: {
+        Args: { p_student_id: string }
+        Returns: {
+          exercise_name: string
+          feedback_note: string
+          hidden: boolean
+          kind: string
+          pain_checkin: string
+          pain_score: number
+          restricted: boolean
+          session_id: string
+          started_at: string
+          workout_label: string
+        }[]
+      }
+      student_tab_counts: {
+        Args: never
+        Returns: {
+          active: number
+          expired: number
+          inactive: number
+        }[]
+      }
+      submit_public_signup: {
+        Args: { p_consent: boolean; p_payload: Json; p_token: string }
+        Returns: string
+      }
+      update_student: {
+        Args: { p_patch: Json; p_student_id: string }
+        Returns: {
+          access_expires_at: string | null
+          birth_date: string | null
+          block_if_overdue: boolean
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          enrollment_number: number
+          first_name: string
+          health_consent_declared_at: string | null
+          health_consent_declared_by: string | null
+          health_data_consent_at: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          organization_id: string
+          photo_path: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          source: Database["public"]["Enums"]["student_source"]
+          status: Database["public"]["Enums"]["student_status"]
+          trainer_id: string | null
+          training_location: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp_e164: string | null
+          workout_plan_ends_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+    }
+    Enums: {
+      contraindication_level: "avoid" | "caution"
+      effective_status: "active" | "blocked" | "inactive" | "expired"
+      intensity_type: "pct_1rm" | "rpe" | "rir"
+      load_unit: "kg" | "lb"
+      payment_method: "pix" | "card" | "cash" | "transfer" | "other"
+      payment_status: "pending" | "paid" | "canceled"
+      plan_status: "draft" | "active" | "scheduled" | "archived"
+      plan_tier: "free" | "pro" | "gold"
+      quantity_unit:
+        | "reps"
+        | "failure"
+        | "seconds"
+        | "minutes"
+        | "meters"
+        | "km"
+        | "arrivals"
+        | "ascents"
+        | "descents"
+      set_type: "warmup" | "work" | "drop"
+      sex: "M" | "F"
+      signup_status: "pending" | "approved" | "rejected"
+      speed_preset: "slow" | "moderate" | "fast" | "explosive"
+      student_source: "manual" | "public_link"
+      student_status: "active" | "inactive"
+      user_role: "owner" | "trainer" | "student"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      contraindication_level: ["avoid", "caution"],
+      effective_status: ["active", "blocked", "inactive", "expired"],
+      intensity_type: ["pct_1rm", "rpe", "rir"],
+      load_unit: ["kg", "lb"],
+      payment_method: ["pix", "card", "cash", "transfer", "other"],
+      payment_status: ["pending", "paid", "canceled"],
+      plan_status: ["draft", "active", "scheduled", "archived"],
+      plan_tier: ["free", "pro", "gold"],
+      quantity_unit: [
+        "reps",
+        "failure",
+        "seconds",
+        "minutes",
+        "meters",
+        "km",
+        "arrivals",
+        "ascents",
+        "descents",
+      ],
+      set_type: ["warmup", "work", "drop"],
+      sex: ["M", "F"],
+      signup_status: ["pending", "approved", "rejected"],
+      speed_preset: ["slow", "moderate", "fast", "explosive"],
+      student_source: ["manual", "public_link"],
+      student_status: ["active", "inactive"],
+      user_role: ["owner", "trainer", "student"],
+    },
+  },
+} as const

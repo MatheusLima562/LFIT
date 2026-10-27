@@ -1,0 +1,735 @@
+# LFit — SaaS de gestão para personal trainers
+
+## Modo autônomo (regra permanente, vale para toda sessão)
+O usuário NÃO acompanha a sessão. É PROIBIDO fazer perguntas, de
+qualquer forma: nem texto pedindo confirmação, nem a ferramenta de
+perguntas (AskUserQuestion), nem "quer que eu...?", nem opções
+A/B/C para ele escolher.
+1. Dúvida ou ambiguidade: escolha a opção mais conservadora e
+   reversível, siga em frente e registre em
+   docs/decisoes-autonomas.md (data, dúvida, escolha, motivo, como
+   reverter).
+2. Ação que exige aprovação (supabase db push/reset, git push, rm,
+   leitura de .env, qualquer comando em ask/deny): NÃO peça e NÃO
+   contorne por outro caminho (nada de python, node ou outro
+   comando para o mesmo efeito). Pule a etapa, termine tudo o que
+   não depende dela e liste em "Pendências para você" o comando
+   exato e por que é necessário.
+3. Se algo for impossível sem decisão do usuário (regra de negócio
+   nova, escolha de segurança, privacidade ou cobrança): faça a
+   parte independente, documente o resto em "Pendências" e pare.
+   Nunca invente regra dessas.
+4. Teste falhando: corrija a causa. Nunca afrouxe teste para
+   passar; se não conseguir, relate o que tentou.
+5. Segurança inalterada: nunca ler ou imprimir .env ou chaves;
+   nunca dado de saúde ou texto de chat em log, URL ou
+   notificação; nunca editar migration já aplicada; nunca push.
+6. Relatório final curto: (a) o que foi feito, (b) decisões
+   tomadas sozinho (link para o log), (c) Pendências para você.
+
+Painel web (desktop-first) para o treinador e, no futuro, app PWA (mobile-first) para o aluno.
+Uso inicial interno (substituir o MFIT Personal); objetivo futuro é vender para outros personais,
+por isso tudo é **multi-tenant desde o início**.
+
+> Marcações: **[existe]** já está no repositório · **[planejado]** definido pela spec, ainda não implementado.
+
+## Stack
+
+| Camada | Tecnologia | Estado |
+|---|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) + React 19 | [existe] |
+| Linguagem | TypeScript `strict` | [existe] |
+| Estilo | Tailwind CSS v4 (tokens em `app/globals.css` via `@theme`) | [existe] |
+| Componentes | shadcn/ui (base Radix, preset Nova) em `components/ui/*.tsx` minúsculos + componentes próprios (`Card`, `StatTabs`, `EmptyState`…); `cn` do pacote `cn` (substitui clsx + tailwind-merge) via `@/lib/utils` | [existe] |
+| Tema | `next-themes` (classe `.dark`); tokens por tema em `app/globals.css` | [existe] |
+| Ícones / gráficos | lucide-react / recharts | [existe] |
+| Banco, Auth, Storage | Supabase (Postgres 17 + RLS), migrations em `supabase/migrations/` | [existe — schema da Fase 1] |
+| Validação / formulários | Zod 4 (mesmo schema no client e no server) + React Hook Form | [existe] |
+| Telefone / datas | libphonenumber-js (E.164, máscara por país) · react-day-picker (calendário) | [existe] |
+| Dados no client | Server Components + Server Actions (TanStack Query **não** adotado por enquanto: sem necessidade de cache no cliente até a 1.3; reavaliar quando houver listas interativas no cliente) | — |
+| Testes | Vitest (banco/RLS em `tests/db/`) · Playwright (e2e) | [existe] · [planejado] |
+| Deploy | Vercel (+ Vercel Cron para jobs diários) | [planejado] |
+
+### Particularidades do Next.js 16 (diferente do que costuma estar no treino dos modelos)
+- `middleware.ts` foi **renomeado para `proxy.ts`** (a convenção antiga está deprecada).
+- `params` e `searchParams` são **Promises** — sempre `await`.
+- Tipos globais `PageProps<"/rota">` e `LayoutProps<"/rota">` (gerados por `next typegen`).
+- Documentação local da versão instalada: `node_modules/next/dist/docs/`. Consulte antes de usar APIs novas.
+
+## Comandos
+
+```bash
+npm run dev        # servidor de desenvolvimento (http://localhost:3000)
+npm run build      # build de produção (inclui checagem de tipos)
+npm run lint       # ESLint (config next/core-web-vitals + typescript)
+npx tsc --noEmit   # checagem de tipos isolada
+```
+
+Banco e testes **[existe]** (precisam de `.env.local` — ver `.env.example`):
+
+```bash
+npm test                  # Vitest (testes de banco pulam se ALLOW_DB_TESTS != true)
+npm run test:db           # só os testes de isolamento/regras contra o Supabase de DEV
+npx supabase link --project-ref <ref>   # uma vez por máquina
+npm run db:push           # aplica supabase/migrations no projeto linkado (confirme antes!)
+npm run db:types          # gera lib/db/types.ts a partir do banco linkado
+npm run db:seed           # dados fictícios (-- --reset para recriar)
+npm run db:seed:demo      # + ~90 dias de sessões fictícias para ver o Início com números (só lfit-dev; separado do seed padrão)
+npm run bootstrap:owner   # cria organização + owner e imprime link de convite (sem e-mail)
+```
+
+> ⚠️ **`supabase db reset` e `npm run db:seed -- --reset` só no lfit-dev, NUNCA em produção.**
+> Ambos apagam dados. Antes de rodar, confirme o projeto linkado (`supabase/.temp/project-ref`)
+> e o `NEXT_PUBLIC_SUPABASE_URL` do `.env.local`. O mesmo vale para `npm run test:db`
+> (cria e apaga organizações; só roda com `ALLOW_DB_TESTS=true`).
+> **Trava de ambiente:** `db:seed` (inclusive `--reset`), `db:seed:demo`, os testes de banco e os roteiros e2e chamam
+> `scripts/dev-guard.mts` e **recusam** rodar se `ALLOW_DB_TESTS` não for `true`, se o project ref de
+> `NEXT_PUBLIC_SUPABASE_URL` não estiver em `ALLOWED_DEV_PROJECT_REFS` (lista única; hoje só o lfit-dev) ou se o CLI
+> estiver linkado a outro projeto. Os testes de banco **falham** (não pulam) nesse caso. Trocar/adicionar projeto de dev
+> = editar a lista num commit; nunca incluir o prod. Testado sem banco em `tests/unit/dev-guard.test.ts`. O seed exige
+> `SEED_USER_PASSWORD` com 12+ caracteres (só na variável; nunca no código ou na documentação).
+> **Trava adicional no `--reset`:** só apaga a organização se `organizations.is_seed = true` (coluna sem grant
+> de escrita para `authenticated`; só `service_role`/o script muda). Isso protege qualquer organização "de
+> verdade" no mesmo projeto — incluindo a sua, criada por `npm run bootstrap:owner` — mesmo que reuse por
+> engano o slug `studio-exemplo`: o script recusa com uma mensagem em vez de apagar. Testado manualmente
+> (flip do `is_seed` para `false` → `--reset` recusa e não apaga; `true` → apaga normalmente).
+
+Roteiros de navegador **[existe]** (`e2e/*.e2e.mjs`, Playwright com o Chrome instalado; só no lfit-dev):
+
+```bash
+npm run build && npx next start -p 3100    # de preferência no build de produção (o dev fica lento com muitos logins)
+npm run db:seed -- --reset                 # dados fictícios esperados pelos roteiros
+BASE=http://localhost:3100 npm run test:e2e             # todos, em série
+BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com os filtros
+```
+
+- Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
+- `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
+  `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
+  `trainer1/2.seed@example.com`) e a senha de `SEED_USER_PASSWORD` do `.env.local` (12+ caracteres; o seed recusa senha
+  ausente ou fraca) — **nunca credenciais reais no
+  repositório**. Senhas de contas de aluno criadas no roteiro são geradas a cada execução.
+- O executor (`e2e/run.mjs`) limpa `public.rate_limits` antes de cada roteiro e falha se houver qualquer linha "✗".
+- Cadastro público: o `next start` precisa das chaves de TESTE do Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+  1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
+- `inicio-professor-cards`: confere os cards do Início (logado como o professor do seed) contra as RPCs e salva o print em
+  `tutoriais-video/inicio-professor.png`; rode depois do f3 ou do `db:seed:demo`, com `--no-reseed`.
+- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`), idempotentes (limpam o que
+  criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
+
+Vídeos de tutorial **[existe]** (`e2e/tutoriais/NN-nome.roteiro.mjs`; mesma trava do lfit-dev e usuários fictícios do seed):
+
+```bash
+npm run build                                   # o script usa a porta 3100 ou sobe o next start sozinho
+npm run tutoriais:video -- 01-visao-geral       # ou 01 02 03 / todos; --legenda-na-tela escreve a legenda no vídeo
+```
+
+- Saída em `tutoriais-video/` (no `.gitignore`; nada de binário no git): `.webm` 1280×720 + `.srt` sincronizado.
+- Grava com o próprio Chrome (CDP screencast + `MediaRecorder`), sem ffmpeg: o `recordVideo` do Playwright exige baixar o
+  ffmpeg dele fora do projeto. Como gravar, regravar e hospedar (YouTube/Loom): `content/tutoriais/README.md`.
+- Passo que não funciona com o seed: ajuste o roteiro, nunca o código do sistema.
+
+## Estrutura de pastas
+
+Atual **[existe]**:
+
+```
+proxy.ts                   # (Next 16) renova a sessão Supabase e protege a área logada
+app/
+  layout.tsx, providers.tsx, globals.css   # tema, tooltips, toasts, tokens
+  (auth)/                  # entrar, esqueci-senha, redefinir-senha, convite, criar-conta (flag),
+                           # acesso/[token] (link do aluno) e acesso/pronto
+  (app)/                   # área logada (requireStaff + AppShell); page.tsx = dashboard
+    alunos/                # "Meus alunos" (lista/cards, filtros na URL) + exportar/route.ts (CSV/XLSX)
+  auth/confirm, auth/sair  # route handlers (links de e-mail, logout forçado)
+features/
+  auth/                    # schemas.ts (Zod), actions.ts (server actions), components/
+  organizations/queries.ts # uso do plano (RPC organization_plan_usage)
+  chat/                    # thread.ts (lógica pura), hooks.ts (Realtime, selos), queries.ts, components/ (conversa, caixa)
+  brand/                   # MARCA: config.ts (nome, logo, cores, textos) + BrandMark.tsx
+  legal/                   # /privacidade e /termos (rascunho): texts.ts + LegalPage.tsx
+  help/                    # tutoriais: tutorials.ts (frontmatter), markdown.ts (Markdown mínimo, sem dependência), queries.ts
+  students/                # search-params.ts (estado da URL), schemas.ts (form Zod), queries.ts, actions.ts,
+                           # account.ts, access-actions.ts (link do aluno), components/ (lista, form/, modal)
+components/
+  ui/                      # shadcn (minúsculos) + próprios (Card, StatTabs, EmptyState, ProgressBar,
+                           # data-table, confirm-dialog, password-input…)
+  students/                # StatusBadge, GroupChip, StudentAvatar
+  layout/                  # AppShell, Sidebar, UserMenu, ThemeToggle, Logo
+  dashboard/               # cards do dashboard (ainda com dados mockados — etapa 1.6)
+lib/
+  db/                      # server.ts, client.ts, admin.ts (service_role, server-only), types.ts (gerado)
+  auth/session.ts          # getSession / requireStaff
+  security/rate-limit.ts   # rate limit via RPC hit_rate_limit
+  security/headers.ts      # CSP e headers de segurança (usado no next.config.ts)
+  text.ts, format.ts, utils.ts
+  dates.ts                 # dd/mm/aaaa ↔ ISO, fim do dia em SP, máscara
+  phone.ts                 # países (pt-BR), máscara, E.164
+messages/pt-BR.ts          # textos da UI + tradução dos códigos de erro das RPCs
+content/tutoriais/         # tutoriais em Markdown (README = convenções); professor/ → /ajuda no painel, aluno/ reservado
+e2e/tutoriais/             # roteiros dos vídeos de tutorial (npm run tutoriais:video) → tutoriais-video/ (fora do git)
+data/                      # navegação (status de cada módulo), ações rápidas, mocks do dashboard
+supabase/migrations/       # schema, RLS e RPCs
+scripts/                   # seed.mts, bootstrap-owner.mts
+tests/db/                  # testes de RLS e regras (Vitest, contra o lfit-dev)
+tests/unit/                # testes de lógica pura (sem banco)
+```
+
+## Convenções
+
+- **Sem lógica de negócio em componentes.** Regras ficam em `features/<modulo>` / funções SQL.
+- Um schema Zod por formulário, reutilizado no client (RHF) e na server action.
+- Toda mudança de banco via **migration versionada**; seed só com dados fictícios, nunca dados reais de alunos.
+- `supabase db reset` / `--reset` só no lfit-dev, nunca em produção.
+- Datas: UTC no banco; exibição em `America/Sao_Paulo`, formato `dd/mm/aaaa`.
+- WhatsApp salvo em E.164 (`+5541999010287`), exibido com máscara.
+- Textos da UI em PT-BR, centralizados.
+- Acessibilidade: foco visível, labels, contraste AA, botões são `<button>` e links são `<a>`.
+- Nada de links mortos: módulo não implementado fica desabilitado com "Em breve". Em `data/navigation.ts`,
+  só itens com `status: "available"` navegam; `CardLink` e o banner consultam `isAvailableRoute()`.
+  Ao entregar um módulo, marque-o como `available`.
+- Remover acentos: use `stripAccents`/`searchKey`/`slugify` de `lib/text.ts` (não reescreva o regex).
+- Arquivos `"use server"` só exportam funções async (tipos podem). Schemas/constantes ficam em outro
+  arquivo — o build não acusa, só a execução (erro 500).
+- Gatilhos que auditam exclusões devem ignorar a cascata da organização (a org já não existe).
+- Server Action que precisa levar a um Route Handler que grava cookies (ex.: `/auth/confirm`): devolva a
+  URL e navegue com `window.location.assign` no cliente. `redirect()` da action faz uma busca RSC e a
+  sessão não chega à página seguinte.
+- Constraints (CHECK) executam com o privilégio de quem faz o UPDATE: se chamarem função do schema
+  `private`, dê `grant execute` ao papel que escreve (ex.: `valid_signup_form_config`).
+- Exportações: grupos especiais (dado de saúde) só com opt-in explícito (`saude=1` + confirmação na UI).
+  Filtrar por grupo especial também revela saúde e exige o mesmo opt-in — regra aplicada no servidor.
+- Links de uso único enviados por WhatsApp/e-mail: nunca consumir no GET (pré-visualizações fazem GET).
+  Mostre um botão e consuma no POST (ver `/acesso/[token]`).
+- Ações sensíveis com a secret key (Auth admin): primeiro uma RPC com a sessão do usuário autoriza e
+  audita (ex.: `record_student_access_email`); só depois o `createAdminClient()`.
+- **Cores — marca × semântica (nunca misturar; regras no topo do `app/globals.css`):**
+  - **Marca (laranja, `brand-*`/`primary`)** só em: botão primário (`bg-primary`), item ativo do menu, foco (`ring`) e
+    logo. É a cor personalizável do white label.
+  - **Semânticos:** `danger` (evitar/erro, carmim), `warning` (cautela, ocre), `success`, `info` — cada um com `-soft`
+    (fundo), `-line` (borda) e `-ink` (texto AA). **Vermelho e âmbar nunca como marca nem decoração**; alerta = ícone +
+    rótulo + cor semântica (`LevelBadge`; card com "Evitar" usa `border-danger`).
+  - **Neutros para o resto:** links usam o utilitário `link` (tinta + sublinhado, nunca só cor); seleção de chips/abas/
+    filtros usa `selected-soft`/`selected-line`; controles marcados (checkbox, rádio, switch, data) usam `control`;
+    barras de progresso, ícones de card e destaques usam `ink*`/`canvas`/`line`. Avatares: paleta decorativa sem
+    marca nem semânticos.
+  - Contraste AA (texto ≥ 4.5:1) nos dois temas, travado em `tests/unit/color-tokens.test.ts` (tokens) e conferido
+    nas páginas renderizadas por varredura de DOM. Matiz da marca a ≥ 20° (OKLCH) de danger/warning: `lib/color.ts` e
+    `lib/brand-color.ts` (`validateBrandColor`, base da validação do white label).
+- Tema escuro: use os tokens (`surface`, `canvas`, `line`, `ink*`, semânticos). Os tons 50–200 e 700–800
+  de emerald/amber/violet/red/teal/sky/rose/orange/zinc seguem remapeados no `.dark` do globals.css (legado/decoração).
+- Ao alterar uma tela do professor, atualizar o tutorial correspondente em `content/tutoriais/` e o campo `updated`
+  (convenções em `content/tutoriais/README.md`; o teste `tests/unit/tutorials.test.ts` valida frontmatter, slug e links)
+  e **regravar o vídeo afetado** (`npm run tutoriais:video -- <roteiro>`; tabela vídeo × seção no README dos tutoriais).
+  `video_url` no frontmatter (opcional) só aceita YouTube ou Loom.
+- **Marca:** nome do app (provisório), logo, cores e textos de marca só em `features/brand/config.ts`. Em texto de
+  arquivo (tutoriais), use `{{marca}}`. `tests/unit/brand.test.ts` falha se o nome aparecer escrito em outro lugar do
+  app e se `colors.primary` divergir do token `--color-brand-500` do CSS.
+- **Headers de segurança** (CSP, nosniff, Referrer-Policy, frame-ancestors none) em `lib/security/headers.ts`, aplicados
+  em `next.config.ts`. Nova origem externa (script, iframe, API, mídia) precisa entrar na CSP, com teste.
+- **Produção:** passos que dependem do dono em `docs/producao-checklist.md`; variáveis (só nomes) em
+  `docs/vercel-variaveis.md`. Páginas legais `/privacidade` e `/termos` são RASCUNHO (texto em
+  `features/legal/texts.ts`, bases legais em aberto) até a revisão do advogado.
+- Commits pequenos em conventional commits (`feat:`, `fix:`, `chore:`...).
+- Não instalar dependência sem justificar.
+- Spec ambígua ou em conflito com o código → **parar e perguntar**.
+
+## Regras de negócio
+
+### Multi-tenant e papéis
+- Toda tabela de negócio tem `organization_id`; isolamento por **RLS** no Postgres (nunca confiar só no front/API).
+- Papéis: `owner`, `trainer`, `student`. Um owner pode ter vários trainers (módulo Equipe).
+
+### Status do aluno (fonte única da verdade — nunca armazenar "expirado")
+```
+effective_status =
+  expired   se access_expires_at <= now()
+  inactive  senão, se status = 'inactive'
+  blocked   senão, se block_if_overdue e existe pagamento pending com
+            due_date + organizations.overdue_grace_days (default 5) < hoje em America/Sao_Paulo
+  active    caso contrário
+```
+- Implementado em `public.student_effective_status()` + view `students_with_status`.
+- Ações: **Desativar** → `status = inactive` · **Expirar** → `access_expires_at = now()` ·
+  **Limpar expiração** → `access_expires_at = null` · **Reativar** → valida limite do plano antes.
+- **Limite do plano**: ocupam vaga `effective_status in (active, blocked)` (decisão do dono: senão a
+  inadimplência liberaria vagas). Bloqueados aparecem na aba Ativos com badge. Cadastro/reativação
+  além de `student_limit` falha com `PLAN_LIMIT_REACHED` (UI mostra CTA de upgrade).
+- Job diário (cron): registra expirações e avisa o treinador sobre alunos expirando em 7 dias.
+
+### Alunos
+- Matrícula (`enrollment_number`) **gerada automaticamente**, sequencial por organização,
+  `unique(organization_id, enrollment_number)`; zeros à esquerda só na exibição.
+- `unique(organization_id, lower(email))` entre alunos não excluídos.
+- Soft delete (`deleted_at`); exclusão definitiva (`hard_delete_student`) só owner, confirmando pelo nome.
+- Trainers só entram por convite do owner; `/criar-conta` só existe com `ALLOW_PUBLIC_SIGNUP=true`.
+- "Copiar link de acesso" gera link de DEFINIR SENHA (tabela `access_links`, 30 min, uso único, só hash
+  no banco) — nunca magic link de login.
+- `audit_logs` para: desativar, expirar, excluir, resetar senha/acesso, alterar dados de saúde.
+
+### Treinos e exercícios (Fase 2)
+- `organization_id` nulo = **global** (biblioteca de exercícios, catálogo de condições, regras de
+  contraindicação): somente leitura para as organizações; muda só por migration.
+- **Regras globais de contraindicação só entram após revisão/aprovação do dono** (CSV em
+  `docs/revisao/contraindicacoes-v2.csv`, coluna "aprovar"; o `contraindicacoes-sugeridas.csv` foi substituído);
+  aplicar apenas as linhas aprovadas, numa migration própria. A biblioteca inicial foi publicada SEM contraindicações;
+  as **19 regras aprovadas** (todas "cautela") entraram em `20261008120000` (ver "Base de conhecimento").
+- Organizações têm condições próprias e uma **camada própria de contraindicações** (inclusive sobre
+  exercícios globais). Níveis: `avoid` (evitar) e `caution` (cautela) + nota (≤ 300).
+- Alerta = grupos especiais do aluno → `special_group_conditions` → regras (globais + da org). Não
+  bloqueia o salvar. Nunca aparece na impressão nem em logs.
+- `training_plans` unifica plano de aluno e modelo (`student_id` nulo = modelo). Escrita só por RPC
+  (`save_training_plan` substitui a estrutura inteira). Agrupamentos (`group_key`) precisam ser
+  contíguos; séries detalhadas (`plan_item_sets`) são opcionais.
+- No máximo 1 plano `active` por aluno (ativar arquiva o anterior). O gatilho `sync_student_plan_end`
+  mantém `students.workout_plan_ends_at` = fim do plano ativo às 23:59:59 de São Paulo. Em "Meus alunos",
+  filtro `?treino=a_vencer|vencido|sem_treino` (a vencer = próximos 7 dias); contagens via
+  `student_plan_counts()` (SECURITY INVOKER, só alunos da aba Ativos).
+- A view `students_with_status` usa `s.*`, que o Postgres congela na criação: coluna nova em `students`
+  exige recriar a view (drop + create + grant), como em `20261001120000_student_plan_filters.sql`.
+
+### Vídeo próprio de exercício (bucket `exercise-media`)
+- **Limites: MP4/WebM, até 15 MB e até 30 s por vídeo; poster JPEG até 1 MB.** Motivo: custo de storage e
+  principalmente de *egress* no plano grátis do Supabase (cada aluno assistindo baixa o arquivo). Por isso o
+  cliente recodifica para **720p sem áudio** (canvas + `MediaRecorder`, nativo, sem ffmpeg.wasm) e só troca
+  pelo original se ficar menor; navegadores sem suporte enviam o original, desde que dentro dos limites.
+- Onde cada limite é garantido: tipo e 15 MB pelo **bucket** (`allowed_mime_types`, `file_size_limit`) e de
+  novo pelo gatilho `private.exercise_media_guard` (lê `storage.objects`); extensão/nome pela política de
+  INSERT; **duração só no cliente** (o banco não decodifica vídeo).
+- **Cota por plano** em `plan_tier_limits.video_quota_bytes` (free = 0 → só link; pro = 500 MB; gold = 2 GB),
+  exceção por organização em `organizations.video_quota_bytes`. Nada fixo no código. `media_bytes` do exercício
+  é calculado pelo gatilho a partir do Storage (o cliente não tem grant nessa coluna).
+- Caminho `<org_id>/<exercise_id>/<uuid>.(mp4|webm|jpg|webp)`; `global/...` só por service_role. Leitura:
+  staff da própria org (+ `global/`); **aluno só de exercícios do próprio plano ativo** (Fase 3). Escrita e
+  remoção: quem edita o exercício (owner ou autor).
+- Um vídeo de cada tipo: link (YouTube/Vimeo) e arquivo; o arquivo tem prioridade na exibição. `<video muted
+  loop playsInline preload="none">` com poster, só carrega no clique.
+- URLs assinadas de **7 dias**, reaproveitadas (`lib/media.ts`, `unstable_cache` por caminho) para o navegador
+  usar o cache. Consequência aceita: revogar acesso (ex.: plano arquivado) não invalida uma URL já emitida até
+  ela vencer; o download autenticado também é servido de cache do Storage por alguns minutos. Vídeos de
+  demonstração não são dado de saúde.
+- Sem órfãos: trocar/remover apaga os arquivos antigos; falha ao gravar apaga os novos; exclusão definitiva
+  (só owner, exercício sem uso em treinos) apaga os arquivos com a secret key **depois** que o RLS autorizou a
+  exclusão da linha. Arquivar não apaga. `npm run db:seed -- --reset` limpa a pasta da org de exemplo.
+
+### Montador — etapa 2.8 (pronta; aguardando teste do dono)
+- **Plano:** `no_end` (sem data de expiração → `students.workout_plan_ends_at = 'infinity'`: fora de A vencer/Vencidos
+  e diferente de "Sem treino"), `planned_sessions`, `trainer_id` (professor do plano; padrão = do aluno). O professor
+  do plano **vê e edita só aquele plano** (`can_access_plan`/`lock_editable_plan`); não vê o cadastro nem outros planos.
+- **Alertas de contraindicação têm 3 níveis de visibilidade**, nunca "tudo ou nada": (1) **completo** — quem pode ver
+  a saúde do aluno (`can_view_student_health`: responsável, ou qualquer staff após a confirmação do titular) recebe
+  nível, nota, condição e grupo; (2) **restrito** (`restricted: true`) — nível por exercício (o pior entre `avoid`/
+  `caution`), **sem** condição, nota ou grupo; vale para o professor do plano sem acesso ao aluno
+  (`private.is_restricted_plan_viewer`) e para staff com acesso ao aluno mas que não é o responsável quando o
+  professor já **declarou** o consentimento, mesmo sem a confirmação do titular (`private.is_restricted_health_viewer`
+  — ex.: owner quando há um professor designado); (3) **oculto** (`hidden: true`) — nada declarado ainda, ou sem
+  acesso nenhum ao aluno. `student_contraindication_rules` e `plan_contraindication_alerts` implementam essa escada
+  nessa ordem. Testado em `tests/db/training-2-8.test.ts` (nenhum campo de saúde vaza no nível restrito).
+- **Agendado:** `activate_plan` devolve o status; início futuro → `scheduled` (sem sobrepor outro agendado:
+  `PLAN_OVERLAP`). Job **pg_cron `lfit-activate-due-plans` às 03:05 UTC (= 00:05 SP)** roda
+  `private.activate_due_plans()` (ativa e arquiva o anterior). Disparo manual: `admin_activate_due_plans()` (service_role).
+- **Prescrição** (item e série, mesmos campos): `quantity_unit` (reps, failure, seconds, minutes, meters, km, arrivals,
+  ascents "Subida", descents "Descida"; inteiras: reps/arrivals/ascents/descents) + `quantity_min/max` +
+  `quantity_note` ("por lado"), **`intensity` texto livre ≤ 20** ("RPE 8", "RIR 2", "70%"; desde
+  `20261007120000`; `intensity_type/value` ficam **sem uso** e saem na próxima limpeza de legadas),
+  `speed` (preset) **ou** `tempo`, `rest_min/max`. Item: `method_id`, `objective_id` (listas por org; só o owner
+  gerencia), `tip` (substitui a observação), até 3 substitutos (`plan_item_substitutes`; alertas incluem substitutos).
+- **Colunas legadas** `reps`, `rest_seconds`, `rpe_target`, `notes` **removidas** depois da 2.8.3
+  (`20261006120000_drop_legacy_prescription_columns.sql`). O `save_training_plan` ainda **aceita o formato antigo na
+  entrada** (`private.read_prescription` converte "8–12", "20–30 s", "até a falha", "8 por lado"…) — usado pelo seed e
+  útil para a Importação do MFIT —, mas grava só as colunas novas.
+- **Padrões por exercício** (`exercise_defaults`): camada global (migration) + camada da org (global: qualquer staff;
+  próprio: owner ou autor). Editáveis no formulário do exercício ("Valores padrão"; vazio = padrão LFit);
+  `resolveDefaults` (`features/exercises/defaults.ts`) aplica org → global → 3 × 10–12, 60 s. Métodos/objetivos
+  iniciais semeados em toda org nova (gatilho em `organizations`).
+- **Produtividade (2.8.4):** "+ Rápido" no seletor (adiciona com os padrões e mantém o painel aberto), "Importar
+  exercícios" (outra divisão, outro plano do aluno ou modelo; `importItems` gera chaves novas e preserva grupos e
+  séries), "Expandir/Recolher todos" e "Copiar para alunos" (`BulkApplyDialog`: prévia de alertas por aluno →
+  `apply_plan_to_students`, resultado por aluno; até 50).
+- **Ajustes após os testes do dono:** intensidade em texto curto na linha principal (ao lado da carga; o seletor
+  RPE | RIR | %1RM foi descartado no reteste); clique no exercício abre o item com foco
+  no primeiro campo, "+ Rápido" entra recolhido com resumo no toast; dica com editor de formatação visível
+  (`TipEditor`, contentEditable convertido para o texto saneado; `sanitizeTip` normaliza negrito duplicado);
+  item e séries mostram só Séries · Quantidade (mín–máx) · Carga · Intensidade · Pausa, o resto em "Mais opções" (abre sozinho
+  se algo estiver preenchido ou com erro).
+
+### Base de conhecimento — etapa 2.10 (Fase B aprovada no teste do dono — 30/09/2026)
+- **Fonte:** `docs/conhecimento/*.md`, aprovados na revisão clínica do dono (25/09/2026). O Guia no app
+  (`features/knowledge/guides.ts`) é transcrito deles: **ao revisar um documento, atualize o Guia** (teste unitário
+  confere chaves, referências citadas e termos internos). Plano: `docs/planos/etapa-2.10-fase-b.md`.
+- **Ajustes do teste do dono** (aluna Ana Duarte): (1) `guideKeyFor` não herda mais o Guia da região para condição
+  própria da org sem chave global (`Estenose foraminal (exemplo)` no seed mostra "Sem Guia" em vez do Guia de
+  lombalgia); (2) alerta duplicado quando a mesma condição tem regra global e da equipe para o mesmo exercício:
+  `student_contraindication_rules`/`plan_contraindication_alerts` devolvem só o pior nível, com a regra mais branda
+  como detalhe recolhido ("Regra global/da equipe: nível" — `20261009120000_alerts_dedupe_and_source.sql`); (3) nota
+  do alerta com o rótulo "Como adaptar:"; (4) menu "⋯" da lista de alunos tinha "Treinos" como primeiro item (fácil de
+  confundir com "editar o cadastro"): agora tem "Editar cadastro", "Treinos" e "Triagem de saúde" (rola até a seção);
+  atalho "Registrar triagem" direto no painel "Condições do aluno" do montador, sem sair da tela.
+- **Condições:** `health_conditions.parent_id` (região, **um nível só**; global só sob global; da org sob global ou da
+  própria org — gatilho `validate_condition_parent`) e `search_terms` (sinônimos de busca, até 10). 8 globais novas
+  (hérnia/estenose/espondilolistese com o padrão direcional no nome + "Dor lombar — intolerância à flexão/extensão",
+  ombro/manguito, dor patelofemoral, artrose de joelho). "Coluna lombar"/"Coluna cervical" seguem sem regras (os Guias
+  de lombalgia inespecífica e cervicalgia ficam nelas).
+- **Sem alerta automático** (só Guia): lombalgia inespecífica, cervicalgia, dor patelofemoral, artrose de joelho.
+  Alertas só direcionais + tríceps no banco (ombro). Balísticos/impacto: só orientação de fase de crise no Guia.
+- **Guia:** `/treinos/condicoes/guia/[key]` para qualquer staff (conteúdo geral, sem dado de aluno); no montador, painel
+  "Condições do aluno" + aba lateral **só no nível completo** (`getStudentHealthGuides` devolve null sem
+  `can_view_student_health`). Condição sem Guia próprio usa o da região. Aviso fixo de apoio à decisão em todo Guia.
+- **Triagem de sinais de alerta** (`student_red_flag_checks`, dado de saúde): sinais **relatados/observados** (lista fixa
+  `private.red_flag_keys()` = `features/knowledge/red-flags.ts`; nunca diagnóstico) ou "nenhum destes sinais",
+  **encaminhamento** (`referred`) e **liberação** (médico/fisioterapeuta, nome, data até hoje, observação) — só esse
+  mínimo. Escrita só por `record_red_flag_check`/`record_red_flag_clearance`. A liberação é o único jeito de tirar o aviso
+  do montador; o aviso nunca bloqueia. Auditoria sem os itens (`diff` nulo).
+  - **Base legal própria (decisão do dono, A VALIDAR COM ADVOGADO — ver `docs/planos/fase-c.md`, C7):** LGPD art. 11, II,
+    "e" (proteção da vida/incolumidade física) e "d" (exercício regular de direitos). Por isso a triagem **não depende do
+    consentimento de saúde**: acesso = professor responsável e owner (`can_access_student`), mesmo quando os grupos estão
+    ocultos para o owner; professor do plano e demais staff não veem. **Recusa do consentimento apaga grupos e demais
+    dados de saúde, mas mantém triagem e liberação** (`20261008120300`).
+  - **Professor do plano** (sem acesso ao aluno/saúde): no montador, só o aviso restrito "Aluno com pendência de
+    liberação — alinhe com o professor responsável antes de prescrever", via `plan_red_flag_pending` (booleano).
+  - Observações (triagem e liberação): até 300 caracteres (CHECK, RPC, Zod e contador na UI).
+  - Na Fase 3, as respostas da anamnese alimentam a mesma lista (`source = 'anamnesis'`).
+- "Personalizar" um exercício global copia também as regras globais dele para a camada da org (ficam congeladas: uma
+  mudança futura na regra global não chega à cópia).
+
+### App do aluno — Fase 3 (banco + páginas do aluno prontos; aguardando teste do dono no celular)
+- Plano: `~/.claude/plans/magical-fluttering-nygaard.md` (aprovado 30/09/2026). **C1 dispensada**: RLS novo da Fase 3 usa
+  `students.user_id = auth.uid()` (+ joins), nunca `current_org_id()`.
+- Migration `20261010120000_fase3_workout_sessions.sql`: `workout_sessions` (uma por treino; `recorded_by`, `rpe`,
+  `feedback_note`, `pain_checkin` = resposta no INÍCIO sobre a sessão anterior, `trainer_reviewed_at/by`),
+  `session_item_logs` (um por exercício: **dor 0–10 por exercício**, obrigatória conforme `ask_pain` — ver abaixo —
+  `PAIN_REQUIRED` na RPC), `session_set_logs` (carga/quantidade por série). `plan_workout_items.care_note` ≤ 300.
+- **`save_training_plan` preserva ids** (desde `20261011120000`): divisão/item com `id` do próprio plano é atualizado no
+  lugar (pode mudar de divisão); `id` novo do cliente é usado se estiver livre (o `key` do montador é um UUID e vira o id —
+  não muda no próximo salvamento); o que saiu é apagado. Payload sem ids (seed/importação) = tudo novo.
+- **Sessão usa a cópia da divisão** (`workout_sessions.snapshot`, mesmo formato de `private.workout_json`): editar o plano
+  não afeta a sessão aberta — `log_set`/`complete_session_item` validam contra a cópia (item fora dela → `ITEM_NOT_FOUND`);
+  a mudança vale na próxima sessão. `session_item_logs.item_id` não tem FK (é o id da cópia). A tela de execução lê
+  `get_training_session` (cópia + registros; dor/resposta/feedback nulos no modo restrito).
+- `session_set_logs.exercise_id` = exercício feito na série (principal ou substituto) — base da evolução de cargas.
+- Sessão abandonada é **calculada** (`public.session_effective_status`: `in_progress` há mais de 6 h), não gravada por
+  job; iniciar outra sessão grava `'abandoned'` nas abertas. Escritas checam o status **gravado** (a fila local pode
+  sincronizar depois de 6 h). "Treino do dia" = rodízio por posição depois da última sessão **concluída** (casa pelo
+  rótulo copiado).
+- Leitura (RLS): titular ou staff com `can_view_student_health`. Escrita só por RPC; chamador duplo (`p_student_id` nulo
+  = aluno; preenchido = modo presencial). Presencial `full` (vê a saúde) registra dor; `restricted` (professor do plano,
+  ou staff sem ver a saúde) registra **sem** dor e vê só o aviso restrito. Status efetivo ≠ `active` → `ACCESS_SUSPENDED`
+  (histórico continua visível). `log_set`/`complete_session_item` são upsert (idempotentes para a fila local).
+- Montador: `care_note` e os ids (`key`) vão no payload (`builder.ts`); duplicar/aplicar modelo/copiar para alunos
+  (`copy_plan`) copiam `care_note`.
+- **Páginas** (`app/aluno/`, URL `/aluno`, sem colidir com `/alunos` do staff): `(acesso)/entrar` (login próprio —
+  `/entrar` continua só do staff), `(logado)/layout.tsx` com os portões nesta ordem: `requireStudent()` → status efetivo
+  (`get_my_student_profile`; ≠ `active` → "Acesso suspenso") → consentimento pendente (`get_my_health_consent_request` →
+  `HealthConsentForm nextHref="/aluno"`) → app. Telas: Hoje (divisão sugerida, "Retomar"), `treino/[sessionId]` (execução,
+  só no cliente via `SessionRunnerClient`), `historico`. Código em `features/student-app/` (lógica pura em `queue.ts`,
+  `session-state.ts`, `format.ts`, testada em `tests/unit/student-*.test.ts`). A página roda em paralelo ao layout: não
+  deixe uma RPC que recusa (ex.: `ACCESS_SUSPENDED`) derrubar a página — o layout é quem mostra o portão.
+- **Regra da dor** (`20261012120000_fase3_ask_pain.sql`): o servidor calcula `ask_pain` por item (orientação de cuidado
+  **ou** alerta de contraindicação para aquele aluno — cautela ou evitar, qualquer camada, no principal ou num
+  substituto — via `private.student_exercise_has_alert`) e devolve **só o booleano** (em `get_my_active_plan` e na cópia
+  da sessão); nunca nível, condição, grupo ou nota. `true` → escala 0–10 obrigatória ao concluir
+  (`session_item_logs.pain_required`, `PAIN_REQUIRED`); `false` → só o link "Sentiu algum desconforto?" (opcional). No
+  modo restrito sai sempre `false` (inclusive lendo uma sessão do aluno: `private.snapshot_without_pain`). Aviso ao
+  professor inalterado (dor > 5 ou "ainda incomoda").
+- **Execução em modo foco** (`FocusExercise` + `ProgressStrip`): um exercício por vez, série atual destacada (só ela
+  tem campos), feitas compactas com ✓ (lápis para editar), concluir avança para o próximo aberto (com volta); faixa de
+  progresso + Anterior/Próximo para voltar. Miniatura (`ExerciseThumb`: pôster do vídeo próprio ou marcador neutro;
+  toque abre o vídeo numa janela; link do YouTube/Vimeo não pré-carrega miniatura de terceiros).
+- **Pausa, regra única** (`formatRestSeconds`/`formatRestRange` em `features/plans/prescription.ts`, usada no montador,
+  na impressão e no app): até 90 s em segundos ("60 s", "60–90 s"), acima em minutos ("2 min", "2–3 min",
+  "90 s – 2 min").
+- **Fila local** (`queue.ts`): cada registro vira operação no `localStorage` (`lfit:aluno:fila:<sessão>`), reenviada em
+  ordem (evento `online` + a cada 15 s); erro de rede → espera; erro do banco → descarta com aviso. "Finalizar" só sai da
+  tela quando a fila esvazia. Sem service worker (manifest em `app/manifest.ts`, ícones gerados em `app/pwa/[file]`).
+- `requireStaff()` manda aluno para `/aluno` (antes: saía). `proxy.ts`: `/aluno/*` sem sessão → `/aluno/entrar`.
+- Seed: `aluno.seed@example.com` (Camila, plano ativo com orientação de cuidado no agachamento),
+  `aluno.suspenso.seed@example.com` (Ana, bloqueada) e `aluno.consentimento.seed@example.com` (Diego, consentimento só
+  declarado); senha = `SEED_USER_PASSWORD`. Roteiro: `e2e/f3-app-aluno.e2e.mjs` (celular 375 px, modo foco, inclusive sem internet).
+- Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
+  "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
+
+### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat e 3.2 aluno prontas — 3.2 aguarda o push da nota de satisfação)
+- Plano: `docs/planos/etapa-2.12.md` ("Revisão 2", aprovado). Migration
+  `20261013120000_humanized_app_chat.sql`: chat aluno ↔ professor responsável/owner (com caixa de conversas do
+  professor), recado do professor, resumo humanizado do fim do treino (constância + recorde pessoal) e resposta do
+  professor ao feedback. Checkpoint do dono: **banco pronto, páginas ainda não implementadas.**
+- **Chat** (`chat_messages`, `chat_reads`): sempre visível a quem acessa o aluno (owner + professor responsável),
+  **independente do consentimento de saúde** (mesma base legal da triagem); professor do plano sem acesso ao aluno
+  não vê nada — tudo-ou-nada, sem escada restrita/oculta aqui. Cursor de leitura **por pessoa** (`chat_reads`,
+  chave `student_id, reader_role, reader_id`): o owner marcar como lido não muda o não lido do professor
+  responsável, e vice-versa. Anexo (`attached_item_id`) só de item do **plano ativo** do aluno; nome copiado
+  (`attached_exercise_name`) sobrevive ao item sumir. Escrita só por RPC (`send_chat_message`/`mark_chat_read`,
+  tabelas sem grant de insert/update/delete); limite de 30 mensagens/minuto por remetente; envio idempotente por
+  `client_msg_id` (gerado no cliente, também usado para deduplicar a mensagem local com o Realtime). Realtime habilitado só
+  nessa tabela (`alter publication supabase_realtime add table public.chat_messages`, respeita o RLS; primeiro uso
+  de Realtime no projeto).
+- **Recado do professor** (`trainer_announcements`, tabela própria — não é chat): por aluno específico ou
+  broadcast (`student_id` nulo = todos os alunos do próprio chamador); expira (`expires_at`, padrão 7 dias);
+  `get_my_announcement()` devolve só o mais recente ainda válido visível ao aluno.
+- **Resumo do fim do treino** (`get_session_summary`): por exercício, `is_pr` só é `true` quando existe carga
+  anterior registrada numa sessão concluída **anterior** (nunca na primeira vez que o aluno faz o exercício); não
+  mistura unidade de carga (kg × lb comparados separadamente). Destaque pretendido na tela: constância
+  (`sessions_this_month`/`week_streak`), recorde como selo discreto — não o título.
+- **Resposta ao feedback**: `workout_sessions` ganhou `coach_reply`/`coach_reply_at`/`coach_reply_by` (RPC
+  `reply_to_session`, staff com `can_access_student`); `get_my_workout_history` devolve `coach_reply`.
+- **`get_my_student_profile`** ganhou `trainer_avatar_url`, `trainer_office_hours` (de
+  `profiles.preferences->>'office_hours'` do professor responsável), `sessions_this_month` (sessões concluídas no
+  mês civil em SP) e `week_streak` (semanas seg–dom consecutivas em SP com ≥ 1 sessão concluída; quebra a zero se a
+  mais recente for anterior à semana passada).
+- **Páginas** (plano `docs/planos/etapa-2.12-paginas.md`, em 3 entregas). **3.1 chat (pronta):** `/aluno/chat` (aviso fixo
+  de emergência + quem vê a conversa + horário do professor; anexo de exercício do plano ativo; altura `100dvh`, campo
+  de 16 px, lista com `aria-live`) e `/chat` no painel (caixa `list_chat_inbox` + conversa, `?aluno=<id>`; item "Chat"
+  do menu `available`, selo real de `staff_total_unread_count` no lugar do mock). Barra do aluno com 3 abas na 3.1;
+  **4 abas desde a 3.2** (ver abaixo). Código em `features/chat/` (mensagens tipadas por `ChatMessage`, em
+  `features/chat/types.ts`, escrito à mão com os nulos corretos — o gerador marca as colunas de RETURNS TABLE como não nulas):
+  - **UUID no cliente sempre por `uuidV4()` (`lib/uuid.ts`)**, nunca `crypto.randomUUID` direto: ele não existe fora de
+    contexto seguro (http pelo IP da rede, como o iPhone em teste) e travava o envio. O fallback usa
+    `crypto.getRandomValues`. Envio com prazo de 15 s (`runWithTimeout`, aborta a requisição): estourou ou falhou →
+    "Não enviada · Tentar de novo", reenvio com o mesmo id.
+  - Envio **do navegador direto para `send_chat_message`** (nunca server action), sempre com `client_msg_id`: reenviar o
+    mesmo texto/anexo reusa o id, texto ou anexo editado gera outro. A mensagem local é deduplicada com o retorno do RPC
+    e com o evento do Realtime pela chave remetente + `client_msg_id`. Sem rede → "Não enviada · Tentar de novo /
+    Editar"; recusa do banco (`RATE_LIMITED`) → texto volta ao campo com aviso amigável.
+  - Realtime: só INSERT (DELETE/UPDATE ignorados); quem garante o isolamento é o RLS, não o filtro do canal (teste com 6
+    clientes em `tests/db/chat-realtime.test.ts`). Fora do ar → "Reconectando…" + busca a cada 20 s com a aba visível;
+    ao reconectar, ao voltar a internet e ao voltar à aba, busca a página mais recente — e de novo 3 s depois
+    (`SETTLE_REFETCH_MS`: o canal fica `SUBSCRIBED` um pouco antes de o servidor começar a entregar as mudanças; uma
+    mensagem gravada nessa janela se perderia). Rajadas chegam devagar pelo Realtime (observado: 30 inserções levaram
+    mais de 5 s), sem perda.
+  - Lida: `mark_chat_read(p_student_id, p_until_message_id)` marca **só até a última mensagem exibida** (`20261016120000`;
+    cursor = par `(last_read_at, last_read_message_id)` na ordem `(created_at, id)` da conversa, nunca anda para trás;
+    mensagem de outra conversa → `INVALID_INPUT`). Chamada ao abrir, quando aparece mensagem nova na tela (aba visível,
+    espera de 0,8 s), ao voltar para a aba e **ao sair da conversa com uma marcação pendente**. O aluno vê o primeiro nome
+    de quem respondeu (`sender_first_name` de `get_chat_messages`) acima das bolhas quando o remetente muda. Selos (`useChatUnread`) sempre buscam a
+    contagem no banco; o Realtime e o evento `lfit:chat-read` só disparam a busca.
+  - Roteiro `e2e/k212-chat.e2e.mjs` (375 px): imprime uma **frase-canário** única por execução para buscar nos logs do
+    Supabase; derruba o WebSocket do Realtime por um proxy do Playwright (`routeWebSocket`); limpa as mensagens pelo
+    marcador da execução, não por horário (o relógio local não bate com o do banco).
+- **3.2 aluno (pronta; a nota depende da migration `20261017120000`, ainda não aplicada):**
+  - **Hoje:** saudação pela hora de SP ("Bom dia/Boa tarde/Boa noite"), constância em destaque sem cobrança
+    (`sessions_this_month`/`week_streak`), recado (`get_my_announcement`), aviso "Seu professor respondeu sobre o treino
+    de terça" (resposta dos últimos 14 dias; o texto fica no Histórico) e card do professor (iniciais — a foto chega na
+    3.3 —, nome, horário, "Mandar mensagem"). Lógica pura em `features/student-app/humanize.ts`
+    (`tests/unit/student-humanize.test.ts`).
+  - **Fim de treino** `/aluno/treino/[sessionId]/concluido`: o `SessionRunner` vai para lá (`doneHref`) quando a fila
+    esvazia; sessão concluída aberta pela tela de execução também. Resumo de `get_session_summary`, constância em
+    destaque, recorde como selo discreto (só o nome do exercício: o resumo não traz a unidade), "Seu professor vai ver o
+    seu comentário" e **nota de satisfação 1–5 opcional** (`rate_workout_session`, do navegador direto para a RPC).
+  - **`/aluno/perfil`:** nome, foto (URL assinada com a secret key depois de `get_my_student_profile` autorizar), estúdio,
+    professor, horário, acesso e "Sair da conta". "Sair" saiu do cabeçalho (fica só nas telas de portão, sem abas).
+  - **`StudentNav`:** 4 abas (Hoje · Histórico · Chat · Perfil), `aria-current`, toque de 56 px; **some com o teclado**
+    (campo de texto focado em aparelho de toque, ou `visualViewport` bem menor que a janela).
+  - **Chat do aluno:** cabeçalho com o nome do professor (ou "Equipe do estúdio") e horário; aviso de emergência
+    recolhível — recolhido, a linha "Não é canal de emergência: ligue 192." continua visível (preferência por aparelho).
+  - **Login:** links cruzados "Sou aluno? Entrar no app do aluno" (`/entrar`) e "Sou professor? Entrar no painel do
+    treinador" (`/aluno/entrar`).
+  - Seed: horário do Caio (`preferences.office_hours`) e um recado dele para a Camila. e2e: `e2e/f3-app-aluno.e2e.mjs`.
+- **Fora do escopo da 3.1/3.2:** notificação push de mensagem nova (depende da etapa de notificações; sem ela, cada lado
+  só vê mensagem nova ao abrir o app/painel); criar/encerrar recado, resposta ao feedback e **tela para o professor editar o próprio horário de atendimento
+  (`profiles.preferences.office_hours`) e foto (`trainer_avatar_url`)** (3.3) — sem ela, a Hoje humanizada mostra
+  esses campos vazios.
+- Testes: `tests/db/chat-humanized.test.ts` (isolamento entre organizações, cursores independentes, rate limit,
+  anexo restrito ao plano ativo, recado não vaza, `is_pr` exige histórico, conteúdo nunca em `audit_logs`, envio
+  idempotente), `tests/db/chat-realtime.test.ts`, `tests/unit/chat-thread.test.ts`.
+
+### Métrica de engajamento
+- Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
+  últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
+  `get_dashboard_engagement_retention` (migration `20261020120100`; ver "Estado atual" → Dashboard).
+
+## Segurança e LGPD (obrigatório)
+- Grupos especiais (ex.: "Dor na Coluna"), anamnese e escala de dor são **dados de saúde**
+  (dados sensíveis, LGPD art. 11) e **nunca** aparecem em URLs, logs ou e-mails.
+- Mesma regra para o **conteúdo do chat** aluno↔professor (`chat_messages.body`), o **recado do professor**
+  (`trainer_announcements.body`) e a **resposta ao feedback** (`workout_sessions.coach_reply`): nunca em
+  `audit_logs`, log, e-mail, URL ou (quando existir) conteúdo de notificação push — nenhuma RPC do chat/recado/
+  resposta chama `private.audit()` com o texto; se precisar auditar o envio em si, só id/contagem, nunca o corpo.
+- **Nota de satisfação do aluno** (`workout_sessions.student_rating`, 1–5, 3.2): não é dado de saúde, mas também nunca vai
+  para log, URL ou notificação (a RPC `rate_workout_session` não audita; erros só com códigos fixos).
+- **Exceção (a validar com advogado):** a triagem de sinais de alerta + encaminhamento + liberação usa a base legal do
+  art. 11, II, "e"/"d" e não depende do consentimento (ver "Base de conhecimento"); a recusa não a apaga. **O chat
+  (2.12) segue a mesma base legal e também não depende do consentimento** — é texto livre e o aluno pode descrever
+  dado de saúde nele (ex.: "sinto dor no joelho"), mesma razão pela qual a triagem é tratada como dado sensível.
+  **Plano B:** se o advogado não aceitar essa base legal para o chat, ele passa a exigir consentimento de saúde
+  **confirmado** pelo titular (como os grupos especiais) antes de habilitar `send_chat_message`/`get_chat_messages`
+  para o par aluno↔professor.
+- **Consentimento em duas etapas:** no cadastro pelo professor, ele DECLARA ter obtido o consentimento
+  (`health_consent_declared_at/_by`); o aluno CONFIRMA pessoalmente no primeiro acesso
+  (`health_data_consent_at`, tela `/acesso/consentimento`) ou recusa (dados de saúde apagados).
+  Sem a confirmação do titular, só o professor responsável (ou o owner, se não houver professor)
+  vê e altera os grupos — regra no RLS (`private.can_view_student_health`) e em `update_student`.
+- No cadastro público o consentimento é do próprio aluno (checkbox) e a saúde vem em texto livre; a
+  lista de grupos nunca é exposta publicamente — o owner classifica ao aprovar.
+- **Nunca** armazenar ou exibir senha em texto puro. Acesso do aluno é por link de convite /
+  magic link com token de uso único e expiração.
+- Rate limit em login, link público de cadastro e reset.
+- Direitos do titular: exportação dos dados do aluno e exclusão definitiva.
+- Segredos só em `.env*` (já no `.gitignore`); `service_role` do Supabase **somente no servidor**.
+
+## Funções SECURITY DEFINER (aviso "authenticated can execute" do Security Advisor)
+
+Escritas em `students` não têm GRANT para `authenticated`: tudo passa por RPCs `SECURITY DEFINER` que
+aplicam as regras (permissão, limite do plano, matrícula, auditoria) na mesma transação. Por isso o
+Security Advisor avisa que `authenticated` executa essas funções — **é intencional e aceito**, porque
+cada uma checa internamente `auth.uid()` → perfil → organização → papel antes de agir. Provas:
+`tests/db/security-definer.test.ts` e `tests/db/training.test.ts` (aluno e anônimo recusados em todas;
+sem efeitos colaterais).
+
+| Quem pode | Funções | Checagem interna |
+|---|---|---|
+| **Aluno (titular), de propósito** | `get_my_health_consent_request`, `respond_my_health_consent` | escopo `students.user_id = auth.uid()`; só o próprio cadastro |
+| Staff (owner/trainer) | `create_student`, `log_students_export` | `private.require_staff()` |
+| Staff com acesso ao aluno | `update_student`, `deactivate_student`, `reactivate_student`, `expire_student`, `clear_student_expiration`, `soft_delete_student`, `create_access_link`, `record_student_access_email`, `request_anamnesis` | `private.lock_accessible_student()`: staff + mesma org + (owner ou professor responsável) |
+| Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
+| Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
+| Alertas de contraindicação (Fase 2/2.8) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem `restricted = true` (só nível, via `is_restricted_plan_viewer`/`is_restricted_health_viewer`) ou `hidden = true` (nada) — nunca condição/grupo/nota fora do nível completo |
+| Triagem — aviso restrito (2.10) | `plan_red_flag_pending` (só um booleano: última triagem do aluno do plano tem sinais sem liberação) | `require_staff` + `get_readable_plan`; nenhum sinal, observação ou liberação na resposta (teste de não vazamento) |
+| Triagem de sinais de alerta (2.10) | `record_red_flag_check`, `record_red_flag_clearance` | `lock_accessible_student` (owner ou responsável; **não** exige consentimento — base legal art. 11, II, "e"/"d", a validar); chaves validadas contra `private.red_flag_keys()`; auditadas |
+| Planos v2 (2.8) | `get_plan_header` (nome do aluno p/ quem acessa o plano), `apply_plan_to_students` (cópia em massa; erro por aluno não interrompe os outros), `preview_plan_alerts_for_students` | `get_readable_plan`/`can_access_plan` + `require_staff`; por aluno `lock_accessible_student`/`can_view_student_health` |
+| **App do aluno (Fase 3), chamador duplo** | `get_my_active_plan`, `start_workout_session`, `get_training_session`, `record_pain_checkin`, `log_set`, `complete_session_item`, `finish_workout_session`, `get_my_workout_history` | `private.training_mode`: `self` (o próprio aluno, `students.user_id = auth.uid()`), `full` (staff com acesso que vê a saúde) ou `restricted` (staff com acesso sem ver a saúde, ou professor do plano ativo) — no restrito nada de dor é gravado, perguntado ou devolvido (`FORBIDDEN`). `private.training_target`/`lock_open_session` exigem status efetivo `active` (`ACCESS_SUSPENDED`). Nunca devolvem dado de contraindicação. Histórico: titular (mesmo suspenso) ou `full` |
+| Aluno (titular), leitura do próprio cadastro | `get_my_student_profile` | escopo `students.user_id = auth.uid()`; só o subconjunto seguro (sem `notes` do professor); inclui `trainer_office_hours`, `sessions_this_month` e `week_streak` (2.12, "App humanizado") |
+| Avisos de dor da Fase 3 | `student_session_alerts` (escada completo / restrito / oculto, como os alertas de contraindicação), `acknowledge_session_alert` | `require_staff`; completo só com `can_view_student_health`; restrito via `is_restricted_plan_viewer`/`is_restricted_health_viewer` sem tipo, dor nem comentário; "visto" exige `lock_accessible_student` + `can_view_student_health` |
+| **Chat aluno ↔ professor/owner (2.12)** | `send_chat_message`, `mark_chat_read`, `chat_unread_count` | `private.chat_reader` (helper em `private`, fora da API, plpgsql): resolve o chamador como `student` (`is_own_student`) ou `staff` (`can_access_student`) — tudo-ou-nada, **independente do consentimento de saúde** (mesma base legal da triagem, art. 11 II "e"/"d"); sem acesso de nenhum lado, `STUDENT_NOT_FOUND`. `send_chat_message` só aceita anexo do item do **plano ativo** do aluno e limita a 30 mensagens/minuto (aluno contado por `student_id`; staff por `sender_id`, somando todas as conversas). Idempotente (`20261014120000`): exige o UUID do cliente (único por remetente — aluno por `student_id`, staff por `sender_id`); reenvio com o mesmo id devolve a linha já gravada sem contar de novo no limite; mesmo id com outro texto/conversa → `INVALID_INPUT`. `mark_chat_read(p_student_id, p_until_message_id)` (`20261016120000`): marca só até a mensagem informada, que precisa ser da conversa (senão `INVALID_INPUT`); cursor nunca retrocede (par `created_at, id`) |
+| Leitura do chat, sem efeito (2.12) | `get_chat_messages` (aluno ou staff), `list_chat_inbox`, `staff_total_unread_count` (caixa de conversas do professor) | funções `sql` — mesmo padrão "leitura sem efeito": `is_own_student`/`private.can_access_student()`; quem não acessa recebe lista/contagem vazia, nunca erro. `get_chat_messages` devolve `sender_first_name` (só o primeiro nome do staff, nulo nas do aluno; nunca sobrenome/e-mail) |
+| Recado do professor (2.12) | `get_my_announcement`, `set_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor |
+| Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()`; `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
+| **Início com dados reais** | `get_dashboard_training_stats`, `get_dashboard_engagement_retention` | `require_staff()` + `private.dashboard_students()` (alunos não excluídos da org com `can_access_student`: owner = organização, professor = os seus) — conta pelo **acesso ao aluno**, não pelo RLS de `workout_sessions` (que exige `can_view_student_health` e faria o owner contar a menos). Saída só com contagens, datas, nome do aluno e rótulo/nome da divisão; satisfação só agregada (média, quantidade, distribuição). "Hoje"/"semana" em São Paulo (`private.sp_day`, `private.sp_day_start`), semana começando na segunda. Testes em `tests/db/dashboard.test.ts` (fuso, outro tenant, professor só os seus, aluno e anônimo recusados, nenhum dado de saúde) |
+| **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
+| Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
+| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+
+Checklist para toda função `SECURITY DEFINER` nova:
+1. `set search_path = ''` e nomes totalmente qualificados.
+2. Primeira linha valida o chamador (`require_staff`/`require_owner`/`lock_accessible_student` ou
+   escopo por `auth.uid()`); nunca confiar em ids recebidos sem checar organização.
+3. Não receber linhas inteiras (`tabela`) como argumento em função DEFINER — o chamador monta a linha
+   que quiser (foi o bug de `student_effective_status`, hoje `SECURITY INVOKER`).
+4. `revoke execute ... from public, anon` (os privilégios padrão já fazem isso; manter explícito) e
+   `grant execute` só a quem precisa. Helpers de RLS ficam no schema `private` (fora da API).
+5. Teste em `tests/db/security-definer.test.ts` com usuário `student` e anônimo.
+
+## Auth: política de senha
+- Mínimo de **10 caracteres**: configurado em *Authentication → Sign In / Providers → Email →
+  Minimum password length* (projeto hospedado), em `supabase/config.toml` (local) e no schema Zod
+  (`PASSWORD_MIN_LENGTH` em `features/auth/schemas.ts`).
+- **Pendente (produção): ativar "Leaked password protection" (HaveIBeenPwned) — exige plano pago do
+  Supabase.** Aviso `auth_leaked_password_protection` do advisor é aceito no lfit-dev.
+
+## Backlog e decisões adiadas
+- **Importação do MFIT** (alunos e treinos via CSV/planilha) — etapa obrigatória **antes do uso com
+  alunos reais**, depois da Fase 3 mínima. Deve respeitar limite do plano, matrícula, consentimento de saúde (importar grupos só
+  como "declarado") e auditoria; relatório de linhas rejeitadas.
+- **Exercício personalizado × regra global:** a cópia congela as regras globais. Mostrar o aviso "regra global
+  atualizada — revise sua cópia" quando uma regra global do exercício de origem mudar depois da personalização.
+- **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
+  `npm run bootstrap:owner` e trainers de teste existem só no seed. O item "Equipe" segue "Em breve".
+- **Dashboard — retenção superestimada:** `private.dashboard_students()` exclui alunos arquivados/excluídos
+  (`deleted_at`). Quem treinou nos dias 31–60 e depois foi excluído sai da base, então a Retenção fica maior do que é.
+  Corrigir contando a base pelas sessões (inclusive de alunos excluídos depois), sem expor nomes deles.
+- **Dashboard — fuso fixo:** "hoje", "semana" e os dias do Início usam `America/Sao_Paulo` fixo
+  (`private.today_br()`, `private.sp_day`, `private.sp_day_start`). Antes de vender fora desse fuso, virar coluna por
+  organização (`organizations.time_zone`) e passar para as RPCs.
+- **Código sem uso:** `lib/dashboard.ts` (inteiro) e os mocks de `data/dashboard.ts` (tudo menos `banner`) não são mais
+  usados pelo Início. Apagar (exige `rm`; pedir na sessão).
+- **CSP com nonce:** hoje `script-src` tem `'unsafe-inline'` (scripts de hidratação do Next sem nonce). Passar para nonce
+  no `proxy.ts` exige render dinâmico em todas as páginas; avaliar antes de abrir para clientes.
+- **Links montados pelo cabeçalho Host:** sem `NEXT_PUBLIC_SITE_URL`, convites/links de acesso usam o `Host` da
+  requisição (no `next start -H 0.0.0.0` local, `/auth/confirm` chega a redirecionar para `0.0.0.0`). Em produção,
+  definir a variável e restringir as Redirect URLs do Supabase Auth.
+
+## Decisões pendentes (rever antes de comercializar)
+- **"1 e-mail = 1 conta"**: cada usuário do Auth tem um único `profile` (uma organização). Um aluno que
+  treina com dois personais (duas organizações) não consegue ter acesso nas duas com o mesmo e-mail —
+  hoje o convite falha com "Este e-mail já tem acesso ao LFit em outra conta". Para vender a outros
+  personais, avaliar vínculo N:N usuário↔organização (ex.: `memberships`) e seleção de organização.
+
+## Estado atual (set/2026)
+- Dashboard "Início": **regra — nunca exibir número de exemplo como se fosse real.** Só cards com dados reais
+  (`features/dashboard/queries.ts`, RLS do usuário): Alunos ativos, Plano, **Acompanhamento** (a vencer/vencidos/sem
+  treino — mesmos filtros de Meus alunos `?treino=`), **Novos alunos** (`students.created_at`: hoje em SP, 7 e 30 dias) e
+  **Acesso expirando** (7 dias). **Com as RPCs do dashboard** (`docs/planos/dashboard-inicio.md`, migrations
+  `20261020120000`/`120100`): tiles Treinos registrados (30 dias, variação contra os 30 anteriores), Engajamento e
+  Retenção ("—" e "dados insuficientes até dd/mm" com menos de 60 dias desde o primeiro treino concluído), cards Treinos concluídos (hoje, contra o mesmo dia da semana passada),
+  Treinos da semana (seg–dom em SP, contra a semana passada até o mesmo dia) e Top 5 (30 dias); **Satisfação** = média de
+  `student_rating` em 30 dias com a quantidade ("4,6 · 12 notas"), o card some sem nenhuma nota e mostra "Dados insuficientes" com menos de 60 dias de histórico. Treinos registrados e Engajamento contam treinos INICIADOS (concluídos ou não). Se as RPCs falharem, esses
+  cards somem (nunca outro número). Lógica pura em `features/dashboard/stats.ts`. Continuam escondidos: Avaliação física
+  (módulo) e Vendas (C8). Cards ausentes também somem de "Personalizar". Banner de oferta só quando `/vendas/planos`
+  existir. A página só usa o `banner` de `data/dashboard.ts`; os mocks de lá e de `lib/dashboard.ts` não são mais usados.
+- Schema da Fase 1 em `supabase/migrations/` (tabelas, RLS, status efetivo, RPCs de alunos, cadastro
+  público, links de acesso, storage). Regras de negócio vivem nas RPCs (`security definer`).
+- Perfis (`profiles`) são criados SEMPRE pelo servidor com service_role, nunca a partir de metadados
+  enviados pelo usuário. "Allow new users to sign up" deve ficar DESLIGADO no Supabase Auth.
+- Autenticação do treinador pronta (login, recuperação, convite, logout, rate limit). Sem deploy ainda.
+- Módulo Alunos disponível: "Meus alunos" (1.2), modal Novo/Editar (1.3, via `?novo=1` / `?editar=<id>`),
+  cadastro público (1.4: `/cadastro/[token]` + `/alunos/cadastros-publicos`, só owner), grupos especiais
+  (`/alunos/grupos`) e turmas (`/turmas`) (1.5). Excluir grupo/turma é auditado.
+- Cadastro público: honeypot → rate limit (5/h por IP, 100/h por link) → Turnstile → RPC com secret key.
+  Sem chaves do Turnstile em produção, o formulário mostra "temporariamente indisponível" (fail-closed);
+  em `npm run dev` usa as chaves de teste oficiais. Pendentes não ocupam vaga; dados enviados são
+  descartados após aprovar/recusar. "Gerar novo link" revoga o anterior.
+- Fotos: upload direto do cliente para `student-photos/{org}/{aluno}/{uuid}.{ext}` (RLS do Storage) depois
+  de salvar o aluno; o banco impede `photo_path` fora da pasta do próprio aluno (CHECK).
+- Fase 2 em andamento: 2.1 (banco) pronta — biblioteca global com 52 exercícios, 11 condições
+  globais; regras globais de contraindicação só a partir da 2.10 (19 aprovadas).
+- 2.2 Biblioteca (`/treinos/exercicios`): view `exercise_library` (busca sem acento, `customized` esconde o
+  global quando a equipe tem cópia), RPCs `save_exercise`/`customize_exercise` em **SECURITY INVOKER** (RLS e
+  grants por coluna do chamador valem; não entram no aviso do advisor). Diálogos pela URL (`?ver=`,
+  `?editar=`, `?novo=1`). Vídeo só carrega no clique (`youtube-nocookie` / Vimeo `dnt=1`, `lib/video.ts`).
+- 2.3 Condições (`/treinos/condicoes`: catálogo somente leitura + próprias; arquivar só owner; nome igual ao
+  do catálogo é recusado) e "Condições relacionadas" no diálogo de grupos especiais. Ao salvar o grupo, os
+  vínculos são adicionados antes de remover e vínculos com condições arquivadas são preservados.
+- 2.4 Montador (`/treinos/novo[?aluno=]`, `/treinos/[planId]/editar`): componente único para aluno e modelo
+  (`features/plans/components/PlanBuilder.tsx`); lógica pura em `features/plans/builder.ts` (blocos,
+  agrupar/desagrupar, rascunho ⇄ payload, testada) e schema Zod `planPayloadSchema` igual ao do banco.
+  `@dnd-kit` (core/sortable/utilities) para arrastar com mouse e teclado + botões ↑↓; `DndContext` precisa
+  de `id={useId()}` (senão erro de hidratação). Alertas vêm de `student_contraindication_rules` e só
+  aparecem para quem vê os dados de saúde.
+- 2.5 `/alunos/[id]/treinos` (ativo, rascunhos, histórico; aplicar modelo, duplicar, salvar como modelo,
+  arquivar), `/treinos/modelos` (aplicar a aluno; arquivados em `?arquivados=1`), `/treinos` (treinos ativos
+  por vencimento) e entrada "Treinos" no menu da linha de Meus alunos.
+- 2.6 Impressão: `/treinos/[planId]/imprimir` no grupo de rotas `(print)` (sem AppShell). Folha A4 com
+  `@page` e cores fixas `neutral-*` (não remapeadas no tema escuro); agrupamentos numerados (2a, 2b), séries
+  detalhadas, sem grupos especiais, condições ou alertas. PDF pelo "Salvar como PDF" do navegador.
+- Vídeo próprio nos exercícios (MP4/WebM, cota por plano): ver seção "Vídeo próprio de exercício".
+- **Notas para a Fase 3:** "Iniciar treino" pelo professor (modo presencial, registrando pelo aluno), evolução de
+  cargas por exercício e volume de treino (séries × reps × carga) por sessão/semana.
+- 2.7 Verificação: roteiros Playwright das Fases 1 e 2 rodados no build de produção (`next start`); o cadastro
+  público precisa das chaves de TESTE do Turnstile nas variáveis de ambiente do `next start` (fail-closed sem elas).
+  Os roteiros estão em `e2e/` (ver "Comandos"); viram suíte formal na 1.7.
+- Roteiros de navegador fazem muitos logins: se o login travar nos testes, limpe `public.rate_limits` no
+  lfit-dev.
+- Expiração de acesso escolhida como data civil = válida até 23:59:59 de São Paulo daquele dia.
+- **2.12 App humanizado:** banco aplicado em lfit-dev (chat aluno ↔ professor/owner com caixa de conversas do
+  professor, recado do professor, resumo humanizado do fim do treino com recorde pessoal, resposta do professor ao
+  feedback) — ver "App humanizado — etapa 2.12". **3.1 (chat) pronta**, aguardando teste do dono no celular; **3.2
+  (aluno) pronta** — a nota de satisfação espera o push de `20261017120000`; 3.3 (professor) pendente.
+- Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
+  (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
+  aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.12**
+  app humanizado (chat, recado, resumo/recorde, resposta ao feedback — **banco aplicado; 3.1 chat e 3.2 aluno prontas, 3.3
+  pendente**, ver "App humanizado — etapa 2.12") → **2.11**
+  ampliação da biblioteca global → **2.9** página do aluno `/alunos/[id]` (planejar antes) → **Importação do MFIT** (antes
+  de alunos reais) → **C1** contas com múltiplos vínculos (antes da C2) → **C2** comercialização
+  → **1.6** dashboard com dados reais + job diário de expiração → **1.7** suíte e2e formal (Playwright) →
+  Fase 4 gestão e retenção. Planos: `docs/planos/fase-c.md`, `docs/planos/etapa-2.8.md` e `docs/planos/etapa-2.12.md`;
+  retomada em `docs/PROXIMOS_PASSOS.md`.
+  - **C1 (antes da C2; não precisa vir antes da Fase 3 — decisão de 30/09/2026):** só o modelo de contas com múltiplos vínculos (`memberships` + vínculo ativo por
+    sessão via claim `session_id`; `current_org_id()`/`current_user_role()` passam a ler o vínculo ativo;
+    `students.user_id` único por organização), seletor de vínculo no login e revisão de RLS e testes de
+    isolamento. Resolve a decisão pendente "1 e-mail = 1 conta". **Nada de cobrança.**
+  - **C2 (depois da Fase 3 e da Importação do MFIT):** autocadastro do personal (`/cadastro-personal`, confirmação
+    de e-mail; substitui `ALLOW_PUBLIC_SIGNUP`), trial de 14 dias com limites do Pro, assinatura
+    (trialing/active/past_due/canceled) e limites em tabela de configuração, `PaymentProvider` (gateway
+    recomendado: Asaas, a confirmar), "Minha assinatura", `platform_admin` sem acesso a dados de alunos, termos
+    em rascunho em `docs/legal/`. Decisões já tomadas: sem plano Free permanente; após a carência de
+    inadimplência (7 dias, configurável) o personal fica em somente leitura **e os alunos perdem o acesso**.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
