@@ -519,8 +519,12 @@ effective_status =
     professor, horário, acesso e "Sair da conta". "Sair" saiu do cabeçalho (fica só nas telas de portão, sem abas).
   - **`StudentNav`:** 4 abas (Hoje · Histórico · Chat · Perfil), `aria-current`, toque de 56 px; **some com o teclado**
     (campo de texto focado em aparelho de toque, ou `visualViewport` bem menor que a janela).
-  - **Chat do aluno:** cabeçalho com o nome do professor (ou "Equipe do estúdio") e horário; aviso de emergência
-    recolhível — recolhido, a linha "Não é canal de emergência: ligue 192." continua visível (preferência por aparelho).
+  - **Chat do aluno:** cabeçalho compacto em uma linha (≤ 56 px: avatar, nome do professor ou "Equipe do estúdio",
+    horário em texto menor); aviso de emergência **aberto no primeiro acesso do aparelho e recolhido depois** (uma
+    linha "Não é canal de emergência · ligue 192"; a nota de quem vê a conversa fica no conteúdo expandido). Preferência
+    por aparelho em `localStorage` (só "1"/"0"; storage falhando = aberto). Cabeçalho e aviso no fluxo, nunca sobre a
+    lista; altura pela `StudentChatFrame` (CSS com áreas seguras; com teclado, pelo `visualViewport`). Roteiro
+    `e2e/k212-chat-layout.e2e.mjs` (375×667 e 390×844: sem sobreposição, lista ≥ 55% com o aviso recolhido).
   - **Login:** links cruzados "Sou aluno? Entrar no app do aluno" (`/entrar`) e "Sou professor? Entrar no painel do
     treinador" (`/aluno/entrar`).
   - Seed: horário do Caio (`preferences.office_hours`) e um recado dele para a Camila. e2e: `e2e/f3-app-aluno.e2e.mjs`.

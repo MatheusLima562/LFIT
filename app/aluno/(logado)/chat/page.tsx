@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ChatThread, type AttachGroup } from "@/features/chat/components/ChatThread";
+import { StudentChatFrame } from "@/features/chat/components/StudentChatFrame";
 import { StudentChatHeader } from "@/features/chat/components/StudentChatHeader";
 import { getChatMessages } from "@/features/chat/queries";
 import { getMyActivePlan, getMyProfile } from "@/features/student-app/queries";
@@ -21,8 +22,7 @@ export default async function StudentChatPage() {
   }));
 
   return (
-    // Altura da tela menos cabeçalho (3.5rem), respiro do topo (1rem) e barra inferior (5rem) + áreas seguras.
-    <div className="-mx-4 h-[calc(100dvh-9.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))]">
+    <StudentChatFrame>
       <ChatThread
         className="h-full"
         studentId={profile.student_id}
@@ -32,6 +32,6 @@ export default async function StudentChatPage() {
         attachGroups={attachGroups}
         header={<StudentChatHeader trainerName={profile.trainer_name} officeHours={profile.trainer_office_hours} />}
       />
-    </div>
+    </StudentChatFrame>
   );
 }

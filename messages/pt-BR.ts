@@ -1224,7 +1224,7 @@ export const messages = {
     studioTeam: "Equipe do estúdio",
     noticeMore: "Ver aviso completo",
     noticeLess: "Recolher aviso",
-    emergencyShort: "Não é canal de emergência: ligue 192.",
+    emergencyShort: "Não é canal de emergência · ligue 192",
     emptyStudent: "Mande uma mensagem para o seu professor.",
     emptyStaff: "Nenhuma mensagem com este aluno ainda.",
     you: "Você",
