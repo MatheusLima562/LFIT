@@ -1,0 +1,42 @@
+aprovar,nome,grupos_musculares,equipamento,instrucoes,padrao_sugerido
+,Supino inclinado com barra,peitoral;ombros;triceps,Barra e banco inclinado,"Banco inclinado a 30–45°, desça a barra até a parte alta do peito e empurre até estender os cotovelos.",3 × 8–12 · 90 s
+,Supino declinado com barra,peitoral;triceps,Barra e banco declinado,"Pés presos no banco declinado, desça a barra até a parte baixa do peito e empurre para cima.",3 × 8–12 · 90 s
+,Supino na máquina,peitoral;triceps;ombros,Máquina de supino,"Costas apoiadas, empurre as alças à frente até quase estender os cotovelos e volte controlando.",3 × 10–12 · 60 s
+,Peck deck (voador),peitoral,Máquina voador,"Cotovelos levemente flexionados, aproxime as alças à frente do peito e volte abrindo devagar.",3 × 12–15 · 60 s
+,Flexão de braços com joelhos apoiados,peitoral;triceps;ombros,Peso corporal,"Joelhos no chão e tronco alinhado, desça o peito em direção ao chão e empurre de volta.",3 × 10–15 · 60 s
+,Puxada frontal com pegada neutra,dorsais;biceps,Polia alta e triângulo,"Sentado, puxe o triângulo até a parte alta do peito levando os cotovelos para baixo.",3 × 10–12 · 60 s
+,Puxada supinada na polia,dorsais;biceps,Polia alta,"Pegada com as palmas voltadas para você, puxe a barra até o peito e volte estendendo os braços.",3 × 10–12 · 60 s
+,Barra fixa assistida,dorsais;biceps,Máquina gravitron ou elástico,"Com apoio nos joelhos ou elástico, puxe o corpo até o queixo passar a barra e desça controlando.",3 × 6–10 · 90 s
+,Remada cavalinho,dorsais;trapezio;biceps,Barra T ou máquina,"Tronco inclinado e coluna neutra, puxe a pegada em direção ao abdômen aproximando as escápulas.",3 × 8–12 · 90 s
+,Remada na máquina,dorsais;trapezio;biceps,Máquina de remada,"Peito apoiado, puxe as alças levando os cotovelos para trás e volte estendendo os braços.",3 × 10–12 · 60 s
+,Remada alta com barra,trapezio;ombros,Barra,"Em pé, puxe a barra junto ao corpo até a altura do peito com os cotovelos acima das mãos.",3 × 10–12 · 60 s
+,Pulldown com braços estendidos na polia,dorsais,Polia alta,"Braços quase estendidos, leve a barra da altura dos olhos até as coxas em arco.",3 × 12–15 · 60 s
+,Desenvolvimento na máquina,ombros;triceps,Máquina de desenvolvimento,"Sentado com as costas apoiadas, empurre as alças para cima e desça até a linha das orelhas.",3 × 10–12 · 60 s
+,Desenvolvimento Arnold,ombros;triceps,Halteres e banco,"Comece com as palmas voltadas para você na altura do queixo, gire e empurre os halteres para cima.",3 × 10–12 · 60 s
+,Elevação lateral na polia,ombros,Polia baixa,"De lado para a polia, eleve o braço lateralmente até a altura do ombro e desça devagar.",3 × 12–15 · 45 s
+,Crucifixo inverso na máquina,ombros;trapezio,Máquina voador,"De frente para o encosto, abra os braços para trás aproximando as escápulas.",3 × 12–15 · 45 s
+,Rosca direta na polia,biceps,Polia baixa,"Cotovelos junto ao corpo, flexione os cotovelos trazendo a barra até o peito e desça controlando.",3 × 10–12 · 60 s
+,Rosca concentrada,biceps,Halter e banco,"Sentado com o cotovelo apoiado na coxa, flexione o cotovelo até o ombro e desça devagar.",3 × 10–12 · 45 s
+,Rosca Scott,biceps,Banco Scott e barra W,"Braços apoiados no banco Scott, flexione os cotovelos e desça sem estender totalmente de forma brusca.",3 × 10–12 · 60 s
+,Tríceps na polia com corda,triceps,Polia alta e corda,"Cotovelos junto ao corpo, estenda os cotovelos afastando as pontas da corda no final.",3 × 10–15 · 45 s
+,Tríceps testa com barra W,triceps,Barra W e banco,"Deitado, desça a barra em direção à testa flexionando só os cotovelos e estenda de volta.",3 × 10–12 · 60 s
+,Tríceps coice com halter,triceps,Halter e banco,"Tronco inclinado e braço junto ao corpo, estenda o cotovelo para trás e volte devagar.",3 × 12–15 · 45 s
+,Rosca de punho com barra,antebracos,Barra e banco,"Antebraços apoiados nas coxas, flexione os punhos levantando a barra e desça devagar.",3 × 15–20 · 45 s
+,Agachamento no Smith,quadriceps;gluteos,Smith,"Barra no trapézio e pés um pouco à frente, desça flexionando joelhos e quadril e suba empurrando o chão.",3 × 8–12 · 90 s
+,Agachamento hack,quadriceps;gluteos,Máquina hack,"Costas apoiadas, desça até onde mantiver a coluna neutra e suba empurrando a plataforma.",3 × 10–12 · 90 s
+,Agachamento sumô com halter,quadriceps;gluteos;adutores,Halter ou kettlebell,"Pés afastados e pontas para fora, desça segurando o peso entre as pernas e suba estendendo o quadril.",3 × 10–12 · 60 s
+,Agachamento com peso corporal,quadriceps;gluteos,Peso corporal,"Pés na largura dos ombros, desça como se fosse sentar e suba mantendo o peito aberto.",3 × 12–15 · 60 s
+,Afundo reverso,quadriceps;gluteos,Halteres ou peso corporal,"Dê um passo para trás e desça até os dois joelhos ficarem perto de 90°; volte à posição inicial.",3 × 10–12 cada lado · 60 s
+,Passada (avanço caminhando),quadriceps;gluteos,Halteres ou peso corporal,"Avance alternando as pernas, descendo o joelho de trás em direção ao chão a cada passo.",3 × 10–12 cada lado · 60 s
+,Stiff com halteres,posteriores;gluteos;lombar,Halteres,"Joelhos levemente flexionados, leve o quadril para trás descendo os halteres junto às pernas e volte.",3 × 10–12 · 90 s
+,Flexora em pé,posteriores,Máquina flexora em pé,"Apoiado na máquina, flexione um joelho trazendo o calcanhar em direção ao glúteo e desça devagar.",3 × 10–12 cada lado · 45 s
+,Glúteo na polia (coice),gluteos,Polia baixa e tornozeleira,"De frente para a polia, leve a perna estendida para trás sem arquear a lombar e volte devagar.",3 × 12–15 cada lado · 45 s
+,Abdução de quadril com elástico,abdutores;gluteos,Mini band,"Elástico acima dos joelhos, afaste os joelhos contra a resistência mantendo o tronco estável.",3 × 15–20 · 45 s
+,Panturrilha no leg press,panturrilhas,Leg press,"Pontas dos pés na borda da plataforma, empurre estendendo os tornozelos e desça alongando.",3 × 15–20 · 45 s
+,Abdominal na polia,abdomen,Polia alta e corda,"Ajoelhado, flexione o tronco aproximando as costelas do quadril e volte controlando.",3 × 12–15 · 45 s
+,Abdominal infra no banco,abdomen,Banco ou colchonete,"Deitado, eleve o quadril trazendo os joelhos em direção ao peito e desça devagar.",3 × 12–15 · 45 s
+,Prancha com toque no ombro,abdomen;ombros,Peso corporal,"Em prancha alta, toque o ombro oposto alternando as mãos sem girar o quadril.",3 × 10–12 cada lado · 45 s
+,Polichinelo,corpo_inteiro,Peso corporal,"Salte abrindo pernas e braços e volte fechando, em ritmo contínuo.",3 × 30–45 s · 30 s
+,Bicicleta ergométrica,corpo_inteiro;quadriceps,Bicicleta ergométrica,"Ajuste o banco na altura do quadril e pedale no ritmo combinado.",1 × 10–20 min
+,Esteira (caminhada ou corrida),corpo_inteiro,Esteira,"Comece devagar e ajuste velocidade e inclinação conforme o combinado.",1 × 10–30 min
+,Remo ergômetro,corpo_inteiro;dorsais,Remo ergômetro,"Empurre com as pernas, depois incline o tronco e puxe a manopla até o abdômen; volte na ordem inversa.",1 × 5–15 min
