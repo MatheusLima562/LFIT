@@ -23,19 +23,21 @@ const files = readdirSync("e2e")
   .filter((f) => !filters.length || filters.some((x) => f.includes(x)))
   .sort();
 
+// Prazos (spawnSync bloqueia; sem eles, um roteiro ou seed parado prende o executor indefinidamente).
+const SEED_TIMEOUT_MS = 5 * 60_000, SCRIPT_TIMEOUT_MS = 10 * 60_000;
 const results = [];
 for (const file of files) {
   if (reseed) {
-    const seed = spawnSync("npm", ["run", "db:seed", "--", "--reset"], { env: process.env, encoding: "utf8" });
+    const seed = spawnSync("npm", ["run", "db:seed", "--", "--reset"], { env: process.env, encoding: "utf8", timeout: SEED_TIMEOUT_MS, killSignal: "SIGKILL" });
     if (seed.status !== 0) {
-      console.error(`Seed falhou antes de ${file}:\n${seed.stdout}${seed.stderr}`);
+      console.error(`Seed falhou antes de ${file}${seed.error ? ` (${seed.error.code ?? seed.error.message})` : ""}:\n${seed.stdout}${seed.stderr}`);
       process.exit(1);
     }
   }
   await admin.from("rate_limits").delete().neq("key", "");
   const started = Date.now();
-  const r = spawnSync(process.execPath, [`e2e/${file}`], { env: process.env, encoding: "utf8" });
-  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  const r = spawnSync(process.execPath, [`e2e/${file}`], { env: process.env, encoding: "utf8", timeout: SCRIPT_TIMEOUT_MS, killSignal: "SIGKILL" });
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}${r.error?.code === "ETIMEDOUT" ? `\n✗ roteiro passou de ${SCRIPT_TIMEOUT_MS / 60_000} min e foi encerrado` : ""}`;
   const failed = out.split("\n").filter((l) => l.startsWith("✗"));
   const ok = r.status === 0 && failed.length === 0;
   results.push({ file, ok, secs: Math.round((Date.now() - started) / 1000) });
