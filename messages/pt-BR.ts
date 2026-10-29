@@ -1269,6 +1269,14 @@ export const messages = {
     },
   },
   /** Tutoriais do professor (/ajuda). O conteúdo vem de content/tutoriais/professor/. */
+  /** Notificações N1 (dentro do app): só o fato, nunca o conteúdo. */
+  notifications: {
+    newMessage: "Nova mensagem no chat",
+    open: "Abrir",
+    newAnnouncement: "Novo recado do seu professor",
+    see: "Ver",
+    todayWithAnnouncement: "Hoje, novo recado",
+  },
   /** Etapa 3.3: recado e resposta ao feedback (o texto nunca vai para toast, URL ou log). */
   coach: {
     announcement: {

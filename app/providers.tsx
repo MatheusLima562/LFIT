@@ -10,7 +10,8 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <TooltipProvider delayDuration={200}>
         {children}
-        <Toaster position="bottom-center" richColors closeButton />
+        {/* No celular, acima da barra de abas do app do aluno (3.5rem + área segura): o aviso não cobre as abas. */}
+        <Toaster position="bottom-center" richColors closeButton mobileOffset={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom))" }} />
       </TooltipProvider>
     </ThemeProvider>
   );

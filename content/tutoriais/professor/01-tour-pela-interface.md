@@ -102,6 +102,8 @@ Em [Turmas](/turmas) você organiza alunos que treinam juntos.
 ## Chat
 
 Em [Chat](/chat) ficam as conversas com os seus alunos. As conversas com mensagens não lidas aparecem primeiro.
+Quando chega mensagem de aluno e você está em outra tela, aparece o aviso **Nova mensagem no chat** (só o aviso, sem o
+texto da mensagem) com o atalho **Abrir**.
 O botão **Recado para todos** publica um recado que aparece na tela Hoje de todos os seus alunos por 7 dias.
 
 ## Tarefas comuns

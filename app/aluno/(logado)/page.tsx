@@ -8,6 +8,7 @@ import { consistency, greeting, workoutDayLabel } from "@/features/student-app/h
 import { StartWorkoutButton } from "@/features/student-app/components/StartWorkoutButton";
 import { TrainerAvatar } from "@/features/student-app/components/TrainerAvatar";
 import { getMyActivePlan, getMyAnnouncement, getMyHistory, getMyProfile } from "@/features/student-app/queries";
+import { AnnouncementSeen } from "@/features/notifications/AnnouncementSeen";
 import type { AppHistoryEntry, AppProfile, AppWorkout } from "@/features/student-app/types";
 import { messages } from "@/messages/pt-BR";
 
@@ -119,7 +120,12 @@ export default async function StudentTodayPage() {
   const humane = profile && (
     <>
       <Hello profile={profile} />
-      {announcement && <Announcement body={announcement.body} />}
+      {announcement && (
+        <>
+          <Announcement body={announcement.body} />
+          <AnnouncementSeen id={announcement.id} />
+        </>
+      )}
       {reply && <ReplyNotice entry={reply} />}
     </>
   );

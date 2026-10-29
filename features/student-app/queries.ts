@@ -73,12 +73,12 @@ export async function getMyHistory(): Promise<AppHistoryEntry[]> {
 }
 
 /** Recado do professor ainda válido (o mais recente) — null quando não há. */
-export async function getMyAnnouncement(): Promise<{ body: string; created_at: string } | null> {
+export async function getMyAnnouncement(): Promise<{ id: string; body: string; created_at: string } | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_my_announcement");
   // Sem recado, a função devolve a linha vazia (todos os campos nulos).
   if (error || !data?.id) return null;
-  return { body: data.body, created_at: data.created_at };
+  return { id: data.id, body: data.body, created_at: data.created_at };
 }
 
 export interface SessionDone {

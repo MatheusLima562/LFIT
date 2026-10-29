@@ -1,10 +1,12 @@
 "use client";
 
 import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import type { PlanUsage, ShellUser } from "@/types/dashboard";
 import { BRAND } from "@/features/brand/config";
 import { useChatUnread } from "@/features/chat/hooks";
+import { useNewMessageToast } from "@/features/notifications/hooks";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -22,6 +24,8 @@ interface AppShellProps {
 
 export function AppShell({ user, plan, chatUnread, children }: AppShellProps) {
   const unread = useChatUnread({ initial: chatUnread, studentId: null });
+  const pathname = usePathname();
+  useNewMessageToast(unread, { onChat: pathname.startsWith("/chat"), href: "/chat" });
   const counts = { chat: unread };
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);

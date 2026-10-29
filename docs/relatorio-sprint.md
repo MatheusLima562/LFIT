@@ -140,3 +140,21 @@ grant execute on function public.end_trainer_announcement(uuid) to authenticated
   comentário; aluna a 375 px vê o recado na Hoje e a resposta no Histórico; recado para todos; owner sem acesso à saúde não
   vê comentário nem "Responder"; professor a 375 px sem rolagem horizontal; textos fora de URL) + f3-app-aluno,
   k212-chat, k212-chat-layout: **4/4**. Unitários e `tsc`/lint ok.
+
+## Pacote 3 — Notificações N1 ✔ (sem migration)
+
+- **Mensagem nova:** toast "Nova mensagem no chat" (com "Abrir") quando a contagem de não lidas sobe fora da conversa —
+  no app do aluno e no painel. Usa o estado compartilhado do selo (pacote 1), agora com o Realtime funcionando.
+- **Recado novo:** marcador na aba Hoje (`aria-label` "Hoje, novo recado") até o aluno ver o recado, e toast "Novo recado do
+  seu professor" uma vez por recado. O recado é buscado ao abrir o app e ao voltar à aba (sem Realtime de recado — ficaria
+  para uma migration de publicação).
+- **Nada de conteúdo:** nenhum aviso traz texto da mensagem, do recado, nome do aluno ou dado de saúde; no aparelho só
+  ficam ids de recado (`localStorage`, com try/catch). Regras puras em `features/notifications/n1.ts`
+  (`tests/unit/notifications-n1.test.ts`).
+- **Bugs achados no caminho (já existiam):** (1) os avisos neutros (`toast()`) não tinham fundo — o wrapper usava
+  `var(--popover)`/`var(--border)`, que não existem (o projeto expõe `--color-*`); (2) no celular os avisos cobriam a barra
+  de abas do aluno — agora ficam acima dela (`mobileOffset`).
+- **Testes:** unitários 273/273; e2e novo `e2e/n1-notificacoes.e2e.mjs` (375 px: toast fora do chat e não dentro, selo,
+  marcador e toast do recado, marcador some depois de ver, sem toast repetido; aviso acima da barra e com fundo; professor
+  recebe o aviso sem conteúdo nem nome; nada em URL). Regressão no build de produção: f3, k212 (3), k212-professor,
+  todos os m28 (11) e n1 — **16/16**.

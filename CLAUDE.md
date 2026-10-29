@@ -546,6 +546,12 @@ effective_status =
   `can_view_student_health` no servidor). No `/chat`, "Recado para todos" (`BroadcastButton`). Textos do navegador direto
   para as RPCs. e2e `e2e/k212-professor.e2e.mjs`. **Adiados:** foto do professor (bucket próprio), horário de atendimento
   editável.
+- **Notificações N1 (dentro do app, sem push):** `features/notifications/` (regras puras em `n1.ts`). Toast "Nova
+  mensagem no chat" quando a contagem de não lidas sobe fora da conversa (aluno e painel, com "Abrir"); recado novo →
+  marcador na aba Hoje até o aluno ver + toast "Novo recado do seu professor" uma vez por recado. **Nunca o conteúdo,
+  o nome ou dado de saúde.** No aparelho só ids de recado (`lfit:aluno:recado-visto`/`-avisado`). Recado é buscado ao
+  abrir e ao voltar à aba (sem Realtime de recado). No celular os toasts ficam acima da barra de abas (`mobileOffset`).
+  e2e `e2e/n1-notificacoes.e2e.mjs`.
 - **Fora do escopo da 3.1/3.2:** notificação push de mensagem nova (depende da etapa de notificações; sem ela, cada lado
   só vê mensagem nova ao abrir o app/painel); criar/encerrar recado, resposta ao feedback e **tela para o professor editar o próprio horário de atendimento
   (`profiles.preferences.office_hours`) e foto (`trainer_avatar_url`)** (3.3) — sem ela, a Hoje humanizada mostra
