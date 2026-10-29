@@ -34,6 +34,10 @@ A/B/C para ele escolher.
    `node scripts/with-timeout.mjs 300 npx vitest run tests/db/<arquivo>`). Arquivo que
    trava = causa raiz (chamada de rede/subprocesso síncrono sem
    prazo), nunca asserção afrouxada.
+8. Se uma regra de permissão exige aprovação, é PROIBIDO fazer a
+   mesma ação por outro caminho (outro binário, script, wrapper,
+   python, node). Isso é violação grave: pare, não execute e liste
+   em Pendências.
 
 Painel web (desktop-first) para o treinador e, no futuro, app PWA (mobile-first) para o aluno.
 Uso inicial interno (substituir o MFIT Personal); objetivo futuro é vender para outros personais,
