@@ -103,6 +103,8 @@ BASE=http://localhost:3100 npm run test:e2e             # todos, em série
 BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com os filtros
 ```
 
+- **Mac na bateria dorme no meio de execuções longas** (rede suspensa → login que não termina, `fetch failed`, `Hook timed
+  out`): rode roteiros e `npm run test:db` com `caffeinate -i <comando>`.
 - Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
 - `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
   `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
@@ -455,7 +457,7 @@ effective_status =
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 
-### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat e 3.2 aluno prontas — 3.2 aguarda o push da nota de satisfação)
+### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat, 3.2 aluno e 3.3 enxuta prontas)
 - Plano: `docs/planos/etapa-2.12.md` ("Revisão 2", aprovado). Migration
   `20261013120000_humanized_app_chat.sql`: chat aluno ↔ professor responsável/owner (com caixa de conversas do
   professor), recado do professor, resumo humanizado do fim do treino (constância + recorde pessoal) e resposta do
@@ -515,7 +517,7 @@ effective_status =
   - Roteiro `e2e/k212-chat.e2e.mjs` (375 px): imprime uma **frase-canário** única por execução para buscar nos logs do
     Supabase; derruba o WebSocket do Realtime por um proxy do Playwright (`routeWebSocket`); limpa as mensagens pelo
     marcador da execução, não por horário (o relógio local não bate com o do banco).
-- **3.2 aluno (pronta; a nota depende da migration `20261017120000`, ainda não aplicada):**
+- **3.2 aluno (pronta; migration da nota `20261017120000` aplicada):**
   - **Hoje:** saudação pela hora de SP ("Bom dia/Boa tarde/Boa noite"), constância em destaque sem cobrança
     (`sessions_this_month`/`week_streak`), recado (`get_my_announcement`), aviso "Seu professor respondeu sobre o treino
     de terça" (resposta dos últimos 14 dias; o texto fica no Histórico) e card do professor (iniciais — a foto chega na
@@ -538,6 +540,12 @@ effective_status =
   - **Login:** links cruzados "Sou aluno? Entrar no app do aluno" (`/entrar`) e "Sou professor? Entrar no painel do
     treinador" (`/aluno/entrar`).
   - Seed: horário do Caio (`preferences.office_hours`) e um recado dele para a Camila. e2e: `e2e/f3-app-aluno.e2e.mjs`.
+- **3.3 enxuta (pronta, `20261028120000`):** `features/coach/`. Em `/alunos/[id]/treinos`, "Recado para este aluno"
+  (publicar até 300, visível 7 dias, "Encerrar recado" só para o autor — `end_trainer_announcement`) e "Sessões recentes"
+  (últimas 10 concluídas; comentário e resposta **só para quem vê a saúde**: `reply_to_session` exige
+  `can_view_student_health` no servidor). No `/chat`, "Recado para todos" (`BroadcastButton`). Textos do navegador direto
+  para as RPCs. e2e `e2e/k212-professor.e2e.mjs`. **Adiados:** foto do professor (bucket próprio), horário de atendimento
+  editável.
 - **Fora do escopo da 3.1/3.2:** notificação push de mensagem nova (depende da etapa de notificações; sem ela, cada lado
   só vê mensagem nova ao abrir o app/painel); criar/encerrar recado, resposta ao feedback e **tela para o professor editar o próprio horário de atendimento
   (`profiles.preferences.office_hours`) e foto (`trainer_avatar_url`)** (3.3) — sem ela, a Hoje humanizada mostra
@@ -605,8 +613,8 @@ sem efeitos colaterais).
 | Avisos de dor da Fase 3 | `student_session_alerts` (escada completo / restrito / oculto, como os alertas de contraindicação), `acknowledge_session_alert` | `require_staff`; completo só com `can_view_student_health`; restrito via `is_restricted_plan_viewer`/`is_restricted_health_viewer` sem tipo, dor nem comentário; "visto" exige `lock_accessible_student` + `can_view_student_health` |
 | **Chat aluno ↔ professor/owner (2.12)** | `send_chat_message`, `mark_chat_read`, `chat_unread_count` | `private.chat_reader` (helper em `private`, fora da API, plpgsql): resolve o chamador como `student` (`is_own_student`) ou `staff` (`can_access_student`) — tudo-ou-nada, **independente do consentimento de saúde** (mesma base legal da triagem, art. 11 II "e"/"d"); sem acesso de nenhum lado, `STUDENT_NOT_FOUND`. `send_chat_message` só aceita anexo do item do **plano ativo** do aluno e limita a 30 mensagens/minuto (aluno contado por `student_id`; staff por `sender_id`, somando todas as conversas). Idempotente (`20261014120000`): exige o UUID do cliente (único por remetente — aluno por `student_id`, staff por `sender_id`); reenvio com o mesmo id devolve a linha já gravada sem contar de novo no limite; mesmo id com outro texto/conversa → `INVALID_INPUT`. `mark_chat_read(p_student_id, p_until_message_id)` (`20261016120000`): marca só até a mensagem informada, que precisa ser da conversa (senão `INVALID_INPUT`); cursor nunca retrocede (par `created_at, id`) |
 | Leitura do chat, sem efeito (2.12) | `get_chat_messages` (aluno ou staff), `list_chat_inbox`, `staff_total_unread_count` (caixa de conversas do professor) | funções `sql` — mesmo padrão "leitura sem efeito": `is_own_student`/`private.can_access_student()`; quem não acessa recebe lista/contagem vazia, nunca erro. `get_chat_messages` devolve `sender_first_name` (só o primeiro nome do staff, nulo nas do aluno; nunca sobrenome/e-mail) |
-| Recado do professor (2.12) | `get_my_announcement`, `set_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor |
-| Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()`; `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
+| Recado do professor (2.12/3.3) | `get_my_announcement`, `set_trainer_announcement`, `end_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor. `end_trainer_announcement` (3.3, `20261028120000`): `require_staff()` + só o **autor** e da própria org (`active = false`); qualquer outro caso → `ANNOUNCEMENT_NOT_FOUND` |
+| Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()` e, desde a 3.3 (`20261028120000`), **`can_view_student_health`** (quem não lê o comentário não responde; recusa = `SESSION_NOT_FOUND`); `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
 | **Início com dados reais** | `get_dashboard_training_stats`, `get_dashboard_engagement_retention` | `require_staff()` + `private.dashboard_students()` (alunos não excluídos da org com `can_access_student`: owner = organização, professor = os seus) — conta pelo **acesso ao aluno**, não pelo RLS de `workout_sessions` (que exige `can_view_student_health` e faria o owner contar a menos). Saída só com contagens, datas, nome do aluno e rótulo/nome da divisão; satisfação só agregada (média, quantidade, distribuição). "Hoje"/"semana" em São Paulo (`private.sp_day`, `private.sp_day_start`), semana começando na segunda. Testes em `tests/db/dashboard.test.ts` (fuso, outro tenant, professor só os seus, aluno e anônimo recusados, nenhum dado de saúde) |
 | **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
@@ -716,7 +724,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - **2.12 App humanizado:** banco aplicado em lfit-dev (chat aluno ↔ professor/owner com caixa de conversas do
   professor, recado do professor, resumo humanizado do fim do treino com recorde pessoal, resposta do professor ao
   feedback) — ver "App humanizado — etapa 2.12". **3.1 (chat) pronta**, aguardando teste do dono no celular; **3.2
-  (aluno) pronta** — a nota de satisfação espera o push de `20261017120000`; 3.3 (professor) pendente.
+  (aluno) pronta**; **3.3 enxuta pronta** (recado com "Encerrar" e resposta ao feedback — ver abaixo).
 - Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
   (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
   aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.12**

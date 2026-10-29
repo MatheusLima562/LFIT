@@ -15,10 +15,10 @@ Estado inicial: todas as migrations locais aplicadas no lfit-dev (`supabase migr
 
 ## 1. Estabilidade (sem migration)
 
-- (a) **Primeiro login após recriar os dados de teste.** Causa: limite do Supabase Auth hospedado (`sign_in_sign_ups`,
-  30 logins a cada 5 min por IP). O seed faz 4 logins por `--reset`; roteiros em série estouram. O app mostrava o 429 como
-  "E-mail ou senha incorretos". Correção: `signInErrorMessage` (429 → "Muitas tentativas"), roteiros com menos logins
-  (reuso de cookies) e diagnóstico do login (`e2e/_login.mjs`), aviso do executor.
+- (a) **Primeiro login após recriar os dados de teste.** Causa comprovada (no pacote 2): o Mac dorme por ociosidade na
+  bateria durante execuções longas (`pmset -g log`) — a hipótese inicial (limite do Supabase Auth) não se confirmou.
+  Correções: execuções longas com `caffeinate -i`; `signInErrorMessage` (o 429 do Auth aparecia como "senha incorreta");
+  diagnóstico do login nos roteiros (`e2e/_login.mjs`); menos logins no `k212-chat-layout`.
 - (b) **"This page couldn't load" no montador.** Causa: server action rejeitada (rede, servidor reiniciado, versão nova)
   dentro de `startTransition` sobe ao error boundary; sem `error.tsx`, cai na tela global do Next. Correção:
   `callAction` (aviso e a tela continua) nas chamadas do montador + `error.tsx` no painel e no app do aluno. e2e

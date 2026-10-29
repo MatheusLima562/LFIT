@@ -3,7 +3,7 @@ title: Tour pela interface do professor
 summary: Conheça o painel do {{marca}} — o menu, as telas principais e o caminho para as tarefas do dia a dia.
 audience: professor
 order: 1
-updated: 2026-10-20
+updated: 2026-10-28
 ---
 
 ## Como entrar
@@ -102,6 +102,7 @@ Em [Turmas](/turmas) você organiza alunos que treinam juntos.
 ## Chat
 
 Em [Chat](/chat) ficam as conversas com os seus alunos. As conversas com mensagens não lidas aparecem primeiro.
+O botão **Recado para todos** publica um recado que aparece na tela Hoje de todos os seus alunos por 7 dias.
 
 ## Tarefas comuns
 
@@ -137,6 +138,23 @@ Ao ativar, o aluno passa a ver o treino no app. O treino ativo anterior vai para
 3. O modelo vira um rascunho do aluno. Revise e clique em **Ativar treino**.
 
 Para levar o mesmo treino a vários alunos de uma vez, use **Copiar para alunos** no menu **⋯** do treino.
+
+### Deixar um recado para o aluno
+
+1. Em [Meus alunos](/alunos), abra o menu **⋯** do aluno e clique em **Treinos**.
+2. Em **Recado para este aluno**, escreva o recado (até 300 caracteres) e clique em **Publicar recado**.
+3. O recado aparece na tela Hoje do aluno por 7 dias. Para tirar antes, clique em **Encerrar recado**.
+
+Um recado novo substitui o anterior na tela do aluno. Só quem publicou pode encerrar.
+
+### Responder ao comentário do treino
+
+1. Na tela de treinos do aluno, veja **Sessões recentes**: data, divisão, esforço e o comentário do aluno.
+2. Clique em **Responder**, escreva (até 300 caracteres) e clique em **Enviar resposta**.
+3. O aluno vê a resposta no Histórico do app.
+
+O comentário e o campo de resposta aparecem só para quem acompanha a saúde do aluno (o professor responsável, ou
+qualquer pessoa da equipe depois que o aluno confirma o consentimento).
 
 ### Responder o chat
 

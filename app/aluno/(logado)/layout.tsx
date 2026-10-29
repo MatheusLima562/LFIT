@@ -7,6 +7,7 @@ import { StudentNav } from "@/features/student-app/components/StudentNav";
 import { getMyConsentRequest, getMyProfile } from "@/features/student-app/queries";
 import { getStudentUnread } from "@/features/chat/queries";
 import { HealthConsentForm } from "@/features/students/components/HealthConsentForm";
+import { RouteError } from "@/components/layout/RouteError";
 import { messages } from "@/messages/pt-BR";
 
 const t = messages.aluno;
@@ -36,7 +37,20 @@ function Header({ name, signOut = false }: { name?: string; signOut?: boolean })
  */
 export default async function StudentLoggedLayout({ children }: LayoutProps<"/aluno">) {
   await requireStudent();
-  const profile = await getMyProfile();
+  let profile: Awaited<ReturnType<typeof getMyProfile>>;
+  try {
+    profile = await getMyProfile();
+  } catch {
+    // Falha da RPC não é "acesso suspenso": tela recuperável, sem as abas.
+    return (
+      <>
+        <Header signOut />
+        <main className="mx-auto max-w-md">
+          <RouteError homeHref="/aluno" />
+        </main>
+      </>
+    );
+  }
   const name = profile?.first_name;
 
   if (!profile || profile.effective_status !== "active") {

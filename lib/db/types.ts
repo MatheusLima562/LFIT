@@ -2450,6 +2450,10 @@ export type Database = {
         }
       }
       duplicate_plan: { Args: { p_plan_id: string }; Returns: string }
+      end_trainer_announcement: {
+        Args: { p_announcement_id: string }
+        Returns: undefined
+      }
       ensure_signup_link: {
         Args: never
         Returns: {

@@ -9,9 +9,15 @@ const PHOTO_BUCKET = "student-photos";
 import type { AppActivePlan, AppExercise, AppHistoryEntry, AppProfile, AppTrainingSession, AppWorkout } from "./types";
 
 /** Perfil seguro do aluno logado (RPC; a tabela `students` não é exposta ao aluno). Memorizado por requisição. */
+/**
+ * Perfil do aluno logado. `null` = sem cadastro de aluno (o layout mostra o portão). Falha da RPC (rede, banco fora) é
+ * exceção, não `null`: antes virava página em branco (as páginas devolvem `null` sem perfil) ou "Acesso suspenso" no
+ * layout. Agora cai na tela "Tentar de novo". Só o código do erro vai para o log do servidor, nunca dado do aluno.
+ */
 export const getMyProfile = cache(async (): Promise<AppProfile | null> => {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("get_my_student_profile");
+  const { data, error } = await supabase.rpc("get_my_student_profile");
+  if (error) throw new Error(`PROFILE_UNAVAILABLE${error.code ? `:${error.code}` : ""}`);
   return (data?.[0] as AppProfile | undefined) ?? null;
 });
 

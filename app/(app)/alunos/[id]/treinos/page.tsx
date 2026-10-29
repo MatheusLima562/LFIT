@@ -12,7 +12,10 @@ import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, MessageSquareText } from "lucide-react";
+import { AnnouncementEditor } from "@/features/coach/components/AnnouncementEditor";
+import { CoachSessions } from "@/features/coach/components/CoachSessions";
+import { getCoachSessions, getStudentAnnouncement } from "@/features/coach/queries";
 
 const t = messages.plans.manage;
 const TABS = ["atuais", "futuros", "anteriores", "todos"] as const;
@@ -26,7 +29,13 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
   if (!z.uuid().safeParse(id).success) notFound();
   const student = await getStudentName(id);
   if (!student) notFound();
-  const [plans, templates, students] = await Promise.all([listStudentPlans(id, session), listTemplateOptions(), listStudentOptions()]);
+  const [plans, templates, students, announcement, coach] = await Promise.all([
+    listStudentPlans(id, session),
+    listTemplateOptions(),
+    listStudentOptions(),
+    getStudentAnnouncement(id, session.userId),
+    getCoachSessions(id),
+  ]);
 
   // Abas pela URL (?aba=). Agendado cuja data já chegou conta como atual até o job diário rodar.
   const today = todayISO();
@@ -94,6 +103,23 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
             <PlanCard key={p.id} plan={p} students={students} />
           ))}
         </ul>
+      )}
+
+      {/* 3.3: recado (quem acessa o aluno) e sessões recentes (só quem vê a saúde; a RPC de resposta confere de novo). */}
+      {announcement && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <AnnouncementEditor studentId={student.id} current={announcement.current} />
+          </section>
+          <section aria-labelledby="coach-sessions-title" className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <h2 id="coach-sessions-title" className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+              <MessageSquareText aria-hidden className="size-4 text-ink-3" />
+              {messages.coach.sessions.title}
+            </h2>
+            <p className="mt-0.5 mb-2 text-xs text-ink-3">{coach.canReply ? messages.coach.sessions.hint : messages.coach.sessions.noAccess}</p>
+            {coach.canReply && <CoachSessions sessions={coach.sessions} />}
+          </section>
+        </div>
       )}
     </div>
   );
