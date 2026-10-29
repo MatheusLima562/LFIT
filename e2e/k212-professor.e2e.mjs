@@ -57,7 +57,11 @@ try {
   ok("professor: recado publicado (toast sem o texto)", (await toastWith(caio, "Recado publicado.")) && (await caio.locator("[data-sonner-toast]", { hasText: RECADO }).count()) === 0);
   ok("professor: recado atual com 'Encerrar'", (await waitText(caio, RECADO)) && (await caio.getByRole("button", { name: "Encerrar recado" }).isVisible()));
   await caio.getByRole("button", { name: "Responder" }).first().click();
+  await caio.getByLabel("Sua resposta").fill("a".repeat(320));
+  ok("resposta: limite de 300 caracteres no campo", (await caio.getByLabel("Sua resposta").inputValue()).length === 300);
+  ok("resposta: contador 300/300", await caio.getByText("300/300", { exact: true }).isVisible());
   await caio.getByLabel("Sua resposta").fill(RESPOSTA);
+  ok("resposta: contador acompanha o texto", await caio.getByText(`${RESPOSTA.length}/300`, { exact: true }).isVisible());
   await caio.getByRole("button", { name: "Enviar resposta" }).click();
   ok("professor: resposta enviada", (await toastWith(caio, "Resposta enviada")) && (await waitText(caio, RESPOSTA)));
   await caio.screenshot({ path: `${OUT}/k212-prof-01-aluno.png`, fullPage: true });
@@ -99,8 +103,16 @@ try {
   await owner.goto(`${BASE}/alunos/${camila.id}/treinos`);
   await settle(owner);
   ok("owner: vê a seção de recado", await waitText(owner, "Recado para este aluno"));
-  ok("owner sem acesso à saúde: sem comentário e sem 'Responder'",
-    (await waitText(owner, "fica visível só para quem acompanha a saúde")) && (await owner.getByText(FEEDBACK).count()) === 0 && (await owner.getByRole("button", { name: "Responder" }).count()) === 0);
+  ok("owner sem acesso à saúde: sem comentário, sem 'Responder' e sem caixa de resposta",
+    (await owner.getByText(FEEDBACK).count()) === 0 && (await owner.getByRole("button", { name: "Responder" }).count()) === 0 &&
+      (await owner.getByLabel("Sua resposta").count()) === 0);
+  const note = owner.getByRole("note").filter({ hasText: "Você não pode ver nem responder ao feedback deste aluno" });
+  ok("owner sem acesso à saúde: aviso claro do motivo", (await note.isVisible()) && (await note.innerText()).includes("fale com o professor responsável"));
+  await owner.setViewportSize({ width: 375, height: 812 });
+  await owner.waitForTimeout(500);
+  ok("owner a 375 px: aviso visível e sem rolagem horizontal", (await note.isVisible()) && (await owner.evaluate(() => document.documentElement.scrollWidth)) <= 375);
+  await note.scrollIntoViewIfNeeded();
+  await owner.screenshot({ path: `${OUT}/k212-prof-03-sem-saude-375.png` });
 
   // --- Texto nunca em URL ---------------------------------------------------------------------------------------
   const leaks = [...caio.urls, ...sp.urls, ...owner.urls].filter((u) => [RECADO, GERAL, RESPOSTA, FEEDBACK].some((x) => decodeURIComponent(u).includes(x)));

@@ -292,3 +292,55 @@ create trigger students_modality_default
   depois da sua aprovação, e sem contraindicação nova.
 - **C1/C2:** não iniciados. A C1 reescreve `current_org_id()` e o RLS do banco inteiro, e precisa de um plano aprovado. A
   C2 é cobrança (regra 3).
+
+## Ajustes de segurança (29/10/2026) — migration `20261029120000`, aplicada no lfit-dev
+
+- **`students_with_status` só leitura, só para logados.** Achado: com os privilégios padrão do Supabase, a view (que
+  é "auto-atualizável") deixava a **secret key escrever em `students` por ela**; o teste falhou antes da migration e
+  passou depois. O `authenticated` já tinha só SELECT, e o `anon`, nada.
+- **Testes novos** (`tests/db/write-protection.test.ts`, 11): o aluno (o próprio), o anônimo e o **professor de outra
+  organização** são recusados ao
+  - mudar a modalidade,
+  - encerrar recado,
+  - responder feedback.
+
+  Cada tentativa é feita pela RPC e por escrita direta na tabela (e pela view), e o estado é conferido no banco depois
+  de cada uma. Controle: o responsável consegue responder.
+- **Tela de resposta ao feedback:**
+  - sem acesso à saúde: sem comentário e sem caixa de resposta, com um aviso claro (ícone e motivo: "fale com o
+    professor responsável");
+  - acesso perdido com a caixa aberta: aviso próprio, e a caixa fecha;
+  - limite de 300 caracteres no campo, com contador `n/300` (fica em cor de cautela nos últimos 20 e é anunciado ao
+    leitor de tela).
+- Tutorial atualizado (seção "Responder ao comentário do treino"). Nenhum vídeo cobre essa seção.
+- e2e `k212-professor` ampliado: limite, contador, aviso e caixa ausente para o owner sem acesso à saúde, a 375 px.
+
+**SQL completo — `20261029120000_students_with_status_read_only.sql`**
+
+```sql
+-- students_with_status: só leitura, só para usuários logados.
+-- A view é "auto-atualizável" (select simples sobre students): um INSERT/UPDATE/DELETE nela vira escrita em students.
+-- Hoje ninguém escreve por ela (authenticated só tem SELECT; o RLS e a falta de grant em students já barram), mas os
+-- privilégios padrão do Supabase deram escrita ao service_role ao recriá-la em 20261028120100. Aqui os grants ficam
+-- explícitos e mínimos, para não depender de privilégio padrão em recriações futuras da view:
+--   anon/public: nada · authenticated: SELECT · service_role: SELECT (scripts e testes só leem).
+-- Escrita em alunos continua só pelas RPCs (create_student, update_student, set_student_modality...).
+
+revoke all on public.students_with_status from public, anon, authenticated, service_role;
+grant select on public.students_with_status to authenticated, service_role;
+
+-- Defesa extra: mesmo que um grant de escrita volte por engano, a view recusa qualquer escrita.
+create function private.students_with_status_read_only()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  raise exception 'READ_ONLY_VIEW' using errcode = '42501';
+end;
+$$;
+
+create trigger students_with_status_read_only
+  instead of insert or update or delete on public.students_with_status
+  for each row execute function private.students_with_status_read_only();
+```

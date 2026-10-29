@@ -305,7 +305,10 @@ effective_status =
   filtro `?treino=a_vencer|vencido|sem_treino` (a vencer = próximos 7 dias); contagens via
   `student_plan_counts()` (SECURITY INVOKER, só alunos da aba Ativos).
 - A view `students_with_status` usa `s.*`, que o Postgres congela na criação: coluna nova em `students`
-  exige recriar a view (drop + create + grant), como em `20261001120000_student_plan_filters.sql`.
+  exige recriar a view (drop + create + grant), como em `20261001120000_student_plan_filters.sql`. **A view é só
+  leitura, só para logados** (`20261029120000`): `revoke all` de public/anon/authenticated/service_role, `grant select` a
+  `authenticated` e `service_role`, e gatilho `instead of` que recusa escrita (`READ_ONLY_VIEW`). O `drop view` apaga
+  gatilho e grants: ao recriar, repita os dois (testado em `tests/db/write-protection.test.ts`).
 
 ### Vídeo próprio de exercício (bucket `exercise-media`)
 - **Limites: MP4/WebM, até 15 MB e até 30 s por vídeo; poster JPEG até 1 MB.** Motivo: custo de storage e

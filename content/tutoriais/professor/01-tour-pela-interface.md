@@ -3,7 +3,7 @@ title: Tour pela interface do professor
 summary: Conheça o painel do {{marca}} — o menu, as telas principais e o caminho para as tarefas do dia a dia.
 audience: professor
 order: 1
-updated: 2026-10-28
+updated: 2026-10-29
 ---
 
 ## Como entrar
@@ -155,11 +155,13 @@ Um recado novo substitui o anterior na tela do aluno. Só quem publicou pode enc
 ### Responder ao comentário do treino
 
 1. Na tela de treinos do aluno, veja **Sessões recentes**: data, divisão, esforço e o comentário do aluno.
-2. Clique em **Responder**, escreva (até 300 caracteres) e clique em **Enviar resposta**.
+2. Clique em **Responder**, escreva e clique em **Enviar resposta**. O contador abaixo do campo mostra quantos dos 300
+   caracteres você já usou.
 3. O aluno vê a resposta no Histórico do app.
 
 O comentário e o campo de resposta aparecem só para quem acompanha a saúde do aluno (o professor responsável, ou
-qualquer pessoa da equipe depois que o aluno confirma o consentimento).
+qualquer pessoa da equipe depois que o aluno confirma o consentimento). Para os outros, a seção mostra o aviso **Você
+não pode ver nem responder ao feedback deste aluno**: nesse caso, fale com o professor responsável.
 
 ### Responder o chat
 

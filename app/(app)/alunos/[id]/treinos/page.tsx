@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Dumbbell, MessageSquareText } from "lucide-react";
+import { Dumbbell, Lock, MessageSquareText } from "lucide-react";
 import { AnnouncementEditor } from "@/features/coach/components/AnnouncementEditor";
 import { CoachSessions } from "@/features/coach/components/CoachSessions";
 import { getCoachSessions, getStudentAnnouncement } from "@/features/coach/queries";
@@ -116,8 +116,21 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
               <MessageSquareText aria-hidden className="size-4 text-ink-3" />
               {messages.coach.sessions.title}
             </h2>
-            <p className="mt-0.5 mb-2 text-xs text-ink-3">{coach.canReply ? messages.coach.sessions.hint : messages.coach.sessions.noAccess}</p>
-            {coach.canReply && <CoachSessions sessions={coach.sessions} />}
+            {coach.canReply ? (
+              <>
+                <p className="mt-0.5 mb-2 text-xs text-ink-3">{messages.coach.sessions.hint}</p>
+                <CoachSessions sessions={coach.sessions} />
+              </>
+            ) : (
+              // Sem acesso à saúde: nem comentário nem caixa de resposta (a RPC também recusa) — aviso explícito.
+              <div role="note" className="mt-2 flex gap-2.5 rounded-xl border border-info-line bg-info-soft p-3 text-info-ink">
+                <Lock aria-hidden className="mt-0.5 size-4 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-sm font-medium">{messages.coach.sessions.noAccessTitle}</p>
+                  <p className="text-xs">{messages.coach.sessions.noAccess}</p>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       )}

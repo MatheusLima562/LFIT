@@ -1309,7 +1309,11 @@ export const messages = {
       title: "Sessões recentes",
       hint: "Comentário e esforço informados pelo aluno nos últimos treinos concluídos.",
       empty: "Nenhum treino concluído ainda.",
-      noAccess: "O comentário do aluno fica visível só para quem acompanha a saúde dele.",
+      noAccessTitle: "Você não pode ver nem responder ao feedback deste aluno",
+      noAccess:
+        "O comentário do aluno pode conter informação de saúde e fica visível só para quem acompanha a saúde dele. Para responder, fale com o professor responsável.",
+      lostAccess: "Você não tem mais acesso ao feedback deste aluno. A resposta não foi enviada.",
+      nearLimit: (left: number) => (left === 1 ? "Resta 1 caractere" : `Restam ${left} caracteres`),
       rpe: (n: number) => `Esforço ${n}/10`,
       workout: (label: string) => `Treino ${label}`,
       noComment: "Sem comentário.",

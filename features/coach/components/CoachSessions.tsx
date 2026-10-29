@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/db/client";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
 import { COACH_TEXT_MAX, coachTextSchema } from "../schemas";
 import type { CoachSession } from "../queries";
@@ -23,12 +24,20 @@ function SessionRow({ session }: { session: CoachSession }) {
   const [draft, setDraft] = useState(session.coachReply ?? "");
   const [busy, setBusy] = useState(false);
   const valid = coachTextSchema.safeParse(draft).success;
+  const nearLimit = COACH_TEXT_MAX - draft.length <= 20;
 
   const send = async () => {
     if (!valid) return;
     setBusy(true);
     try {
       const { error } = await supabase.rpc("reply_to_session", { p_session_id: session.id, p_reply: draft.trim() });
+      if (error?.message === "SESSION_NOT_FOUND") {
+        // Perdeu o acesso à saúde com a caixa aberta (a RPC confere no servidor): avisa e recarrega sem a caixa.
+        toast.error(t.lostAccess);
+        setOpen(false);
+        router.refresh();
+        return;
+      }
       if (error) return void toast.error(dbErrorMessage(error));
       toast.success(t.sent);
       setOpen(false);
@@ -73,8 +82,11 @@ function SessionRow({ session }: { session: CoachSession }) {
             onChange={(e) => setDraft(e.target.value)}
             className="text-base md:text-sm"
           />
-          <span id={`${id}-count`} className="self-end text-[11px] text-ink-3 tabular-nums">
+          <span id={`${id}-count`} className={cn("self-end text-[11px] tabular-nums", nearLimit ? "text-warning-ink" : "text-ink-3")}>
             {messages.coach.counter(draft.length, COACH_TEXT_MAX)}
+          </span>
+          <span aria-live="polite" className="sr-only">
+            {nearLimit ? t.nearLimit(COACH_TEXT_MAX - draft.length) : ""}
           </span>
           <div className="flex gap-2">
             <Button type="button" size="sm" disabled={!valid || busy} onClick={() => void send()}>
