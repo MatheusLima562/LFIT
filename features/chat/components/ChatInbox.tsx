@@ -8,6 +8,7 @@ import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
 import { CHAT_READ_EVENT, SETTLE_REFETCH_MS } from "../hooks";
+import { joinWithAuth } from "../realtime";
 import { dayLabel } from "../thread";
 import type { InboxEntry } from "../queries";
 
@@ -47,15 +48,17 @@ export function ChatInbox({ initial, selectedId }: { initial: InboxEntry[]; sele
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => void refetch(), 400);
     };
-    const channel = supabase
-      .channel("chat-inbox")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, schedule)
-      .subscribe((status) => {
-        if (status !== "SUBSCRIBED") return;
-        schedule();
-        if (settle) clearTimeout(settle);
-        settle = setTimeout(schedule, SETTLE_REFETCH_MS);
-      });
+    const leave = joinWithAuth(supabase, () =>
+      supabase
+        .channel("chat-inbox")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, schedule)
+        .subscribe((status) => {
+          if (status !== "SUBSCRIBED") return;
+          schedule();
+          if (settle) clearTimeout(settle);
+          settle = setTimeout(schedule, SETTLE_REFETCH_MS);
+        }),
+    );
     window.addEventListener(CHAT_READ_EVENT, schedule);
     window.addEventListener("online", schedule);
     return () => {
@@ -63,7 +66,7 @@ export function ChatInbox({ initial, selectedId }: { initial: InboxEntry[]; sele
       if (timer.current) clearTimeout(timer.current);
       window.removeEventListener(CHAT_READ_EVENT, schedule);
       window.removeEventListener("online", schedule);
-      void supabase.removeChannel(channel);
+      leave();
     };
   }, [supabase, refetch]);
 

@@ -1,4 +1,5 @@
 import "./_guard.mjs";
+import { waitLoggedIn } from "./_login.mjs";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
@@ -20,7 +21,7 @@ async function phone(email) {
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill(PW);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await page.waitForURL(`${BASE}/aluno`, { timeout: 30000 });
+  await waitLoggedIn(page, `${BASE}/aluno`);
   await settle(page);
   return page;
 }
@@ -246,7 +247,7 @@ await staff.goto(`${BASE}/entrar`);
 await staff.getByLabel("E-mail").fill("owner.seed@example.com");
 await staff.getByLabel("Senha", { exact: true }).fill(PW);
 await staff.getByRole("button", { name: "Entrar" }).click();
-await staff.waitForURL(`${BASE}/`, { timeout: 30000 });
+await waitLoggedIn(staff, `${BASE}/`);
 await staff.goto(`${BASE}/aluno`);
 await staff.waitForURL(`${BASE}/`, { timeout: 15000 }).catch(() => {});
 ok("professor em /aluno volta para o painel", staff.url() === `${BASE}/`);

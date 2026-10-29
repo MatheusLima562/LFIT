@@ -1,4 +1,5 @@
 import "./_guard.mjs";
+import { waitLoggedIn } from "./_login.mjs";
 import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -13,18 +14,24 @@ const ok = (n, c, e = "") => { console.log(`${c ? "✓" : "✗"} ${n}${e ? " —
 const settle = (p) => p.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
 
 // Chat do aluno no celular: cabeçalho compacto e aviso no fluxo, nunca sobre a lista; lista com ≥ 55% da altura.
+// Um login só (o Supabase Auth hospedado aceita 30 logins a cada 5 min por IP, e o seed já faz 4): os outros aparelhos
+// reusam os cookies da sessão, sem o localStorage — cada um começa como um aparelho novo para o aviso do chat.
+let cookies = null;
 async function phone(width, height, { brokenStorage = false } = {}) {
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  const page = await ctx.newPage();
-  await page.goto(`${BASE}/aluno/entrar`);
-  await page.getByLabel("E-mail").fill("aluno.seed@example.com");
-  await page.getByLabel("Senha", { exact: true }).fill(PW);
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await page.waitForURL(`${BASE}/aluno`, { timeout: 30000 }).catch(async (e) => {
-    console.log(`✗ login travou em ${page.url()}: ${(await page.locator("body").innerText()).slice(0, 300)}`);
-    throw e;
+  const ctx = await browser.newContext({
+    viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+    ...(cookies ? { storageState: { cookies, origins: [] } } : {}),
   });
-  // Storage bloqueado só depois do login (como num modo privado que recusa gravar).
+  const page = await ctx.newPage();
+  if (!cookies) {
+    await page.goto(`${BASE}/aluno/entrar`);
+    await page.getByLabel("E-mail").fill("aluno.seed@example.com");
+    await page.getByLabel("Senha", { exact: true }).fill(PW);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await waitLoggedIn(page, `${BASE}/aluno`);
+    cookies = (await ctx.storageState()).cookies;
+  }
+  // Storage bloqueado (como num modo privado que recusa gravar).
   if (brokenStorage) {
     await page.addInitScript(() => {
       Storage.prototype.getItem = () => { throw new Error("bloqueado"); };

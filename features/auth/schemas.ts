@@ -40,3 +40,13 @@ export function safeNext(next: unknown, fallback = "/") {
     ? next
     : fallback;
 }
+
+/**
+ * Mensagem do login a partir do erro do Supabase Auth. O limite do próprio Auth (429, `over_request_rate_limit`: 30
+ * logins a cada 5 min por IP no projeto hospedado) aparecia como "senha incorreta" e confundia; ele é por IP, então
+ * dizer "muitas tentativas" não revela se a conta existe.
+ */
+export function signInErrorMessage(error: { status?: number; code?: string } | null): string {
+  if (error && (error.status === 429 || error.code === "over_request_rate_limit")) return messages.auth.errors.rateLimited;
+  return messages.auth.errors.invalidCredentials;
+}

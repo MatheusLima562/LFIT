@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { DateField } from "@/features/students/components/form/DateField";
 import { bulkApplyPlan, previewBulkApply, type BulkPreviewRow, type BulkResultRow } from "../actions";
 import type { Option } from "./ApplyTemplateDialog";
+import { callAction } from "@/lib/action";
 
 const t = messages.plans.bulk;
 type Step = "choose" | "preview" | "result";
@@ -55,7 +56,8 @@ export function BulkApplyDialog({ source, students, onClose }: { source: { id: s
     if ("error" in d) return setError(d.error ?? null);
     setError(null);
     startTransition(async () => {
-      const r = await previewBulkApply(source.id, [...picked]);
+      const r = await callAction(() => previewBulkApply(source.id, [...picked]));
+      if (!r) return;
       if (!r.ok) return setError(r.error);
       setPreview(r.rows);
       setStep("preview");
@@ -66,7 +68,10 @@ export function BulkApplyDialog({ source, students, onClose }: { source: { id: s
     const d = dates();
     if ("error" in d) return setError(d.error ?? null);
     startTransition(async () => {
-      const r = await bulkApplyPlan({ sourceId: source.id, studentIds: [...picked], startsOn: d.s ?? null, endsOn: d.e ?? null, noEnd, activate });
+      const r = await callAction(() =>
+        bulkApplyPlan({ sourceId: source.id, studentIds: [...picked], startsOn: d.s ?? null, endsOn: d.e ?? null, noEnd, activate }),
+      );
+      if (!r) return;
       if (!r.ok) return setError(r.error);
       setResult(r.rows);
       setStep("result");

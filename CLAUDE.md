@@ -199,6 +199,13 @@ tests/unit/                # testes de lógica pura (sem banco)
   `private`, dê `grant execute` ao papel que escreve (ex.: `valid_signup_form_config`).
 - Exportações: grupos especiais (dado de saúde) só com opt-in explícito (`saude=1` + confirmação na UI).
   Filtrar por grupo especial também revela saúde e exige o mesmo opt-in — regra aplicada no servidor.
+- **Server action chamada pelo cliente** (dentro de `startTransition`): sempre por `callAction` (`lib/action.ts`). Se a
+  chamada falhar antes de responder (rede, servidor reiniciado, versão nova), a exceção derrubava a tela inteira em "This
+  page couldn't load"; `callAction` vira aviso e a tela continua. Os segmentos `(app)` e `aluno/(logado)` têm `error.tsx`
+  (`RouteError`) para o resto.
+- **Realtime:** entrar no canal sempre por `joinWithAuth` (`features/chat/realtime.ts`). Logo após carregar a página o
+  cliente ainda não leu a sessão e o canal entrava como `anon` — o Realtime recusava a assinatura filtrada ("invalid
+  column for filter") sem erro visível. O k212 falha se alguma assinatura for recusada.
 - Links de uso único enviados por WhatsApp/e-mail: nunca consumir no GET (pré-visualizações fazem GET).
   Mostre um botão e consuma no POST (ver `/acesso/[token]`).
 - Ações sensíveis com a secret key (Auth admin): primeiro uma RPC com a sessão do usuário autoriza e
@@ -490,6 +497,9 @@ effective_status =
     mesmo texto/anexo reusa o id, texto ou anexo editado gera outro. A mensagem local é deduplicada com o retorno do RPC
     e com o evento do Realtime pela chave remetente + `client_msg_id`. Sem rede → "Não enviada · Tentar de novo /
     Editar"; recusa do banco (`RATE_LIMITED`) → texto volta ao campo com aviso amigável.
+  - Selos de não lidas: estado compartilhado por conversa (`useChatUnread`, um canal e uma busca para todos os selos),
+    agendador `features/chat/unread.ts` (junta pedidos, no máximo 1 busca a cada 2 s, nada com a aba oculta);
+    `markRead` não repete o mesmo ponto.
   - Realtime: só INSERT (DELETE/UPDATE ignorados); quem garante o isolamento é o RLS, não o filtro do canal (teste com 6
     clientes em `tests/db/chat-realtime.test.ts`). Fora do ar → "Reconectando…" + busca a cada 20 s com a aba visível;
     ao reconectar, ao voltar a internet e ao voltar à aba, busca a página mais recente — e de novo 3 s depois

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/db/client";
 import { uuidV4 } from "@/lib/uuid";
 import {
@@ -21,6 +21,8 @@ import {
   setLocalStatus,
   type ThreadMessage,
 } from "./thread";
+import { joinWithAuth } from "./realtime";
+import { createUnreadScheduler } from "./unread";
 
 /** Disparado depois de marcar uma conversa como lida: os selos de não lidas buscam a contagem de novo. */
 export const CHAT_READ_EVENT = "lfit:chat-read";
@@ -74,11 +76,19 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
     latestShownRef.current = latestShown;
   }, [latestShown]);
 
+  // Último ponto já marcado: o cursor nunca volta, então marcar de novo a mesma mensagem não muda nada (ao abrir, a
+  // marcação imediata e a da espera curta caíam na mesma mensagem — duas chamadas e duas recontagens do selo).
+  const lastMarked = useRef<string | null>(null);
   const markRead = useCallback(async () => {
     const until = latestShownRef.current;
-    if (!until || !isVisible()) return;
+    if (!until || until === lastMarked.current || !isVisible()) return;
+    lastMarked.current = until;
     const { error } = await supabase.rpc("mark_chat_read", { p_student_id: studentId, p_until_message_id: until });
-    if (!error) window.dispatchEvent(new Event(CHAT_READ_EVENT));
+    if (error) {
+      if (lastMarked.current === until) lastMarked.current = null;
+      return;
+    }
+    window.dispatchEvent(new Event(CHAT_READ_EVENT));
   }, [supabase, studentId]);
 
   const scheduleMarkRead = useCallback(() => {
@@ -110,34 +120,36 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
   useEffect(() => {
     let disposed = false;
     let settle: ReturnType<typeof setTimeout> | null = null;
-    const channel = supabase
-      .channel(`chat-thread:${studentId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages", filter: `student_id=eq.${studentId}` },
-        (payload) => {
-          const row = payload.new as ChatMessage;
-          setMessages((cur) => mergeRows(cur, [row]));
-          // O Realtime não traz o primeiro nome: a recarga traz (get_chat_messages) e o merge preserva.
-          if (row.sender_role === "staff" && viewer.role === "student") void refreshLatest();
-        },
-      )
-      .subscribe((status) => {
-        if (disposed) return;
-        if (status === "SUBSCRIBED") {
-          setConnected(true);
-          // Fecha a janela entre a página do servidor (ou a queda) e a assinatura — agora e de novo em alguns segundos.
-          void refreshLatest();
-          if (settle) clearTimeout(settle);
-          settle = setTimeout(() => !disposed && void refreshLatest(), SETTLE_REFETCH_MS);
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-          setConnected(false);
-        }
-      });
+    const leave = joinWithAuth(supabase, () =>
+      supabase
+        .channel(`chat-thread:${studentId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "chat_messages", filter: `student_id=eq.${studentId}` },
+          (payload) => {
+            const row = payload.new as ChatMessage;
+            setMessages((cur) => mergeRows(cur, [row]));
+            // O Realtime não traz o primeiro nome: a recarga traz (get_chat_messages) e o merge preserva.
+            if (row.sender_role === "staff" && viewer.role === "student") void refreshLatest();
+          },
+        )
+        .subscribe((status) => {
+          if (disposed) return;
+          if (status === "SUBSCRIBED") {
+            setConnected(true);
+            // Fecha a janela entre a página do servidor (ou a queda) e a assinatura — agora e de novo em alguns segundos.
+            void refreshLatest();
+            if (settle) clearTimeout(settle);
+            settle = setTimeout(() => !disposed && void refreshLatest(), SETTLE_REFETCH_MS);
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            setConnected(false);
+          }
+        }),
+    );
     return () => {
       disposed = true;
       if (settle) clearTimeout(settle);
-      void supabase.removeChannel(channel);
+      leave();
     };
   }, [supabase, studentId, viewer.role, refreshLatest]);
 
@@ -244,62 +256,100 @@ export function useChatThread({ studentId, viewer, initial }: { studentId: strin
 
   return { messages, connected, hasOlder, loadingOlder, loadOlder, send, retry, edit };
 }
+const UNREAD_DELAY_MS = 500;
+const UNREAD_MIN_INTERVAL_MS = 2_000;
 
-/**
- * Selo de não lidas (aba Chat do aluno, menu "Chat" do painel). A contagem vem sempre do banco; o Realtime (pelo RLS)
- * e o evento de "lida" só avisam que é hora de buscar de novo.
- */
-export function useChatUnread({ initial, studentId }: { initial: number; studentId: string | null }) {
-  const supabase = useMemo(() => createClient(), []);
-  const [count, setCount] = useState(initial);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+/** Um estado por conversa (aluno) ou por staff: todos os selos da página dividem um canal e uma busca. */
+interface UnreadStore {
+  count: number | null;
+  listeners: Set<() => void>;
+  teardown: (() => void) | null;
+}
+const unreadStores = new Map<string, UnreadStore>();
+
+function startUnread(store: UnreadStore, studentId: string | null) {
+  const supabase = createClient();
   const incomingRole = studentId ? "staff" : "student";
-
-  const refetch = useCallback(async () => {
-    const res = studentId
-      ? await supabase.rpc("chat_unread_count", { p_student_id: studentId })
-      : await supabase.rpc("staff_total_unread_count");
-    if (!res.error && typeof res.data === "number") setCount(res.data);
-  }, [supabase, studentId]);
-
-  const schedule = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void refetch(), 500);
-  }, [refetch]);
-
-  useEffect(() => {
-    let disposed = false;
-    let settle: ReturnType<typeof setTimeout> | null = null;
-    const channel = supabase
+  const notify = () => store.listeners.forEach((l) => l());
+  const scheduler = createUnreadScheduler(
+    async () => {
+      const res = studentId
+        ? await supabase.rpc("chat_unread_count", { p_student_id: studentId })
+        : await supabase.rpc("staff_total_unread_count");
+      if (!res.error && typeof res.data === "number" && res.data !== store.count) {
+        store.count = res.data;
+        notify();
+      }
+    },
+    { delayMs: UNREAD_DELAY_MS, minIntervalMs: UNREAD_MIN_INTERVAL_MS, visible: isVisible },
+  );
+  let subscribedOnce = false;
+  let settle: ReturnType<typeof setTimeout> | null = null;
+  const leave = joinWithAuth(supabase, () =>
+    supabase
       .channel(`chat-unread:${studentId ?? "staff"}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages", ...(studentId ? { filter: `student_id=eq.${studentId}` } : {}) },
         (payload) => {
-          if (!disposed && (payload.new as ChatMessage).sender_role === incomingRole) schedule();
+          if ((payload.new as ChatMessage).sender_role === incomingRole) scheduler.request();
         },
       )
       .subscribe((status) => {
-        if (disposed || status !== "SUBSCRIBED") return;
-        schedule();
+        if (status !== "SUBSCRIBED") return;
+        // A contagem inicial veio do servidor: na primeira inscrição basta a busca de acomodação (mensagem gravada antes
+        // de o canal entregar). Numa reconexão, o que chegou fora do ar só vem pela busca: agora e de novo depois.
+        if (subscribedOnce) scheduler.request();
+        subscribedOnce = true;
         if (settle) clearTimeout(settle);
-        settle = setTimeout(() => !disposed && schedule(), SETTLE_REFETCH_MS);
-      });
-    const onRead = () => schedule();
-    const onVisible = () => isVisible() && schedule();
-    window.addEventListener(CHAT_READ_EVENT, onRead);
-    window.addEventListener("online", onRead);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      disposed = true;
-      if (settle) clearTimeout(settle);
-      if (timer.current) clearTimeout(timer.current);
-      window.removeEventListener(CHAT_READ_EVENT, onRead);
-      window.removeEventListener("online", onRead);
-      document.removeEventListener("visibilitychange", onVisible);
-      void supabase.removeChannel(channel);
-    };
-  }, [supabase, studentId, incomingRole, schedule]);
+        settle = setTimeout(scheduler.request, SETTLE_REFETCH_MS);
+      }),
+  );
+  const onVisible = () => isVisible() && scheduler.request();
+  window.addEventListener(CHAT_READ_EVENT, scheduler.request);
+  window.addEventListener("online", scheduler.request);
+  document.addEventListener("visibilitychange", onVisible);
+  return () => {
+    scheduler.cancel();
+    if (settle) clearTimeout(settle);
+    window.removeEventListener(CHAT_READ_EVENT, scheduler.request);
+    window.removeEventListener("online", scheduler.request);
+    document.removeEventListener("visibilitychange", onVisible);
+    leave();
+  };
+}
 
-  return count;
+/**
+ * Selo de não lidas (aluno: a própria conversa; staff: `studentId` nulo = soma de todas). A busca sempre vai ao banco; o
+ * Realtime, a marcação de lida (`CHAT_READ_EVENT`), a volta da internet e a volta à aba só pedem uma busca, e o
+ * agendador junta os pedidos (no máximo uma busca a cada 2 s, nenhuma com a aba oculta).
+ */
+export function useChatUnread({ initial, studentId }: { initial: number; studentId: string | null }) {
+  const key = studentId ?? "staff";
+  const subscribe = useCallback(
+    (listener: () => void) => {
+      let store = unreadStores.get(key);
+      if (!store) {
+        store = { count: null, listeners: new Set(), teardown: null };
+        unreadStores.set(key, store);
+      }
+      store.listeners.add(listener);
+      if (!store.teardown) store.teardown = startUnread(store, studentId);
+      const current = store;
+      return () => {
+        current.listeners.delete(listener);
+        if (current.listeners.size === 0) {
+          current.teardown?.();
+          current.teardown = null;
+          unreadStores.delete(key);
+        }
+      };
+    },
+    [key, studentId],
+  );
+  return useSyncExternalStore(
+    subscribe,
+    () => unreadStores.get(key)?.count ?? initial,
+    () => initial,
+  );
 }

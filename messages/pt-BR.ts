@@ -10,6 +10,12 @@ export const messages = {
     tagline: BRAND.tagline,
     soon: "Em breve",
     soonHint: "Este módulo ainda está em construção.",
+    /** Server action que não chegou ao servidor (rede caiu, servidor reiniciado, versão nova publicada). */
+    actionFailed: "Não foi possível falar com o servidor. Confira a conexão e tente de novo.",
+    errorTitle: "Algo deu errado nesta tela",
+    errorText: "Pode ter sido a conexão ou uma atualização do sistema. O que você já salvou continua salvo.",
+    errorRetry: "Tentar de novo",
+    errorHome: "Voltar ao início",
   },
   roles: {
     owner: "Administrador",

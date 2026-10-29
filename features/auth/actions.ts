@@ -11,6 +11,7 @@ import {
   forgotPasswordSchema,
   newPasswordSchema,
   safeNext,
+  signInErrorMessage,
   signInSchema,
   signUpSchema,
   type ActionResult,
@@ -38,7 +39,7 @@ export async function signIn(input: unknown, next?: string): Promise<ActionResul
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.user) return { ok: false, error: t.errors.invalidCredentials };
+  if (error || !data.user) return { ok: false, error: signInErrorMessage(error) };
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
   if (!profile || profile.role === "student") {

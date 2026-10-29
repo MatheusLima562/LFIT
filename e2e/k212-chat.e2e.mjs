@@ -1,4 +1,5 @@
 import "./_guard.mjs";
+import { waitLoggedIn } from "./_login.mjs";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -25,6 +26,15 @@ function watch(page) {
   page.on("pageerror", (e) => page.errors.push(e.message));
   page.on("console", (m) => page.consoleLines.push(m.text()));
   page.on("framenavigated", (f) => f === page.mainFrame() && page.urls.push(f.url()));
+  // Assinaturas recusadas pelo Realtime (ex.: canal que entrou como `anon` antes de a sessão carregar): só o canal.
+  page.realtimeErrors = [];
+  page.on("websocket", (ws) => ws.on("framereceived", (f) => {
+    try {
+      const m = JSON.parse(String(f.payload));
+      const [topic, event, payload] = Array.isArray(m) ? [m[2], m[3], m[4]] : [m.topic, m.event, m.payload];
+      if (event === "system" && payload?.status === "error") page.realtimeErrors.push(topic);
+    } catch {}
+  }));
 }
 
 // Celular de 375 px. O WebSocket do Realtime passa por um proxy do Playwright: dá para derrubá-lo e segurar a volta.
@@ -43,7 +53,7 @@ async function phone(email) {
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill(PW);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await page.waitForURL(`${BASE}/aluno`, { timeout: 30000 });
+  await waitLoggedIn(page, `${BASE}/aluno`);
   await settle(page);
   return page;
 }
@@ -54,7 +64,7 @@ async function desk(email) {
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill(PW);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await page.waitForURL(`${BASE}/`, { timeout: 30000 });
+  await waitLoggedIn(page, `${BASE}/`);
   await settle(page);
   return page;
 }
@@ -225,6 +235,7 @@ try {
     const leaks = [...p.urls, await p.title(), ...p.consoleLines].filter((x) => x.includes(CANARY));
     ok(`${name}: canário fora de URL, título e console`, leaks.length === 0, leaks.join(" | "));
     ok(`${name}: sem erro de página`, p.errors.length === 0, p.errors.join(" | "));
+    ok(`${name}: o Realtime aceitou todas as assinaturas`, p.realtimeErrors.length === 0, [...new Set(p.realtimeErrors)].join(" | "));
   }
 } finally {
   // Limpa o que o roteiro criou: todo texto enviado aqui contém o marcador da execução (o relógio local pode não bater

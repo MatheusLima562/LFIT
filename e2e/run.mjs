@@ -40,6 +40,9 @@ for (const file of files) {
   const ok = r.status === 0 && failed.length === 0;
   results.push({ file, ok, secs: Math.round((Date.now() - started) / 1000) });
   console.log(`${ok ? "✓" : "✗"} ${file} (${results.at(-1).secs}s)`);
+  // Limite do Supabase Auth hospedado: 30 logins a cada 5 min por IP (o seed faz 4 por execução). O app mostra
+  // "Muitas tentativas"; rodar tudo em série pode estourar. Esperar 5 min e rodar só os que falharam.
+  if (!ok && out.includes("Muitas tentativas")) console.log("    ⚠ limite de login do Supabase Auth (30 a cada 5 min por IP): espere 5 min e rode de novo só este roteiro");
   if (!ok) console.log(failed.length ? failed.map((l) => `    ${l}`).join("\n") : out.split("\n").slice(-12).map((l) => `    ${l}`).join("\n"));
 }
 const bad = results.filter((r) => !r.ok);

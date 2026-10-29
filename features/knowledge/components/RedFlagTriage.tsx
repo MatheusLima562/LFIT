@@ -19,6 +19,7 @@ import { recordRedFlagCheck, recordRedFlagClearance } from "../red-flag-actions"
 import { CLEARANCE_KINDS, RED_FLAG_NOTE_MAX, RED_FLAGS, redFlagLabel, type ClearanceKind, type RedFlagCheck, type RedFlagKey } from "../red-flags";
 import { redFlagCheckSchema, redFlagClearanceSchema } from "../red-flag-schemas";
 import type { GuideTone } from "../types";
+import { callAction } from "@/lib/action";
 
 const t = messages.redFlags;
 const TONES: GuideTone[] = ["emergency", "sameDay", "refer"];
@@ -124,7 +125,8 @@ export function RedFlagCheckDialog({ studentId, onClose }: { studentId: string; 
             const parsed = redFlagCheckSchema.safeParse(values);
             if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? null);
             startTransition(async () => {
-              const r = await recordRedFlagCheck(studentId, values);
+              const r = await callAction(() => recordRedFlagCheck(studentId, values));
+              if (!r) return;
               if (!r.ok) return setError(r.error);
               toast.success(r.message);
               router.refresh();
@@ -236,7 +238,8 @@ function ClearanceDialog({ check, onClose }: { check: RedFlagCheck; onClose: () 
               return setErrors(next);
             }
             startTransition(async () => {
-              const r = await recordRedFlagClearance(check.id, values);
+              const r = await callAction(() => recordRedFlagClearance(check.id, values));
+              if (!r) return;
               if (!r.ok) return setErrors({ form: r.error });
               toast.success(r.message);
               router.refresh();
