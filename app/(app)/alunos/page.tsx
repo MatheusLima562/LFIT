@@ -21,6 +21,7 @@ import { StudentsList } from "@/features/students/components/StudentsList";
 import { StudentsPagination } from "@/features/students/components/StudentsPagination";
 import { StudentsTabs } from "@/features/students/components/StudentsTabs";
 import { StudentsPlanFilter } from "@/features/students/components/StudentsPlanFilter";
+import { StudentsModalityFilter } from "@/features/students/components/StudentsModalityFilter";
 import { StudentsToolbar } from "@/features/students/components/StudentsToolbar";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,10 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
 
       <StudentsTabs params={params} counts={counts} />
 
-      <StudentsPlanFilter params={params} counts={planCounts} />
+      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-6">
+        <StudentsPlanFilter params={params} counts={planCounts} />
+        <StudentsModalityFilter params={params} />
+      </div>
 
       <StudentsToolbar params={params} view={view} classes={filters.classes} groups={filters.groups} />
 

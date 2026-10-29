@@ -26,6 +26,14 @@ A/B/C para ele escolher.
    notificação; nunca editar migration já aplicada; nunca push.
 6. Relatório final curto: (a) o que foi feito, (b) decisões
    tomadas sozinho (link para o log), (c) Pendências para você.
+7. Nunca esperar indefinidamente: todo comando longo roda com
+   timeout (máx. 20 min; o macOS não tem `timeout`: use
+   `caffeinate -i node scripts/with-timeout.mjs 1200 <comando>`).
+   Estourou: mate o processo e rode fracionado (testes de banco
+   arquivo por arquivo, 5 min cada:
+   `node scripts/with-timeout.mjs 300 npx vitest run tests/db/<arquivo>`). Arquivo que
+   trava = causa raiz (chamada de rede/subprocesso síncrono sem
+   prazo), nunca asserção afrouxada.
 
 Painel web (desktop-first) para o treinador e, no futuro, app PWA (mobile-first) para o aluno.
 Uso inicial interno (substituir o MFIT Personal); objetivo futuro é vender para outros personais,
@@ -104,7 +112,9 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
 ```
 
 - **Mac na bateria dorme no meio de execuções longas** (rede suspensa → login que não termina, `fetch failed`, `Hook timed
-  out`): rode roteiros e `npm run test:db` com `caffeinate -i <comando>`.
+  out`): rode roteiros e `npm run test:db` com `caffeinate -i <comando>`. Com a **tampa fechada na bateria**
+  ("Clamshell Sleep" no `pmset -g log`) o `caffeinate` não segura: os prazos da regra 7 limitam a espera; rode de novo o
+  arquivo afetado.
 - Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
 - `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
   `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
@@ -560,6 +570,13 @@ effective_status =
   anexo restrito ao plano ativo, recado não vaza, `is_pr` exige histórico, conteúdo nunca em `audit_logs`, envio
   idempotente), `tests/db/chat-realtime.test.ts`, `tests/unit/chat-thread.test.ts`.
 
+### Modalidade do aluno — base do presencial (28/10/2026)
+- `students.modality` = `consultoria` (padrão) | `presencial` | `hibrido`; escrita só por `set_student_modality`
+  (owner ou professor responsável), chamada pelo `saveStudent` depois de create/update (campo "Modalidade" no formulário).
+  Etiqueta na lista só para presencial/híbrido (o padrão não repete em toda linha) e filtro `?modalidade=` (links, como o
+  de treino). `students_with_status` recriada (o `s.*` congela). **Nada de agenda, presença ou cobrança** — proposta e
+  riscos em `docs/planos/modulo-presencial.md`, aguardando aprovação. e2e `e2e/fase1-modalidade.e2e.mjs`.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -608,6 +625,7 @@ sem efeitos colaterais).
 | **Aluno (titular), de propósito** | `get_my_health_consent_request`, `respond_my_health_consent` | escopo `students.user_id = auth.uid()`; só o próprio cadastro |
 | Staff (owner/trainer) | `create_student`, `log_students_export` | `private.require_staff()` |
 | Staff com acesso ao aluno | `update_student`, `deactivate_student`, `reactivate_student`, `expire_student`, `clear_student_expiration`, `soft_delete_student`, `create_access_link`, `record_student_access_email`, `request_anamnesis` | `private.lock_accessible_student()`: staff + mesma org + (owner ou professor responsável) |
+| Modalidade do aluno (base do presencial) | `set_student_modality` | `private.lock_accessible_student()` (owner ou professor responsável), valor só em `consultoria`/`presencial`/`hibrido` (senão `INVALID_INPUT`; o CHECK da coluna repete a lista); sem auditoria (não é ação sensível). `20261028120100` (+ gatilho `private.student_modality_default` em `…120200`: o `create_student` insere a linha inteira e o DEFAULT não se aplicava). Testes em `tests/db/student-modality.test.ts` |
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
 | Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
 | Alertas de contraindicação (Fase 2/2.8) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem `restricted = true` (só nível, via `is_restricted_plan_viewer`/`is_restricted_health_viewer`) ou `hidden = true` (nada) — nunca condição/grupo/nota fora do nível completo |

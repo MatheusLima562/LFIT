@@ -158,3 +158,137 @@ grant execute on function public.end_trainer_announcement(uuid) to authenticated
   marcador e toast do recado, marcador some depois de ver, sem toast repetido; aviso acima da barra e com fundo; professor
   recebe o aviso sem conteúdo nem nome; nada em URL). Regressão no build de produção: f3, k212 (3), k212-professor,
   todos os m28 (11) e n1 — **16/16**.
+
+## Pacote 4 — Chat e inadimplência ✖ (não implementado — decisão sua)
+
+- O pedido: "professor em somente leitura após a carência; alunos **NÃO** perdem acesso".
+- O registrado: CLAUDE.md ("Decisões já tomadas … o personal fica em somente leitura **e os alunos perdem o acesso**") e
+  `docs/planos/fase-c.md` ("Alunos após a carência (decisão sua): perdem acesso"; item "Reavaliar" a regra).
+- Além do conflito, a regra depende da C2 (tabela `subscriptions`, status `past_due`, carência configurável), que não
+  existe. Não há "parte já decidida e completa" implementável sem inventar regra de cobrança.
+- **Para destravar:** (1) confirmar qual regra vale para os alunos depois da carência; (2) o chat entra no "somente leitura"
+  do professor (pode ler e não responder?) e o aluno pode continuar mandando mensagem?; (3) a ordem — isso entra junto da C2.
+
+## Pacote 5 — Base para o presencial ✔ (migrations `20261028120100` e `20261028120200`, aplicadas no lfit-dev)
+
+**O que entrou**
+- `students.modality` (`consultoria` padrão | `presencial` | `hibrido`) + `students_with_status` recriada.
+- `set_student_modality` (owner ou professor responsável, via `lock_accessible_student`, como as demais escritas do
+  aluno). Campo "Modalidade" no formulário Novo/Editar aluno (gravado por essa RPC depois do salvar).
+- Lista: etiqueta "Presencial"/"Híbrido" ao lado do status (o padrão não aparece para não repetir em toda linha) e filtro
+  `?modalidade=` (links, como o de Treino). Exportação respeita o filtro (mesma consulta).
+- `docs/planos/modulo-presencial.md`: proposta (presença, pacote de aulas, treino complementar no híbrido, aluno em
+  risco) + riscos + o que você precisa decidir. **Nada implementado** além da base.
+- **Incidente no lfit-dev:** a 1ª migration quebrou o `create_student` por alguns minutos — ele monta a linha inteira
+  (`insert … values (r.*)`), então o DEFAULT não se aplicava e `modality` chegava nula. Os testes de banco pegaram; corrigi
+  numa **migration nova** (gatilho `BEFORE INSERT`), sem editar a aplicada. Produção não foi tocada. **Antes de levar para
+  produção, as duas vão juntas.**
+
+**Dry-runs:** cada um listou só a migration do pacote (`…120100`, depois `…120200`), projeto `fwbpazxawtxuppuczijd`.
+
+**SQL completo — `20261028120100_student_modality.sql`**
+
+```sql
+-- Base para o presencial (mínimo): modalidade do aluno. Só a etiqueta e o filtro — nada de agenda, presença ou cobrança
+-- (proposta em docs/planos/modulo-presencial.md).
+-- 1) students.modality: consultoria (padrão) | presencial | hibrido.
+-- 2) students_with_status recriada: a view expandiu s.* na criação e não vê a coluna nova (mesma definição de
+--    20261001120000_student_plan_filters.sql).
+-- 3) set_student_modality: escrita só por RPC, como as demais do aluno (owner ou professor responsável).
+
+alter table public.students
+  add column modality text not null default 'consultoria'
+  check (modality in ('consultoria', 'presencial', 'hibrido'));
+
+drop view public.students_with_status;
+
+create view public.students_with_status
+with (security_invoker = true)
+as
+select
+  s.*,
+  public.student_effective_status(s) as effective_status,
+  s.first_name || ' ' || s.last_name as full_name,
+  private.immutable_unaccent(lower(s.first_name || ' ' || s.last_name || ' ' || s.email)) as search_text
+from public.students s
+where s.deleted_at is null;
+
+grant select on public.students_with_status to authenticated;
+
+create function public.set_student_modality(p_student_id uuid, p_modality text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  s public.students := private.lock_accessible_student(p_student_id);
+begin
+  if p_modality is null or p_modality not in ('consultoria', 'presencial', 'hibrido') then
+    raise exception 'INVALID_INPUT' using errcode = 'P0001', detail = 'modality';
+  end if;
+  update public.students set modality = p_modality, updated_at = now() where id = s.id;
+end;
+$$;
+revoke execute on function public.set_student_modality(uuid, text) from public, anon;
+grant execute on function public.set_student_modality(uuid, text) to authenticated;
+```
+
+**SQL completo — `20261028120200_student_modality_insert_default.sql`**
+
+```sql
+-- Correção de 20261028120100: create_student monta a linha inteira (jsonb_populate_record + insert ... values (r.*)),
+-- então o DEFAULT da coluna nova não se aplica e modality chegava nula (NOT NULL). Gatilho BEFORE INSERT completa o
+-- padrão; o NOT NULL é verificado depois dos gatilhos BEFORE. Vale para qualquer insert futuro no mesmo padrão.
+
+create function private.student_modality_default()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.modality is null then
+    new.modality := 'consultoria';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger students_modality_default
+  before insert on public.students
+  for each row execute function private.student_modality_default();
+```
+
+**Resultados (29/10/2026, build de produção em `:3100` com as chaves de teste do Turnstile):**
+- Testes de banco, **arquivo por arquivo** (prazo de 5 min cada): 22/22 arquivos, **316 testes passando**
+  (`student-modality` 4/4; `security-definer` 82/82, com `set_student_modality` recusada para aluno e anônimo;
+  `security-definer-coverage` 1/1).
+- Unitários: 30 arquivos, 274 testes passando. `tsc --noEmit` e `npm run lint` sem erros.
+- e2e fase 1: 5/5 (`fase1-modalidade` 10/10; `fase1-saude-consentimento` passou com as chaves do Turnstile no `next start`,
+  e a falha anterior era do ambiente, que estava sem elas).
+- Vídeo 02 regravado (`tutoriais-video/02-cadastrar-aluno.webm`, 1:32).
+
+### Suíte de banco presa por 8 h (28→29/10)
+
+- **Sintoma:** `security-definer-coverage` ficou 30 979 s (8,6 h) sem terminar.
+- **Causa raiz:** `execFileSync("npx supabase db query")` sem prazo. A chamada é síncrona: bloqueia o processo, e o
+  `testTimeout` do Vitest não a interrompe. O `npx` ainda consulta o registro antes de rodar: medido em 30–40 s,
+  contra 4 s com o binário local. Com o Mac suspenso, nunca voltava.
+- **Correção:**
+  - binário local `node_modules/.bin/supabase` + `timeout: 60 s` + `SIGKILL` (asserções iguais); agora o teste roda em
+    3,6 s;
+  - `e2e/run.mjs` com prazo no seed (5 min) e por roteiro (10 min);
+  - `scripts/with-timeout.mjs`, porque o macOS não tem `timeout`;
+  - regra 7 do "Modo autônomo" no CLAUDE.md.
+- **Queda de rede às 08:35, durante a execução arquivo por arquivo:** o `pmset` registrou "Clamshell Sleep" (tampa
+  fechada, na bateria), situação em que o `caffeinate` não segura. `red-flags` estourou os 5 min, e os dois arquivos
+  seguintes saíram com `fetch failed`. Rodados de novo, passaram (7/7, 27/27, 38/38). Observação registrada no
+  CLAUDE.md.
+
+## Pacote 6 — Biblioteca (2.11), C1, C2 ◐ (só proposta)
+
+- **2.11:** `docs/planos/etapa-2.11.md` + `docs/revisao/biblioteca-2.11.csv`, com **41 exercícios** novos para revisão
+  (coluna "aprovar"; hoje são 54). Nenhum repete um global. Nada no banco: o conteúdo global só muda por migration
+  depois da sua aprovação, e sem contraindicação nova.
+- **C1/C2:** não iniciados. A C1 reescreve `current_org_id()` e o RLS do banco inteiro, e precisa de um plano aprovado. A
+  C2 é cobrança (regra 3).

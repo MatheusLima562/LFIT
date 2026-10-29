@@ -1558,6 +1558,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -1586,6 +1587,7 @@ export type Database = {
           health_data_consent_at?: string | null
           id?: string
           last_name: string
+          modality?: string
           notes?: string | null
           organization_id: string
           photo_path?: string | null
@@ -1614,6 +1616,7 @@ export type Database = {
           health_data_consent_at?: string | null
           id?: string
           last_name?: string
+          modality?: string
           notes?: string | null
           organization_id?: string
           photo_path?: string | null
@@ -2108,6 +2111,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string | null
           last_name: string | null
+          modality: string | null
           notes: string | null
           organization_id: string | null
           photo_path: string | null
@@ -2139,6 +2143,7 @@ export type Database = {
           health_data_consent_at?: string | null
           id?: string | null
           last_name?: string | null
+          modality?: string | null
           notes?: string | null
           organization_id?: string | null
           photo_path?: string | null
@@ -2170,6 +2175,7 @@ export type Database = {
           health_data_consent_at?: string | null
           id?: string | null
           last_name?: string | null
+          modality?: string | null
           notes?: string | null
           organization_id?: string | null
           photo_path?: string | null
@@ -2254,6 +2260,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -2291,6 +2298,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -2334,6 +2342,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -2391,6 +2400,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -2429,6 +2439,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -2489,6 +2500,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -2719,6 +2731,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null
@@ -2842,6 +2855,10 @@ export type Database = {
         Args: { w: Database["public"]["Tables"]["workout_sessions"]["Row"] }
         Returns: string
       }
+      set_student_modality: {
+        Args: { p_modality: string; p_student_id: string }
+        Returns: undefined
+      }
       set_trainer_announcement: {
         Args: { p_body: string; p_student_id?: string }
         Returns: string
@@ -2931,6 +2948,7 @@ export type Database = {
           health_data_consent_at: string | null
           id: string
           last_name: string
+          modality: string
           notes: string | null
           organization_id: string
           photo_path: string | null

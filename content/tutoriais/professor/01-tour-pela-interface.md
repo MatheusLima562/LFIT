@@ -67,7 +67,9 @@ Em [Meus alunos](/alunos) fica a lista de todos os seus alunos.
 
 - Abas **Ativos**, **Inativos** e **Expirados**.
 - Busca por nome, e-mail ou matrícula.
-- Filtros por **Turma**, **Grupo especial** e **Treino** (**A vencer (7 dias)**, **Vencidos**, **Sem treino**).
+- Filtros por **Turma**, **Grupo especial**, **Treino** (**A vencer (7 dias)**, **Vencidos**, **Sem treino**) e
+  **Modalidade** (**Consultoria**, **Presencial**, **Híbrido**). Alunos presenciais e híbridos têm uma etiqueta ao lado do
+  status.
 - **Ordenar** e **Visualização** (lista ou cards).
 - **Exportar** gera uma planilha CSV ou Excel com a lista filtrada.
 
@@ -113,6 +115,7 @@ O botão **Recado para todos** publica um recado que aparece na tela Hoje de tod
 1. Abra [Meus alunos](/alunos) e clique em **Adicionar aluno**.
 2. Preencha **Nome**, **Sobrenome** e **E-mail** (obrigatórios). Os outros campos são opcionais.
 3. Se você é o administrador, escolha o **Professor responsável**. Se você é professor, você será o responsável.
+   Em **Modalidade**, indique se o aluno é de **Consultoria** (padrão), **Presencial** ou **Híbrido**.
 4. Para o aluno usar o app, deixe ligado **Enviar convite de acesso** (já vem ligado).
 5. Clique em **Cadastrar aluno**.
 

@@ -153,6 +153,9 @@ export const messages = {
       delete: "Excluir",
       plans: "Treinos",
     },
+    /** Base do presencial: modalidade do aluno (só etiqueta e filtro). */
+    modality: { consultoria: "Consultoria", presencial: "Presencial", hibrido: "Híbrido" },
+    modalityFilter: { label: "Modalidade", all: "Todas" },
     planFilter: {
       label: "Treino",
       all: "Todos",
@@ -209,6 +212,7 @@ export const messages = {
     openCalendar: "Abrir calendário",
     sex: "Sexo",
     sexNone: "Não informado",
+    modality: "Modalidade",
     whatsapp: "WhatsApp",
     country: "País",
     trainer: "Professor responsável",
@@ -258,6 +262,7 @@ export const messages = {
       invite: "O aluno foi salvo, mas o convite não pôde ser enviado. Use “Copiar link de acesso”.",
       anamnesis: "O aluno foi salvo, mas a anamnese não pôde ser solicitada.",
       photo: "O aluno foi salvo, mas a foto não pôde ser enviada.",
+      modality: "O aluno foi salvo, mas a modalidade não pôde ser alterada.",
     },
     errors: {
       invalidDate: "Data inválida. Use dd/mm/aaaa.",

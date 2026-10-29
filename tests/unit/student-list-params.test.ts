@@ -28,4 +28,11 @@ describe("parâmetros da tela Meus alunos", () => {
     const url = new URL(studentListHref(original), "http://x");
     expect(parseStudentListParams(Object.fromEntries(url.searchParams))).toMatchObject(original);
   });
+
+  it("modalidade: aceita só a lista do banco e vai para a URL", () => {
+    expect(parseStudentListParams({ modalidade: "presencial" }).modalidade).toBe("presencial");
+    expect(parseStudentListParams({ modalidade: "hibrido" }).modalidade).toBe("hibrido");
+    expect(parseStudentListParams({ modalidade: "online" }).modalidade).toBeUndefined();
+    expect(studentListHref({ status: "active", modalidade: "hibrido", page: 1 })).toBe("/alunos?modalidade=hibrido");
+  });
 });

@@ -69,6 +69,8 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["reply_to_session", () => ({ p_session_id: randomUUID(), p_reply: "x" })],
     // 3.3: encerrar recado é do staff (autor).
     ["end_trainer_announcement", () => ({ p_announcement_id: randomUUID() })],
+    // Base do presencial: modalidade é escrita do staff com acesso ao aluno.
+    ["set_student_modality", () => ({ p_student_id: studentId, p_modality: "presencial" })],
     // 3.2: nota de satisfação — só o aluno dono da sessão (o "student" deste teste não tem sessão).
     ["rate_workout_session", () => ({ p_session_id: randomUUID(), p_rating: 5 })],
     // Início com dados reais: só staff (contagens da organização/dos seus alunos).
@@ -116,7 +118,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "send_chat_message", "get_chat_messages", "mark_chat_read", "chat_unread_count", "list_chat_inbox",
     "staff_total_unread_count", "get_my_announcement", "set_trainer_announcement", "get_session_summary", "reply_to_session",
     "rate_workout_session", "get_dashboard_training_stats", "get_dashboard_engagement_retention",
-    "end_trainer_announcement",
+    "end_trainer_announcement", "set_student_modality",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

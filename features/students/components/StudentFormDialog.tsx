@@ -29,6 +29,7 @@ import { GroupsField, type GroupOption } from "./form/GroupsField";
 import { PhoneField } from "./form/PhoneField";
 import { PHOTO_TYPES, PhotoField, type PhotoValue } from "./form/PhotoField";
 import { uuidV4 } from "@/lib/uuid";
+import { MODALITIES } from "../modality";
 
 const t = messages.studentForm;
 const NONE = "none";
@@ -65,6 +66,7 @@ function initialValues(student: StudentForEdit | null, role: "owner" | "trainer"
     // Na edição nada é reenviado sem o usuário pedir.
     sendInvite: false,
     blockIfOverdue: student.blockIfOverdue,
+    modality: student.modality,
   };
 }
 
@@ -227,6 +229,27 @@ export function StudentFormDialog({
                             <SelectItem value={NONE}>{t.sexNone}</SelectItem>
                             <SelectItem value="F">{messages.students.sex.F}</SelectItem>
                             <SelectItem value="M">{messages.students.sex.M}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="modality">{t.modality}</FieldLabel>
+                    <Controller
+                      control={control}
+                      name="modality"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="modality" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {MODALITIES.map((m) => (
+                              <SelectItem key={m} value={m}>
+                                {messages.students.modality[m]}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       )}
