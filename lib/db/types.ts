@@ -652,29 +652,6 @@ export type Database = {
           },
         ]
       }
-      organization_counters: {
-        Row: {
-          last_enrollment_number: number
-          organization_id: string
-        }
-        Insert: {
-          last_enrollment_number?: number
-          organization_id: string
-        }
-        Update: {
-          last_enrollment_number?: number
-          organization_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_counters_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       nps_prompts: {
         Row: {
           organization_id: string
@@ -700,7 +677,29 @@ export type Database = {
           snoozed_until?: string | null
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "nps_prompts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_prompts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_prompts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nps_responses: {
         Row: {
@@ -720,7 +719,7 @@ export type Database = {
           score: number
           student_id: string
           submitted_at?: string
-          submitted_on?: string
+          submitted_on: string
           trainer_id?: string | null
         }
         Update: {
@@ -733,7 +732,52 @@ export type Database = {
           submitted_on?: string
           trainer_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "nps_responses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_counters: {
+        Row: {
+          last_enrollment_number: number
+          organization_id: string
+        }
+        Insert: {
+          last_enrollment_number?: number
+          organization_id: string
+        }
+        Update: {
+          last_enrollment_number?: number
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organizations: {
         Row: {
@@ -2633,6 +2677,7 @@ export type Database = {
           trainer_name: string
         }[]
       }
+      get_my_nps_prompt: { Args: never; Returns: Json }
       get_my_student_profile: {
         Args: never
         Returns: {
@@ -2666,6 +2711,7 @@ export type Database = {
           workout_name: string
         }[]
       }
+      get_nps_summary: { Args: never; Returns: Json }
       get_plan_header: {
         Args: { p_plan_id: string }
         Returns: {
@@ -2774,14 +2820,6 @@ export type Database = {
         Args: { p_rating: number; p_session_id: string }
         Returns: undefined
       }
-      request_nps: { Args: { p_student_id: string }; Returns: Json }
-      get_my_nps_prompt: { Args: never; Returns: Json }
-      get_nps_summary: { Args: never; Returns: Json }
-      snooze_nps_prompt: { Args: never; Returns: undefined }
-      submit_nps: {
-        Args: { p_comment?: string; p_score: number }
-        Returns: string
-      }
       reactivate_student: {
         Args: { p_student_id: string }
         Returns: {
@@ -2880,6 +2918,7 @@ export type Database = {
         Args: { p_student_id: string; p_template_id: string }
         Returns: string
       }
+      request_nps: { Args: { p_student_id: string }; Returns: Json }
       respond_my_health_consent: {
         Args: { p_accept: boolean }
         Returns: undefined
@@ -2931,6 +2970,7 @@ export type Database = {
         Args: { p_body: string; p_student_id?: string }
         Returns: string
       }
+      snooze_nps_prompt: { Args: never; Returns: undefined }
       soft_delete_student: {
         Args: { p_confirm_name: string; p_student_id: string }
         Returns: undefined
@@ -2994,6 +3034,10 @@ export type Database = {
           expired: number
           inactive: number
         }[]
+      }
+      submit_nps: {
+        Args: { p_comment?: string; p_score: number }
+        Returns: string
       }
       submit_public_signup: {
         Args: { p_consent: boolean; p_payload: Json; p_token: string }

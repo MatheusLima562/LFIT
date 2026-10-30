@@ -8,8 +8,8 @@
 --   `get_nps_summary` para quem `can_view_student_health`. Nunca em audit_logs, log, URL ou notificação.
 -- * Critérios para responder (`private.nps_eligibility`): conta de aluno, status efetivo `active`, 30 dias desde o
 --   primeiro treino concluído, 8+ treinos concluídos e 90 dias desde a última resposta.
--- * `nps_prompts`: estado do cartão por aluno — "Agora não" (14 dias) e "Pedir avaliação" do professor (mostra o cartão
---   na próxima abertura mesmo dentro do "Agora não"). Sem texto: nada é enviado por notificação externa.
+-- * `nps_prompts`: estado do cartão por aluno — "Agora não" (14 dias) e "Pedir avaliação" do professor (recusado com o
+--   motivo 'snoozed' enquanto vale o "Agora não"). Sem texto: nada é enviado por notificação externa.
 -- =============================================================================
 
 create extension if not exists btree_gist with schema extensions;
@@ -179,9 +179,9 @@ begin
     return null;
   end if;
 
+  -- "Agora não" vale até o fim: nem o pedido do professor fura (request_nps recusa com reason = 'snoozed').
   select * into p from public.nps_prompts where student_id = s.id;
-  if found and p.snoozed_until is not null and p.snoozed_until > now()
-     and not (p.requested_at is not null and p.requested_at > coalesce(p.snoozed_at, '-infinity'::timestamptz)) then
+  if found and p.snoozed_until is not null and p.snoozed_until > now() then
     return null;
   end if;
 
@@ -255,7 +255,8 @@ $$;
 -- -----------------------------------------------------------------------------
 -- 5) Equipe: "Pedir avaliação" (um aluno por chamada) e resumo
 -- -----------------------------------------------------------------------------
--- Owner ou professor responsável. Não apto → devolve o motivo (nada gravado). Já pedido e ainda pendente → não repete.
+-- Owner ou professor responsável. Não apto → devolve o motivo (nada gravado). Aluno em "Agora não" → não grava e
+-- devolve reason = 'snoozed' com o dia em que libera (o pedido não fura a escolha do aluno). Já pedido → não repete.
 create function public.request_nps(p_student_id uuid)
 returns jsonb
 language plpgsql
@@ -272,6 +273,9 @@ begin
   end if;
 
   select * into p from public.nps_prompts where student_id = s.id;
+  if found and p.snoozed_until is not null and p.snoozed_until > now() then
+    return v_check || jsonb_build_object('requested', false, 'reason', 'snoozed', 'available_on', private.sp_day(p.snoozed_until));
+  end if;
   if found and p.requested_at is not null and p.requested_at > coalesce(p.snoozed_at, '-infinity'::timestamptz) then
     return v_check || jsonb_build_object('requested', true, 'already', true);
   end if;

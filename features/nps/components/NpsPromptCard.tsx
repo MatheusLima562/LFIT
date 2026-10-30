@@ -5,6 +5,7 @@ import { Eye, HeartHandshake } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/db/client";
 import { cn } from "@/lib/utils";
@@ -26,9 +27,12 @@ export function NpsPromptCard({ trainerFirstName }: { trainerFirstName: string |
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState<"send" | "later" | null>(null);
   const [done, setDone] = useState<"sent" | "later" | null>(null);
+  // A nota não pode ser editada depois: confirmar antes ("Enviar nota X?").
+  const [confirming, setConfirming] = useState(false);
 
   const send = async () => {
     if (score === null) return;
+    setConfirming(false);
     setBusy("send");
     try {
       const { error } = await supabase.rpc("submit_nps", { p_score: score, ...(comment.trim() ? { p_comment: comment.trim() } : {}) });
@@ -129,13 +133,25 @@ export function NpsPromptCard({ trainerFirstName }: { trainerFirstName: string |
       </p>
 
       <div className="flex flex-col gap-2">
-        <Button type="button" size="lg" className="h-12 w-full text-base" disabled={score === null || busy !== null} onClick={() => void send()}>
+        <Button type="button" size="lg" className="h-12 w-full text-base" disabled={score === null || busy !== null} onClick={() => setConfirming(true)}>
           {busy === "send" ? t.sending : t.send}
         </Button>
         <Button type="button" variant="ghost" className="h-11 w-full" disabled={busy !== null} onClick={() => void later()}>
           {t.notNow}
         </Button>
       </div>
+      {score !== null && (
+        <ConfirmDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          title={t.confirmTitle(score)}
+          description={t.confirmText}
+          confirmLabel={t.confirmSend(score)}
+          cancelLabel={t.confirmBack}
+          pending={busy !== null}
+          onConfirm={() => void send()}
+        />
+      )}
     </section>
   );
 }

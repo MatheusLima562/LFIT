@@ -172,9 +172,13 @@ responder: 30 dias depois do primeiro treino concluído, com pelo menos 8 treino
 90 dias. Se ele tocar em **Agora não**, o cartão volta em 14 dias.
 
 1. Na tela de treinos do aluno, em **Avaliação do acompanhamento (NPS)**, clique em **Pedir avaliação**.
-2. Se o aluno já puder responder, ele verá o pedido na próxima vez que abrir o app, mesmo que tenha tocado em
-   **Agora não**. Nada é enviado por WhatsApp, e-mail ou notificação.
+2. Se o aluno já puder responder, ele verá o pedido na próxima vez que abrir o app. Nada é enviado por WhatsApp,
+   e-mail ou notificação.
 3. Se ainda não puder, a tela mostra o motivo, por exemplo quantos treinos faltam ou a partir de quando ele pode responder.
+   Se o aluno tocou em **Agora não**, a escolha dele é respeitada: o pedido não é registrado, e a tela mostra a partir de
+   quando você pode pedir de novo.
+
+Antes de enviar, o aluno confirma a nota ("Enviar nota 8?"), porque depois de enviada ela não pode ser alterada.
 
 O pedido é feito para um aluno por vez. O professor responsável e o administrador podem pedir.
 

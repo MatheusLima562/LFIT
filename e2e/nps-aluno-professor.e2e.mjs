@@ -75,23 +75,49 @@ try {
   }
   await caio.goto(`${BASE}/alunos/${camila.id}/treinos`);
   await settle(caio);
+  // Aluna em "Agora não": o pedido não é registrado e a tela diz até quando.
+  await caio.getByRole("button", { name: "Pedir avaliação" }).click();
+  ok("professor: aluna em 'Agora não' → motivo e data, pedido não registrado", await waitText(caio, /pediu para responder mais tarde.*tente de novo a partir de \d{2}\/\d{2}\/\d{4}/));
+  const { data: prompt } = await admin.from("nps_prompts").select("requested_at").eq("student_id", camila.id).single();
+  ok("banco: nenhum pedido gravado durante o 'Agora não'", prompt?.requested_at === null);
+  await sp.reload();
+  await settle(sp);
+  ok("aluna: cartão continua escondido", (await sp.getByRole("region", { name: /Como está sendo treinar com/ }).count()) === 0);
+
+  // Fim dos 14 dias (simulado: o estado do "Agora não" é apagado com a secret key — sem UPDATE nessa tabela).
+  await admin.from("nps_prompts").delete().eq("student_id", camila.id);
   await caio.getByRole("button", { name: "Pedir avaliação" }).click();
   ok("professor: pedido feito (sem notificação externa)", await waitText(caio, "na próxima vez que abrir o app"));
   await caio.getByRole("button", { name: "Pedir avaliação" }).click();
   ok("professor: pedido repetido não duplica", await waitText(caio, "O pedido já está feito"));
 
-  // --- Aluna: o pedido traz o cartão de volta; responde com comentário ----------------------------------------------
+  // --- Aluna: cartão de volta; confirmação antes de enviar (a nota não pode ser editada) ----------------------------
   await sp.reload();
   await settle(sp);
   const again = sp.getByRole("region", { name: /Como está sendo treinar com/ });
-  ok("aluna: pedido do professor traz o cartão de volta", await again.waitFor({ timeout: 15000 }).then(() => true, () => false));
+  ok("aluna: cartão de volta depois do 'Agora não'", await again.waitFor({ timeout: 15000 }).then(() => true, () => false));
   await again.getByRole("radio", { name: "Nota 4 de 10" }).check({ force: true });
   await again.getByLabel("Quer contar o motivo? (opcional)").fill("x".repeat(320));
   ok("aluna: comentário limitado a 300", (await again.getByLabel("Quer contar o motivo? (opcional)").inputValue()).length === 300);
   await again.getByLabel("Quer contar o motivo? (opcional)").fill(COMMENT);
+  // Como a pessoa no celular: fecha o teclado antes de tocar em "Enviar". Com o campo em foco a barra de abas se esconde
+  // e, no clique, reaparece por cima do botão (o clique caía na aba "Hoje").
+  await again.getByLabel("Quer contar o motivo? (opcional)").blur();
+  await sp.waitForTimeout(400);
   await again.getByRole("button", { name: "Enviar avaliação" }).click();
+  const confirm = sp.getByRole("alertdialog", { name: "Enviar nota 4?" });
+  ok("aluna: confirmação 'Enviar nota 4?' com aviso de que não pode ser alterada",
+    (await confirm.waitFor({ timeout: 5000 }).then(() => true, () => false)) && (await confirm.getByText("não pode ser alterada").isVisible()));
+  await sp.waitForTimeout(400); // fim da animação de abertura
+  await sp.screenshot({ path: `${OUT}/nps-02-confirmacao-375.png` });
+  await confirm.getByRole("button", { name: "Voltar" }).click();
+  await sp.waitForTimeout(800);
+  const { data: none } = await admin.from("nps_responses").select("id").eq("student_id", camila.id);
+  ok("aluna: 'Voltar' não envia", (none ?? []).length === 0 && (await again.isVisible()));
+  await again.getByRole("button", { name: "Enviar avaliação" }).click();
+  await sp.getByRole("alertdialog", { name: "Enviar nota 4?" }).getByRole("button", { name: "Enviar nota 4" }).click();
   ok("aluna: agradecimento depois de enviar", await waitText(sp, "Sua avaliação foi enviada"));
-  await sp.screenshot({ path: `${OUT}/nps-02-enviado-375.png` });
+  await sp.screenshot({ path: `${OUT}/nps-03-enviado-375.png` });
   const { data: saved } = await admin.from("nps_responses").select("score, comment").eq("student_id", camila.id);
   ok("banco: nota e comentário gravados", saved?.length === 1 && saved[0].score === 4 && saved[0].comment === COMMENT);
 
@@ -103,7 +129,7 @@ try {
   ok("Início: detrator com nome e nota", (await nps.getByText(camila.first_name, { exact: false }).count()) > 0 && (await nps.getByText(/Nota 4/).count()) > 0);
   ok("Início (responsável): comentário visível", (await nps.getByText(COMMENT).count()) === 1);
   await nps.scrollIntoViewIfNeeded();
-  await caio.screenshot({ path: `${OUT}/nps-03-inicio.png` });
+  await caio.screenshot({ path: `${OUT}/nps-04-inicio.png` });
 
   const leaks = [...sp.urls, ...caio.urls].filter((u) => decodeURIComponent(u).includes(RUN));
   ok("comentário nunca em URL", leaks.length === 0, leaks.join(" | "));

@@ -198,14 +198,24 @@ describe.runIf(dbTestsEnabled)("NPS identificado do aluno para o professor", () 
       await expect(rpc(u.client, "request_nps", { p_student_id: sPoucos })).rejects.toThrow("STUDENT_NOT_FOUND");
     }
 
-    // sPoucos passa a ter 8 treinos: apto. "Agora não" esconde; o pedido do professor faz o cartão voltar.
+    // sPoucos passa a ter 8 treinos: apto. Pedido registrado uma vez (o segundo não duplica).
     await addSessions(sPoucos, trainer, [8, 6, 4]);
     expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).not.toBeNull();
-    await rpc(alunoPoucos.client, "snooze_nps_prompt");
-    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
     expect(await rpc<Check>(trainer.client, "request_nps", { p_student_id: sPoucos })).toMatchObject({ requested: true, already: false });
     expect(await rpc<Check>(owner.client, "request_nps", { p_student_id: sPoucos })).toMatchObject({ requested: true, already: true });
-    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).not.toBeNull();
+
+    // "Agora não" esconde o cartão por 14 dias, e o pedido do professor NÃO fura: não grava e devolve o dia que libera.
+    await rpc(alunoPoucos.client, "snooze_nps_prompt");
+    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
+    const before = (await fx.db.from("nps_prompts").select("*").eq("student_id", sPoucos).single()).data;
+    expect(before).toMatchObject({ requested_at: null, requested_by: null });
+    for (const u of [trainer, owner]) {
+      expect(await rpc<Check>(u.client, "request_nps", { p_student_id: sPoucos })).toMatchObject({
+        requested: false, reason: "snoozed", available_on: spDateDaysAgo(-14),
+      });
+    }
+    expect((await fx.db.from("nps_prompts").select("*").eq("student_id", sPoucos).single()).data).toEqual(before);
+    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
     // Equipe não lê nem escreve o estado do cartão diretamente.
     expect((await trainer.client.from("nps_prompts").select("student_id")).error?.message ?? "").toMatch(/permission denied/);
     // Respondeu: pedido some.

@@ -7,7 +7,7 @@ export const NPS_MIN_RESPONSES = 10;
 export const NPS_COMMENT_MAX = 300;
 export const NPS_SCORES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export type NpsReason = "not_found" | "no_account" | "inactive" | "recent_response" | "too_early" | "few_sessions";
+export type NpsReason = "not_found" | "no_account" | "inactive" | "recent_response" | "too_early" | "few_sessions" | "snoozed";
 
 /** Resposta de `request_nps` (e o mesmo formato de critérios de `private.nps_eligibility`). */
 export interface NpsRequestResult {
@@ -102,6 +102,8 @@ export function requestOutcome(r: NpsRequestResult): { ok: boolean; text: string
       return { ok: false, text: t.reasons.too_early(r.available_on ? formatDate(r.available_on) : null, done) };
     case "few_sessions":
       return { ok: false, text: t.reasons.few_sessions(done) };
+    case "snoozed":
+      return { ok: false, text: t.reasons.snoozed(r.available_on ? formatDate(r.available_on) : "") };
     default:
       return { ok: false, text: t.reasons.not_found };
   }

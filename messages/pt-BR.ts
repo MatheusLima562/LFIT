@@ -1358,6 +1358,10 @@ export const messages = {
       identified: "Não é anônimo: seu professor e a coordenação do estúdio veem o seu nome e a sua nota. O comentário fica visível para quem acompanha o seu treino.",
       send: "Enviar avaliação",
       sending: "Enviando…",
+      confirmTitle: (score: number) => `Enviar nota ${score}?`,
+      confirmText: "Depois de enviada, a avaliação não pode ser alterada. Você poderá avaliar de novo daqui a 90 dias.",
+      confirmSend: (score: number) => `Enviar nota ${score}`,
+      confirmBack: "Voltar",
       notNow: "Agora não",
       thanks: "Obrigado! Sua avaliação foi enviada.",
       later: "Tudo bem. Perguntamos de novo daqui a alguns dias.",
@@ -1399,6 +1403,8 @@ export const messages = {
             ? `Ainda é cedo: a avaliação fica disponível 30 dias depois do primeiro treino concluído, a partir de ${date} (${done} de 8 treinos concluídos).`
             : "Ainda é cedo: o aluno ainda não concluiu nenhum treino. São necessários 30 dias de uso e 8 treinos concluídos.",
         few_sessions: (done: number) => `O aluno precisa de 8 treinos concluídos para avaliar; até agora são ${done}.`,
+        snoozed: (date: string) =>
+          `O aluno pediu para responder mais tarde ("Agora não"). O pedido não foi registrado; tente de novo a partir de ${date}.`,
         not_found: "Aluno não encontrado.",
       },
       failed: "Não deu para pedir agora. Confira a conexão e tente de novo.",

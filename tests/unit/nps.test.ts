@@ -33,5 +33,9 @@ describe("NPS: regras de exibição", () => {
     expect(requestOutcome({ eligible: false, reason: "too_early", available_on: null, sessions_done: 0, requested: false }).text).toContain("nenhum treino");
     expect(requestOutcome({ eligible: false, reason: "few_sessions", sessions_done: 5, requested: false })).toEqual({ ok: false, text: expect.stringContaining("são 5") });
     expect(requestOutcome({ eligible: false, reason: "inactive", requested: false }).ok).toBe(false);
+    expect(requestOutcome({ eligible: true, reason: "snoozed", available_on: "2026-11-12", requested: false })).toEqual({
+      ok: false,
+      text: expect.stringContaining("Agora não\"). O pedido não foi registrado; tente de novo a partir de 12/11/2026"),
+    });
   });
 });

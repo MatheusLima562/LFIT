@@ -345,7 +345,26 @@ create trigger students_with_status_read_only
   for each row execute function private.students_with_status_read_only();
 ```
 
-## NPS identificado (29/10/2026) — migration `20261029130000_nps.sql`, **NÃO aplicada** (push exige sua aprovação)
+## NPS identificado (29/10/2026) — migration `20261029130000_nps.sql`, aplicada no lfit-dev (push aprovado por você)
+
+**Atualização (mesma noite), antes do push:**
+- **Conferência somente leitura no lfit-dev:** as colunas e funções usadas existem com as assinaturas esperadas
+  (`student_effective_status` devolve o enum `effective_status`, compatível com `<> 'active'`). O `btree_gist` estava
+  disponível e não instalado; a migration o instala. Nada a corrigir.
+- **`request_nps` respeita o "Agora não":** não grava e devolve `reason = 'snoozed'` com o dia que libera.
+  `get_my_nps_prompt` esconde o cartão enquanto o "Agora não" vale, sem exceção.
+- **Confirmação "Enviar nota X?"** antes do envio, porque a nota não pode ser editada.
+- **Push e testes:** dry-run com só esta migration, aplicada; `db:types` regenerado (igual às entradas manuais, só
+  muda a ordem e as `Relationships`).
+- **Testes de banco** (um arquivo por vez, 5 min cada): `nps` 10/10, `security-definer` 89/89,
+  `security-definer-coverage` 1/1.
+- **Roteiro `nps-aluno-professor` (375 px, build de produção):** passou.
+  - Falha intermediária: o clique em "Enviar avaliação" com o campo de comentário em foco caía na barra de abas, que se
+    esconde com o "teclado" e reaparece no `mousedown`.
+  - Correção no roteiro: fechar o teclado antes de tocar, como no celular. Asserções iguais.
+- Unitários 279 ✔, `tsc`/lint ✔. Vídeos não regravados (pedido do dono).
+
+**Texto original (antes do push):**
 
 - **Banco:**
   - `nps_responses`, sem UPDATE/DELETE, com uma resposta a cada 90 dias garantida por uma exclusion constraint;
