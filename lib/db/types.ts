@@ -701,6 +701,55 @@ export type Database = {
           },
         ]
       }
+      nps_reminders: {
+        Row: {
+          cycle_key: string
+          id: string
+          organization_id: string
+          sent_at: string
+          sent_by: string | null
+          student_id: string
+        }
+        Insert: {
+          cycle_key: string
+          id?: string
+          organization_id: string
+          sent_at?: string
+          sent_by?: string | null
+          student_id: string
+        }
+        Update: {
+          cycle_key?: string
+          id?: string
+          organization_id?: string
+          sent_at?: string
+          sent_by?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_reminders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_reminders_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_reminders_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nps_responses: {
         Row: {
           comment: string | null
@@ -2711,6 +2760,7 @@ export type Database = {
           workout_name: string
         }[]
       }
+      get_nps_status: { Args: { p_student_id: string }; Returns: Json }
       get_nps_summary: { Args: never; Returns: Json }
       get_plan_header: {
         Args: { p_plan_id: string }
@@ -2919,8 +2969,6 @@ export type Database = {
         Returns: string
       }
       request_nps: { Args: { p_student_id: string }; Returns: Json }
-      send_nps_reminder: { Args: { p_student_id: string }; Returns: Json }
-      get_nps_status: { Args: { p_student_id: string }; Returns: Json }
       respond_my_health_consent: {
         Args: { p_accept: boolean }
         Returns: undefined
@@ -2960,6 +3008,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      send_nps_reminder: { Args: { p_student_id: string }; Returns: Json }
       session_effective_status: {
         Args: { w: Database["public"]["Tables"]["workout_sessions"]["Row"] }
         Returns: string

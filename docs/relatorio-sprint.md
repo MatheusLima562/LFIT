@@ -389,3 +389,23 @@ create trigger students_with_status_read_only
     novo.
 - **Depois do push:** `npm run db:types`; rodar `tests/db/nps.test.ts`, `security-definer` e `-coverage`; rodar o
   roteiro `e2e/nps-aluno-professor.e2e.mjs`, que inclui a verificação a 375 px; regravar o vídeo 01 (Início).
+
+## NPS v2 (29–30/10/2026) — migration `20261030120000_nps_v2.sql`, aplicada no lfit-dev (aprovada pelo dono)
+
+- **Plano aprovado em etapas:**
+  - cartão automático;
+  - regras em `private.nps_settings` (8 treinos, 30 dias, 90 dias, "Agora não" de 14 dias, mínimo de 10 respostas);
+  - lembrete no lugar de "Pedir avaliação";
+  - equipe só com agregados por trimestre fechado;
+  - comentário não coletado;
+  - "Agora não" visto pela equipe como "indisponível no momento", sem data.
+- **Dry-run:** listou só `20261030120000_nps_v2.sql`; aplicada com `npx supabase db push`, com a aprovação do dono.
+  `db:types` regenerado.
+- **Testes de banco** (um arquivo por vez, 5 min cada): 24/24 arquivos.
+  - `nps` 11/11, `security-definer` 92/92, `security-definer-coverage` 1/1.
+  - `exercise-media` falhou uma vez: o upload de 16 MB não terminou em 45 s numa rede lenta. Rodado de novo em outra
+    rede, passou 7/7.
+- **Roteiros e2e** (build de produção): `nps-aluno-professor` (375 px), `f3-app-aluno`, `k212-chat`, `k212-chat-layout`
+  e `k212-professor` — 5/5.
+- **Vídeo 01 regravado** (2:21). O roteiro precisou de `exact: true` no botão "Novo": o seletor casava por trecho com
+  outro botão.
