@@ -76,6 +76,9 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     // Início com dados reais: só staff (contagens da organização/dos seus alunos).
     ["get_dashboard_training_stats", () => ({})],
     ["get_dashboard_engagement_retention", () => ({})],
+    // NPS: resumo e "Pedir avaliação" são do staff (submit/snooze são do próprio aluno: tests/db/nps.test.ts).
+    ["get_nps_summary", () => ({})],
+    ["request_nps", () => ({ p_student_id: studentId })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -119,6 +122,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "staff_total_unread_count", "get_my_announcement", "set_trainer_announcement", "get_session_summary", "reply_to_session",
     "rate_workout_session", "get_dashboard_training_stats", "get_dashboard_engagement_retention",
     "end_trainer_announcement", "set_student_modality",
+    "submit_nps", "get_my_nps_prompt", "snooze_nps_prompt", "request_nps", "get_nps_summary",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

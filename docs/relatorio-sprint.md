@@ -344,3 +344,29 @@ create trigger students_with_status_read_only
   instead of insert or update or delete on public.students_with_status
   for each row execute function private.students_with_status_read_only();
 ```
+
+## NPS identificado (29/10/2026) — migration `20261029130000_nps.sql`, **NÃO aplicada** (push exige sua aprovação)
+
+- **Banco:**
+  - `nps_responses`, sem UPDATE/DELETE, com uma resposta a cada 90 dias garantida por uma exclusion constraint;
+  - `nps_prompts` ("Agora não" e "Pedir avaliação");
+  - `private.nps_eligibility`;
+  - RPCs `submit_nps`, `get_my_nps_prompt`, `snooze_nps_prompt`, `request_nps` e `get_nps_summary`, documentadas na
+    tabela de SECURITY DEFINER do CLAUDE.md.
+
+  SQL completo no próprio arquivo da migration (a fonte única; a resposta da sessão reproduz o texto).
+- **App do aluno:** `NpsPromptCard` na Hoje, com 0–10, comentário ≤ 300 com contador, aviso "Não é anônimo" e "Agora
+  não" (14 dias).
+- **Painel:**
+  - card "NPS dos alunos" no Início: 90 dias, "dados insuficientes" abaixo de 10 respostas, trimestres, detratores e,
+    para o owner, o NPS por professor;
+  - "Pedir avaliação" em `/alunos/[id]/treinos`, um aluno por vez, com o motivo quando o aluno ainda não pode responder.
+- **Testes:**
+  - unitários 31 arquivos / 279 testes ✔ (`nps.test.ts` novo); `tsc` e lint ✔; build ✔;
+  - e2e de regressão no build de produção ✔: `f3-app-aluno`, `k212-professor`, `inicio-*` (3);
+  - banco, um arquivo por vez: 21/24 passam. `nps` (9 falhas), `security-definer` (2: `get_nps_summary`/`request_nps`) e
+    `security-definer-coverage` (as 5 funções documentadas ainda não existem) falham com **"função não existe"** — falta
+    a migration. `chat-humanized` falhou uma vez com `fetch failed` (rede; o Mac entrou em suspensão) e passou 16/16 de
+    novo.
+- **Depois do push:** `npm run db:types`; rodar `tests/db/nps.test.ts`, `security-definer` e `-coverage`; rodar o
+  roteiro `e2e/nps-aluno-professor.e2e.mjs`, que inclui a verificação a 375 px; regravar o vídeo 01 (Início).

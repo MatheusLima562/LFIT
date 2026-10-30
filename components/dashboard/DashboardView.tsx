@@ -17,6 +17,7 @@ import { QuickActions } from "./QuickActions";
 const layout: Record<Exclude<DashboardCardId, "overview">, string> = {
   tracking: "xl:col-span-4 xl:row-span-2",
   satisfaction: "xl:col-span-4 xl:row-span-2",
+  nps: "xl:col-span-4 xl:row-span-2",
   completed: "xl:col-span-4",
   plan: "xl:col-span-4",
   subscribers: "xl:col-span-4",

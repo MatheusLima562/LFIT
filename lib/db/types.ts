@@ -675,6 +675,66 @@ export type Database = {
           },
         ]
       }
+      nps_prompts: {
+        Row: {
+          organization_id: string
+          requested_at: string | null
+          requested_by: string | null
+          snoozed_at: string | null
+          snoozed_until: string | null
+          student_id: string
+        }
+        Insert: {
+          organization_id: string
+          requested_at?: string | null
+          requested_by?: string | null
+          snoozed_at?: string | null
+          snoozed_until?: string | null
+          student_id: string
+        }
+        Update: {
+          organization_id?: string
+          requested_at?: string | null
+          requested_by?: string | null
+          snoozed_at?: string | null
+          snoozed_until?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
+      nps_responses: {
+        Row: {
+          comment: string | null
+          id: string
+          organization_id: string
+          score: number
+          student_id: string
+          submitted_at: string
+          submitted_on: string
+          trainer_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          id?: string
+          organization_id: string
+          score: number
+          student_id: string
+          submitted_at?: string
+          submitted_on?: string
+          trainer_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          id?: string
+          organization_id?: string
+          score?: number
+          student_id?: string
+          submitted_at?: string
+          submitted_on?: string
+          trainer_id?: string | null
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string
@@ -2713,6 +2773,14 @@ export type Database = {
       rate_workout_session: {
         Args: { p_rating: number; p_session_id: string }
         Returns: undefined
+      }
+      request_nps: { Args: { p_student_id: string }; Returns: Json }
+      get_my_nps_prompt: { Args: never; Returns: Json }
+      get_nps_summary: { Args: never; Returns: Json }
+      snooze_nps_prompt: { Args: never; Returns: undefined }
+      submit_nps: {
+        Args: { p_comment?: string; p_score: number }
+        Returns: string
       }
       reactivate_student: {
         Args: { p_student_id: string }

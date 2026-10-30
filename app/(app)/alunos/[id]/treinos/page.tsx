@@ -16,6 +16,7 @@ import { Dumbbell, Lock, MessageSquareText } from "lucide-react";
 import { AnnouncementEditor } from "@/features/coach/components/AnnouncementEditor";
 import { CoachSessions } from "@/features/coach/components/CoachSessions";
 import { getCoachSessions, getStudentAnnouncement } from "@/features/coach/queries";
+import { RequestNpsButton } from "@/features/nps/components/RequestNpsButton";
 
 const t = messages.plans.manage;
 const TABS = ["atuais", "futuros", "anteriores", "todos"] as const;
@@ -131,6 +132,10 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
                 </div>
               </div>
             )}
+          </section>
+          {/* NPS: mesmo escopo do recado (owner ou professor responsável — `request_nps` confere de novo). */}
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <RequestNpsButton studentId={student.id} />
           </section>
         </div>
       )}

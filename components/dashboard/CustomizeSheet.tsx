@@ -11,6 +11,7 @@ export const cardLabels: Record<DashboardCardId, string> = {
   overview: "Visão geral",
   tracking: "Acompanhamento de alunos",
   satisfaction: "Satisfação dos alunos",
+  nps: "NPS dos alunos",
   completed: "Treinos concluídos",
   plan: "Plano",
   subscribers: "Novos alunos",

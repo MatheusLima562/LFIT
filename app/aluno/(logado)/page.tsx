@@ -9,6 +9,8 @@ import { StartWorkoutButton } from "@/features/student-app/components/StartWorko
 import { TrainerAvatar } from "@/features/student-app/components/TrainerAvatar";
 import { getMyActivePlan, getMyAnnouncement, getMyHistory, getMyProfile } from "@/features/student-app/queries";
 import { AnnouncementSeen } from "@/features/notifications/AnnouncementSeen";
+import { NpsPromptCard } from "@/features/nps/components/NpsPromptCard";
+import { getMyNpsPrompt } from "@/features/nps/queries";
 import type { AppHistoryEntry, AppProfile, AppWorkout } from "@/features/student-app/types";
 import { messages } from "@/messages/pt-BR";
 
@@ -110,11 +112,12 @@ function TrainerCard({ profile }: { profile: AppProfile }) {
 
 export default async function StudentTodayPage() {
   // A página roda em paralelo ao layout: com acesso suspenso a RPC recusa e quem mostra a tela é o layout.
-  const [profile, active, announcement, history] = await Promise.all([
+  const [profile, active, announcement, history, nps] = await Promise.all([
     getMyProfile(),
     getMyActivePlan().catch(() => null),
     getMyAnnouncement(),
     getMyHistory(),
+    getMyNpsPrompt(),
   ]);
   const reply = recentReply(history);
   const humane = profile && (
@@ -127,6 +130,7 @@ export default async function StudentTodayPage() {
         </>
       )}
       {reply && <ReplyNotice entry={reply} />}
+      {nps && <NpsPromptCard trainerFirstName={nps.trainerFirstName} />}
     </>
   );
 

@@ -11,11 +11,13 @@ import {
   getTrainingStats,
 } from "@/features/dashboard/queries";
 import { completedComparison, completedToday, satisfaction, topStudents, trainingMetrics, weekPoints } from "@/features/dashboard/stats";
+import { getNpsSummary } from "@/features/nps/queries";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
 import type { OverviewMetric } from "@/types/dashboard";
 import { CompletedWorkoutsCard } from "@/components/dashboard/CompletedWorkoutsCard";
 import { DashboardView } from "@/components/dashboard/DashboardView";
 import { ExpiringAccessCard } from "@/components/dashboard/ExpiringAccessCard";
+import { NpsCard } from "@/components/dashboard/NpsCard";
 import { OverviewMetrics } from "@/components/dashboard/OverviewMetrics";
 import { PlanCard } from "@/components/dashboard/PlanCard";
 import { SatisfactionCard } from "@/components/dashboard/SatisfactionCard";
@@ -36,13 +38,14 @@ export const metadata: Metadata = {
  */
 export default async function DashboardPage() {
   const session = await requireStaff();
-  const [plan, tracking, newStudents, expiring, training, engagement] = await Promise.all([
+  const [plan, tracking, newStudents, expiring, training, engagement, nps] = await Promise.all([
     getOrganizationPlanUsage(),
     getTrackingTabs(),
     getNewStudentTabs(),
     getExpiringAccess(),
     getTrainingStats(),
     getEngagementStats(),
+    getNpsSummary(),
   ]);
 
   const active: OverviewMetric = {
@@ -74,6 +77,7 @@ export default async function DashboardPage() {
           topStudents: <TopStudentsCard students={topStudents(training)} />,
         }),
         ...(rating && { satisfaction: <SatisfactionCard data={rating} /> }),
+        ...(nps && { nps: <NpsCard data={nps} /> }),
       }}
     />
   );
