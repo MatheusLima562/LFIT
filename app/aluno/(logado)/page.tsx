@@ -130,7 +130,7 @@ export default async function StudentTodayPage() {
         </>
       )}
       {reply && <ReplyNotice entry={reply} />}
-      {nps && <NpsPromptCard trainerFirstName={nps.trainerFirstName} />}
+      {nps && <NpsPromptCard trainerFirstName={nps.trainerFirstName} intervalDays={nps.intervalDays} reminded={nps.reminded} />}
     </>
   );
 

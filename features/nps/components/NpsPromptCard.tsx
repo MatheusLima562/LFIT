@@ -1,30 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Eye, HeartHandshake } from "lucide-react";
+import { EyeOff, HeartHandshake } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/db/client";
 import { cn } from "@/lib/utils";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
-import { NPS_COMMENT_MAX, NPS_SCORES } from "../nps";
+import { NPS_SCORES } from "../nps";
 
 const t = messages.nps.prompt;
 
 /**
- * Cartão "Como está sendo treinar com {nome}?" na Hoje do aluno. Nota e comentário vão do navegador direto para
- * `submit_nps` (o comentário é texto livre e pode ter saúde: nunca server action, toast ou console). O banco confere
- * critérios e o intervalo de 90 dias; "Agora não" esconde por 14 dias (`snooze_nps_prompt`).
+ * Cartão "Como está sendo treinar com {nome}?" na Hoje do aluno: só a nota 0–10 (sem comentário). Aparece sozinho
+ * quando o aluno está apto; o banco confere critérios e intervalo. "Agora não" esconde pelo prazo de
+ * `private.nps_settings`. A equipe vê só o resultado agrupado. Nota do navegador direto para `submit_nps`.
  */
-export function NpsPromptCard({ trainerFirstName }: { trainerFirstName: string | null }) {
+export function NpsPromptCard({ trainerFirstName, intervalDays, reminded }: { trainerFirstName: string | null; intervalDays: number; reminded: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const id = useId();
   const [score, setScore] = useState<number | null>(null);
-  const [comment, setComment] = useState("");
   const [busy, setBusy] = useState<"send" | "later" | null>(null);
   const [done, setDone] = useState<"sent" | "later" | null>(null);
   // A nota não pode ser editada depois: confirmar antes ("Enviar nota X?").
@@ -35,7 +33,7 @@ export function NpsPromptCard({ trainerFirstName }: { trainerFirstName: string |
     setConfirming(false);
     setBusy("send");
     try {
-      const { error } = await supabase.rpc("submit_nps", { p_score: score, ...(comment.trim() ? { p_comment: comment.trim() } : {}) });
+      const { error } = await supabase.rpc("submit_nps", { p_score: score });
       if (error) {
         toast.error(dbErrorMessage(error));
         if (error.message === "NPS_NOT_ELIGIBLE") setDone("later");
@@ -84,6 +82,7 @@ export function NpsPromptCard({ trainerFirstName }: { trainerFirstName: string |
             {t.title(trainerFirstName)}
           </h2>
           <p className="mt-0.5 text-[13px] text-ink-2">{t.question}</p>
+          {reminded && <p className="mt-1 text-[13px] font-medium text-ink">{t.reminder}</p>}
         </div>
       </div>
 
@@ -109,27 +108,9 @@ export function NpsPromptCard({ trainerFirstName }: { trainerFirstName: string |
         </div>
       </fieldset>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor={`${id}-comment`} className="text-sm font-medium text-ink">
-          {t.commentLabel}
-        </label>
-        <Textarea
-          id={`${id}-comment`}
-          value={comment}
-          maxLength={NPS_COMMENT_MAX}
-          rows={2}
-          aria-describedby={`${id}-count ${id}-who`}
-          onChange={(e) => setComment(e.target.value)}
-          className="text-base"
-        />
-        <span id={`${id}-count`} className="self-end text-[11px] text-ink-3 tabular-nums">
-          {messages.coach.counter(comment.length, NPS_COMMENT_MAX)}
-        </span>
-      </div>
-
-      <p id={`${id}-who`} className="flex gap-2 rounded-xl bg-info-soft p-3 text-xs text-info-ink ring-1 ring-info-line">
-        <Eye aria-hidden className="mt-px size-4 shrink-0" />
-        <span>{t.identified}</span>
+      <p className="flex gap-2 rounded-xl bg-info-soft p-3 text-xs text-info-ink ring-1 ring-info-line">
+        <EyeOff aria-hidden className="mt-px size-4 shrink-0" />
+        <span>{t.privacy}</span>
       </p>
 
       <div className="flex flex-col gap-2">
@@ -145,7 +126,7 @@ export function NpsPromptCard({ trainerFirstName }: { trainerFirstName: string |
           open={confirming}
           onOpenChange={setConfirming}
           title={t.confirmTitle(score)}
-          description={t.confirmText}
+          description={t.confirmText(intervalDays)}
           confirmLabel={t.confirmSend(score)}
           cancelLabel={t.confirmBack}
           pending={busy !== null}

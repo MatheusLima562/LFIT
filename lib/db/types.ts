@@ -2919,6 +2919,8 @@ export type Database = {
         Returns: string
       }
       request_nps: { Args: { p_student_id: string }; Returns: Json }
+      send_nps_reminder: { Args: { p_student_id: string }; Returns: Json }
+      get_nps_status: { Args: { p_student_id: string }; Returns: Json }
       respond_my_health_consent: {
         Args: { p_accept: boolean }
         Returns: undefined

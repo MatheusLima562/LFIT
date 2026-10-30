@@ -1,29 +1,39 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { anon, dbTestsEnabled, Fixture, rpc, spDateDaysAgo, studentData, type TestOrg, type TestUser } from "./helpers";
 
+type Agg = { enough: boolean; n?: number; average?: number; nps?: number; promoters?: number; passives?: number; detractors?: number };
 type Summary = {
-  n: number; promoters: number; passives: number; detractors: number; nps: number | null; min_n: number;
-  quarters: { quarter_start: string; n: number; nps: number | null }[];
-  detractor_list: { student_id: string; student_name: string; score: number; comment: string | null; comment_hidden: boolean }[];
-  by_trainer: { trainer_id: string | null; n: number; nps: number | null }[] | null;
+  min_n: number; quarter_start: string; headline: Agg;
+  quarters: (Agg & { quarter_start: string })[];
+  by_trainer: (Agg & { trainer_id: string | null; trainer_name: string })[] | null;
 };
-type Check = { eligible: boolean; reason: string | null; available_on?: string | null; sessions_done?: number; requested?: boolean; already?: boolean };
+type Status = {
+  state: string; reason?: string; available_on?: string | null; sessions_done?: number; sessions_needed?: number;
+  reminded_at?: string | null; sent?: boolean; already?: boolean;
+};
+type Prompt = { trainer_first_name: string | null; interval_days: number; reminded: boolean } | null;
 
 const DAY = 86_400_000;
 
+/** Primeiro dia do trimestre anterior ao atual (São Paulo) + 45 dias, ao meio-dia UTC: uma data "no meio" dele. */
+function midPreviousQuarter(): string {
+  const [y, m] = spDateDaysAgo(0).split("-").map(Number);
+  const startMonth = Math.floor((m - 1) / 3) * 3; // 0-based
+  const prev = new Date(Date.UTC(y, startMonth - 3, 1, 12));
+  return new Date(prev.getTime() + 45 * DAY).toISOString();
+}
+
 /**
- * NPS identificado (20261029130000): só o próprio aluno responde, com 30 dias de uso e 8+ treinos concluídos, uma vez a
- * cada 90 dias (garantido no banco). Resumo: professor só os seus, owner a organização + por professor, NPS só com
- * n >= 10, comentário de detrator só para quem vê a saúde.
+ * NPS v2 (20261030120000): critérios em private.nps_settings, cartão automático, "Agora não" sem exceção, lembrete em
+ * vez de pedido, sem comentário e equipe só com agregados por trimestre fechado (mínimo de respostas).
  */
-describe.runIf(dbTestsEnabled)("NPS identificado do aluno para o professor", () => {
+describe.runIf(dbTestsEnabled)("NPS v2: cartão automático, lembrete e só agregados para a equipe", () => {
   const fx = new Fixture();
   let org: TestOrg, orgB: TestOrg;
   let owner: TestUser, trainer: TestUser, trainer2: TestUser, ownerB: TestUser;
   let alunoOk: TestUser, alunoCedo: TestUser, alunoPoucos: TestUser;
   // sOk: 8 treinos desde 40 dias atrás (apto). sCedo: 3 treinos nos últimos 5 dias. sPoucos: 5 treinos desde 40 dias.
   let sOk: string, sCedo: string, sPoucos: string;
-  const COMMENT = "Comentário NPS de teste — joelho incomodou";
 
   const addSessions = async (studentId: string, by: TestUser, daysAgo: number[]) => {
     const exercise = (await fx.db.from("exercises").select("id").is("organization_id", null).eq("name", "Abdominal supra").single()).data!.id;
@@ -58,6 +68,7 @@ describe.runIf(dbTestsEnabled)("NPS identificado do aluno para o professor", () 
   };
 
   const summary = (u: TestUser) => rpc<Summary>(u.client, "get_nps_summary");
+  const status = (u: TestUser, id: string) => rpc<Status>(u.client, "get_nps_status", { p_student_id: id });
   const responses = async (studentId: string) => (await fx.db.from("nps_responses").select("id").eq("student_id", studentId)).data!.length;
 
   beforeAll(async () => {
@@ -71,7 +82,6 @@ describe.runIf(dbTestsEnabled)("NPS identificado do aluno para o professor", () 
     alunoPoucos = await fx.user(org, "student", "poucos");
     ownerB = await fx.user(orgB, "owner");
 
-    // Consentimento de saúde NÃO confirmado pelo titular: o owner acessa o aluno mas não vê a saúde; o responsável vê.
     sOk = await newStudent(alunoOk, trainer.id);
     sCedo = await newStudent(alunoCedo, trainer.id);
     sPoucos = await newStudent(alunoPoucos, trainer.id);
@@ -81,27 +91,30 @@ describe.runIf(dbTestsEnabled)("NPS identificado do aluno para o professor", () 
   });
   afterAll(() => fx.cleanup());
 
-  it("anônimo: nenhuma RPC nem leitura da tabela", async () => {
+  it("anônimo: nenhuma RPC nem leitura das tabelas", async () => {
     const a = anon();
     for (const [fn, args] of [
-      ["submit_nps", { p_score: 10 }], ["get_my_nps_prompt", {}], ["snooze_nps_prompt", {}], ["get_nps_summary", {}], ["request_nps", { p_student_id: sOk }],
+      ["submit_nps", { p_score: 10 }], ["get_my_nps_prompt", {}], ["snooze_nps_prompt", {}], ["get_nps_summary", {}],
+      ["get_nps_status", { p_student_id: sOk }], ["send_nps_reminder", { p_student_id: sOk }], ["request_nps", { p_student_id: sOk }],
     ] as const) {
       await expect(rpc(a, fn, args), fn).rejects.toThrow(/permission denied/);
     }
-    const { error } = await a.from("nps_responses").select("id");
-    expect(error?.message ?? "").toMatch(/permission denied/);
+    for (const table of ["nps_responses", "nps_reminders", "nps_prompts"]) {
+      const { error } = await a.from(table).select("*");
+      expect(error?.message ?? "", table).toMatch(/permission denied/);
+    }
   });
 
-  it("aluno cedo demais (menos de 30 dias de uso) ou com poucos treinos: recusado, nada gravado, sem cartão", async () => {
+  it("aluno cedo demais ou com poucos treinos: recusado, nada gravado, sem cartão", async () => {
     await expect(rpc(alunoCedo.client, "submit_nps", { p_score: 9 })).rejects.toMatchObject({ message: "NPS_NOT_ELIGIBLE", details: "too_early" });
     await expect(rpc(alunoPoucos.client, "submit_nps", { p_score: 9 })).rejects.toMatchObject({ message: "NPS_NOT_ELIGIBLE", details: "few_sessions" });
-    expect(await rpc(alunoCedo.client, "get_my_nps_prompt")).toBeNull();
-    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
+    expect(await rpc<Prompt>(alunoCedo.client, "get_my_nps_prompt")).toBeNull();
+    expect(await rpc<Prompt>(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
     expect(await responses(sCedo)).toBe(0);
     expect(await responses(sPoucos)).toBe(0);
   });
 
-  it("professor e owner não escrevem nota (nem pela RPC, nem direto na tabela)", async () => {
+  it("equipe não escreve nota (nem pela RPC, nem direto na tabela)", async () => {
     for (const u of [trainer, owner, ownerB]) {
       await expect(rpc(u.client, "submit_nps", { p_score: 10 })).rejects.toThrow("STUDENT_NOT_FOUND");
       const { error } = await u.client.from("nps_responses").insert({ organization_id: org.id, student_id: sOk, score: 10 });
@@ -110,20 +123,20 @@ describe.runIf(dbTestsEnabled)("NPS identificado do aluno para o professor", () 
     expect(await responses(sOk)).toBe(0);
   });
 
-  it("aluno apto: vê o cartão com o primeiro nome do professor, responde uma vez; a segunda é recusada", async () => {
-    const prompt = await rpc<{ trainer_first_name: string } | null>(alunoOk.client, "get_my_nps_prompt");
+  it("aluno apto: cartão automático com intervalo da configuração; sem comentário; responde uma vez", async () => {
+    const prompt = await rpc<Prompt>(alunoOk.client, "get_my_nps_prompt");
+    expect(prompt).toMatchObject({ interval_days: 90, reminded: false });
     expect(prompt?.trainer_first_name).toBeTruthy();
     await expect(rpc(alunoOk.client, "submit_nps", { p_score: 11 })).rejects.toThrow("INVALID_INPUT");
-    await expect(rpc(alunoOk.client, "submit_nps", { p_score: 4, p_comment: "x".repeat(301) })).rejects.toThrow("INVALID_INPUT");
+    await expect(rpc(alunoOk.client, "submit_nps", { p_score: 4, p_comment: "texto livre" })).rejects.toMatchObject({ message: "INVALID_INPUT", details: "comment" });
+    expect(await responses(sOk)).toBe(0);
 
-    await rpc(alunoOk.client, "submit_nps", { p_score: 4, p_comment: `  ${COMMENT}  ` });
+    await rpc(alunoOk.client, "submit_nps", { p_score: 4, p_comment: "   " });
     const { data: mine } = await alunoOk.client.from("nps_responses").select("score, comment, trainer_id");
-    expect(mine).toEqual([{ score: 4, comment: COMMENT, trainer_id: trainer.id }]);
+    expect(mine).toEqual([{ score: 4, comment: null, trainer_id: trainer.id }]);
 
     await expect(rpc(alunoOk.client, "submit_nps", { p_score: 10 })).rejects.toMatchObject({ message: "NPS_NOT_ELIGIBLE", details: "recent_response" });
-    expect(await rpc(alunoOk.client, "get_my_nps_prompt")).toBeNull();
-    expect(await responses(sOk)).toBe(1);
-    // Outro aluno não lê a resposta (RLS).
+    expect(await rpc<Prompt>(alunoOk.client, "get_my_nps_prompt")).toBeNull();
     expect((await alunoCedo.client.from("nps_responses").select("id")).data).toEqual([]);
   });
 
@@ -132,99 +145,103 @@ describe.runIf(dbTestsEnabled)("NPS identificado do aluno para o professor", () 
       await u.client.from("nps_responses").update({ score: 10 }).eq("student_id", sOk);
       await u.client.from("nps_responses").delete().eq("student_id", sOk);
     }
-    const upd = await fx.db.from("nps_responses").update({ score: 10 }).eq("student_id", sOk);
-    expect(upd.error).not.toBeNull();
-    const del = await fx.db.from("nps_responses").delete().eq("student_id", sOk);
-    expect(del.error?.message ?? "").toMatch(/permission denied/);
-    const { data } = await fx.db.from("nps_responses").select("score").eq("student_id", sOk);
-    expect(data).toEqual([{ score: 4 }]);
+    expect((await fx.db.from("nps_responses").update({ score: 10 }).eq("student_id", sOk)).error).not.toBeNull();
+    expect((await fx.db.from("nps_responses").delete().eq("student_id", sOk)).error?.message ?? "").toMatch(/permission denied/);
+    expect((await fx.db.from("nps_responses").select("score").eq("student_id", sOk)).data).toEqual([{ score: 4 }]);
   });
 
-  it("90 dias garantidos no banco: mesmo a secret key não grava duas respostas a menos de 90 dias", async () => {
+  it("90 dias garantidos no banco, mesmo para a secret key", async () => {
     const sB = (await rpc<{ id: string }>(ownerB.client, "create_student", { p_data: studentData() })).id;
     const at = (d: number) => new Date(Date.now() - d * DAY).toISOString();
     expect((await fx.db.from("nps_responses").insert({ organization_id: orgB.id, student_id: sB, score: 8, submitted_at: at(200) })).error).toBeNull();
     expect((await fx.db.from("nps_responses").insert({ organization_id: orgB.id, student_id: sB, score: 8, submitted_at: at(100) })).error).toBeNull();
     const clash = await fx.db.from("nps_responses").insert({ organization_id: orgB.id, student_id: sB, score: 8, submitted_at: at(50) });
     expect(clash.error?.message ?? "").toMatch(/nps_responses_one_per_90_days/);
-    // A organização vem do aluno, não do que foi enviado.
-    const forged = await fx.db.from("nps_responses").insert({ organization_id: org.id, student_id: sB, score: 1, submitted_at: at(400) }).select("organization_id").single();
-    expect(forged.data?.organization_id).toBe(orgB.id);
   });
 
-  it("resumo: professor vê os seus; comentário só para quem vê a saúde; outro professor e outra organização não veem", async () => {
-    const mine = await summary(trainer);
-    expect(mine).toMatchObject({ n: 1, detractors: 1, nps: null, min_n: 10, by_trainer: null });
-    expect(mine.detractor_list).toEqual([expect.objectContaining({ student_id: sOk, score: 4, comment: COMMENT, comment_hidden: false })]);
-
-    expect(await rpc<boolean>(owner.client, "can_view_student_health", { p_student_id: sOk })).toBe(false);
-    const own = await summary(owner);
-    expect(own.detractor_list).toEqual([expect.objectContaining({ student_id: sOk, score: 4, comment: null, comment_hidden: true })]);
-    expect(own.by_trainer).toEqual([expect.objectContaining({ trainer_id: trainer.id, n: 1, nps: null })]);
-
-    for (const other of [trainer2, ownerB]) {
-      const s = await summary(other);
-      expect(s.n).toBe(0);
-      expect(JSON.stringify(s)).not.toContain(COMMENT);
-      expect(s.detractor_list).toEqual([]);
-    }
-    await expect(rpc(alunoOk.client, "get_nps_summary")).rejects.toThrow("FORBIDDEN");
+  it("'Pedir avaliação' antigo (request_nps) sem EXECUTE para a equipe", async () => {
+    await expect(rpc(trainer.client, "request_nps", { p_student_id: sPoucos })).rejects.toThrow(/permission denied/);
   });
 
-  it("NPS só aparece com 10+ respostas e entra na tendência do trimestre", async () => {
-    // 9 respostas a mais nos alunos do professor (secret key): 6 promotores, 2 neutros, 1 detrator.
-    const scores = [10, 10, 9, 9, 9, 10, 8, 7, 2];
-    for (const [i, score] of scores.entries()) {
-      const sid = await newStudent(null, trainer.id);
-      await fx.db.from("nps_responses").insert({ organization_id: org.id, student_id: sid, trainer_id: trainer.id, score });
-      const s = await summary(trainer);
-      expect(s.n).toBe(i + 2);
-      expect(s.nps).toBe(i + 2 >= 10 ? 40 : null); // (6 − 2) / 10 = 40
-    }
-    const s = await summary(trainer);
-    expect(s).toMatchObject({ promoters: 6, passives: 2, detractors: 2 });
-    expect(s.quarters).toHaveLength(4);
-    expect(s.quarters.at(-1)).toMatchObject({ n: 10, nps: 40 });
-  });
+  it("estado para a equipe: motivo quando ainda não pode; quem respondeu vira 'none', sem data", async () => {
+    expect(await status(trainer, sCedo)).toMatchObject({ state: "not_yet", reason: "too_early", sessions_done: 3, sessions_needed: 8 });
+    expect(await status(owner, sPoucos)).toMatchObject({ state: "not_yet", reason: "few_sessions", sessions_done: 5, sessions_needed: 8 });
+    const answered = await status(trainer, sOk);
+    expect(answered).toEqual({ state: "none", reminded_at: null });
 
-  it("pedir avaliação: owner ou responsável, um aluno por vez, com o motivo quando ainda não pode", async () => {
-    expect(await rpc<Check>(trainer.client, "request_nps", { p_student_id: sCedo })).toMatchObject({ requested: false, reason: "too_early", sessions_done: 3 });
-    expect(await rpc<Check>(trainer.client, "request_nps", { p_student_id: sPoucos })).toMatchObject({ requested: false, reason: "few_sessions", sessions_done: 5 });
-    const recent = await rpc<Check>(owner.client, "request_nps", { p_student_id: sOk });
-    expect(recent).toMatchObject({ requested: false, reason: "recent_response" });
-    expect(recent.available_on).toBe(spDateDaysAgo(-90));
-
+    await expect(status(trainer2, sOk)).rejects.toThrow("STUDENT_NOT_FOUND");
+    await expect(status(ownerB, sOk)).rejects.toThrow("STUDENT_NOT_FOUND");
+    await expect(rpc(alunoOk.client, "get_nps_status", { p_student_id: sOk })).rejects.toThrow("FORBIDDEN");
     for (const u of [trainer2, ownerB, alunoPoucos]) {
-      await expect(rpc(u.client, "request_nps", { p_student_id: sPoucos })).rejects.toThrow("STUDENT_NOT_FOUND");
+      await expect(rpc(u.client, "send_nps_reminder", { p_student_id: sPoucos })).rejects.toThrow("STUDENT_NOT_FOUND");
     }
+  });
 
-    // sPoucos passa a ter 8 treinos: apto. Pedido registrado uma vez (o segundo não duplica).
+  it("lembrete: só com o cartão já disponível, um por ciclo; não cria nem antecipa o cartão", async () => {
+    // Ainda não apto: nada é gravado.
+    expect(await rpc<Status>(trainer.client, "send_nps_reminder", { p_student_id: sPoucos })).toMatchObject({ state: "not_yet", sent: false });
+    expect((await fx.db.from("nps_reminders").select("id").eq("student_id", sPoucos)).data).toEqual([]);
+    expect(await rpc<Prompt>(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
+
+    // Apto: o cartão já aparece sozinho; o lembrete só acrescenta a frase. Segundo lembrete no ciclo não duplica.
     await addSessions(sPoucos, trainer, [8, 6, 4]);
-    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).not.toBeNull();
-    expect(await rpc<Check>(trainer.client, "request_nps", { p_student_id: sPoucos })).toMatchObject({ requested: true, already: false });
-    expect(await rpc<Check>(owner.client, "request_nps", { p_student_id: sPoucos })).toMatchObject({ requested: true, already: true });
+    expect(await rpc<Prompt>(alunoPoucos.client, "get_my_nps_prompt")).toMatchObject({ reminded: false });
+    expect(await status(trainer, sPoucos)).toEqual({ state: "pending", reminded_at: null });
+    expect(await rpc<Status>(trainer.client, "send_nps_reminder", { p_student_id: sPoucos })).toMatchObject({ state: "pending", sent: true, already: false });
+    expect(await rpc<Status>(owner.client, "send_nps_reminder", { p_student_id: sPoucos })).toMatchObject({ sent: false, already: true });
+    expect((await fx.db.from("nps_reminders").select("id").eq("student_id", sPoucos)).data).toHaveLength(1);
+    expect(await rpc<Prompt>(alunoPoucos.client, "get_my_nps_prompt")).toMatchObject({ reminded: true });
+    expect((await trainer.client.from("nps_reminders").select("id")).error?.message ?? "").toMatch(/permission denied/);
+  });
 
-    // "Agora não" esconde o cartão por 14 dias, e o pedido do professor NÃO fura: não grava e devolve o dia que libera.
+  it("'Agora não' vale sem exceção e aparece para a equipe só como indisponível, sem data", async () => {
     await rpc(alunoPoucos.client, "snooze_nps_prompt");
-    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
-    const before = (await fx.db.from("nps_prompts").select("*").eq("student_id", sPoucos).single()).data;
-    expect(before).toMatchObject({ requested_at: null, requested_by: null });
+    expect(await rpc<Prompt>(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
     for (const u of [trainer, owner]) {
-      expect(await rpc<Check>(u.client, "request_nps", { p_student_id: sPoucos })).toMatchObject({
-        requested: false, reason: "snoozed", available_on: spDateDaysAgo(-14),
-      });
+      const s = await status(u, sPoucos);
+      expect(s.state).toBe("unavailable");
+      expect(s).not.toHaveProperty("available_on");
+      const r = await rpc<Status>(u.client, "send_nps_reminder", { p_student_id: sPoucos });
+      expect(r).toMatchObject({ state: "unavailable", sent: false });
+      expect(JSON.stringify(r)).not.toMatch(/\d{4}-\d{2}-\d{2}/);
     }
-    expect((await fx.db.from("nps_prompts").select("*").eq("student_id", sPoucos).single()).data).toEqual(before);
-    expect(await rpc(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
-    // Equipe não lê nem escreve o estado do cartão diretamente.
-    expect((await trainer.client.from("nps_prompts").select("student_id")).error?.message ?? "").toMatch(/permission denied/);
-    // Respondeu: pedido some.
+    expect(await rpc<Prompt>(alunoPoucos.client, "get_my_nps_prompt")).toBeNull();
+    // Responder continua possível (a escolha é dele) e encerra o estado do cartão.
     await rpc(alunoPoucos.client, "submit_nps", { p_score: 9 });
     expect((await fx.db.from("nps_prompts").select("student_id").eq("student_id", sPoucos)).data).toEqual([]);
   });
 
-  it("comentário nunca em audit_logs", async () => {
-    const { data } = await fx.db.from("audit_logs").select("diff, action").eq("organization_id", org.id);
-    expect(JSON.stringify(data ?? [])).not.toContain("joelho incomodou");
+  it("resumo: só trimestre fechado, só agregado e só com 10+ respostas; nada que identifique o aluno", async () => {
+    // As respostas acima são deste trimestre (em aberto): não entram.
+    const open = await summary(trainer);
+    expect(open.min_n).toBe(10);
+    expect(open.headline).toEqual({ enough: false });
+    expect(open.by_trainer).toBeNull();
+    expect(open.quarters).toHaveLength(4);
+    expect(open.quarters.at(-1)?.quarter_start).toBe(open.quarter_start);
+
+    // 10 respostas no trimestre anterior (fechado), em alunos do professor: 6 promotores, 2 neutros, 2 detratores.
+    const at = midPreviousQuarter();
+    const scores = [10, 10, 9, 9, 9, 10, 8, 7, 2, 4];
+    const ids: string[] = [];
+    for (const [i, score] of scores.entries()) {
+      const sid = await newStudent(null, trainer.id);
+      ids.push(sid);
+      await fx.db.from("nps_responses").insert({ organization_id: org.id, student_id: sid, trainer_id: trainer.id, score, submitted_at: at });
+      const s = await summary(trainer);
+      if (i < 9) expect(s.headline, `com ${i + 1} respostas`).toEqual({ enough: false });
+    }
+    const full = await summary(trainer);
+    expect(full.headline).toEqual({ enough: true, n: 10, average: 7.8, nps: 40, promoters: 6, passives: 2, detractors: 2 });
+    expect(full.quarters.at(-1)).toMatchObject({ enough: true, n: 10, nps: 40 });
+    const text = JSON.stringify(full);
+    for (const sid of [...ids, sOk, sPoucos]) expect(text).not.toContain(sid);
+    expect(text).not.toMatch(/student|score|comment|Aluno/i);
+
+    const own = await summary(owner);
+    expect(own.headline).toMatchObject({ enough: true, n: 10 });
+    expect(own.by_trainer).toEqual([expect.objectContaining({ trainer_id: trainer.id, enough: true, n: 10, nps: 40 })]);
+    for (const other of [trainer2, ownerB]) expect((await summary(other)).headline).toEqual({ enough: false });
+    await expect(rpc(alunoOk.client, "get_nps_summary")).rejects.toThrow("FORBIDDEN");
   });
 });

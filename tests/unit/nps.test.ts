@@ -1,41 +1,41 @@
 import { describe, expect, it } from "vitest";
-import { formatNps, npsCategory, npsScore, quarterLabel, requestOutcome } from "@/features/nps/nps";
+import { formatAverage, formatNps, isNpsSummary, quarterLabel, reminderOutcome, statusText } from "@/features/nps/nps";
 
-describe("NPS: regras de exibição", () => {
-  it("classifica 9–10 promotor, 7–8 neutro, 0–6 detrator", () => {
-    expect([0, 6, 7, 8, 9, 10].map(npsCategory)).toEqual(["detractor", "detractor", "passive", "passive", "promoter", "promoter"]);
-  });
-
-  it("NPS só com 10+ respostas, arredondado", () => {
-    expect(npsScore(5, 1, 9)).toBeNull();
-    expect(npsScore(0, 0, 0)).toBeNull();
-    expect(npsScore(6, 2, 10)).toBe(40);
-    expect(npsScore(1, 2, 12)).toBe(-8);
-  });
-
-  it("formata com sinal e travessão quando não há valor", () => {
+describe("NPS v2: regras de exibição", () => {
+  it("formata NPS com sinal e média com vírgula", () => {
     expect(formatNps(42)).toBe("+42");
     expect(formatNps(0)).toBe("0");
     expect(formatNps(-15)).toBe("−15");
-    expect(formatNps(null)).toBe("—");
+    expect(formatAverage(8.4)).toBe("8,4");
+    expect(formatAverage(9)).toBe("9,0");
   });
 
   it("rótulo do trimestre", () => {
     expect(quarterLabel("2026-01-01")).toBe("1º tri 2026");
-    expect(quarterLabel("2026-10-01")).toBe("4º tri 2026");
+    expect(quarterLabel("2026-07-01")).toBe("3º tri 2026");
   });
 
-  it("motivo para o professor quando o aluno ainda não pode responder", () => {
-    expect(requestOutcome({ eligible: true, reason: null, requested: true, already: false })).toEqual({ ok: true, text: expect.stringContaining("próxima vez") });
-    expect(requestOutcome({ eligible: true, reason: null, requested: true, already: true }).text).toContain("já está feito");
-    expect(requestOutcome({ eligible: false, reason: "recent_response", available_on: "2027-01-20", requested: false }).text).toContain("20/01/2027");
-    expect(requestOutcome({ eligible: false, reason: "too_early", available_on: "2026-11-15", sessions_done: 3, requested: false }).text).toContain("15/11/2026 (3 de 8");
-    expect(requestOutcome({ eligible: false, reason: "too_early", available_on: null, sessions_done: 0, requested: false }).text).toContain("nenhum treino");
-    expect(requestOutcome({ eligible: false, reason: "few_sessions", sessions_done: 5, requested: false })).toEqual({ ok: false, text: expect.stringContaining("são 5") });
-    expect(requestOutcome({ eligible: false, reason: "inactive", requested: false }).ok).toBe(false);
-    expect(requestOutcome({ eligible: true, reason: "snoozed", available_on: "2026-11-12", requested: false })).toEqual({
-      ok: false,
-      text: expect.stringContaining("Agora não\"). O pedido não foi registrado; tente de novo a partir de 12/11/2026"),
-    });
+  it("aceita só o resumo v2 (o v1 trazia aluno, nota e comentário)", () => {
+    expect(isNpsSummary({ min_n: 10, quarter_start: "2026-07-01", headline: { enough: false }, quarters: [], by_trainer: null })).toBe(true);
+    expect(isNpsSummary({ n: 1, nps: null, detractor_list: [{ student_name: "X", score: 3 }], quarters: [] })).toBe(false);
+    expect(isNpsSummary(null)).toBe(false);
+  });
+
+  it("estado para o professor: 'Agora não' aparece só como indisponível, resposta nunca aparece", () => {
+    expect(statusText({ state: "pending" })).toBe("O aluno pode avaliar e ainda não respondeu.");
+    expect(statusText({ state: "unavailable" })).toBe("Avaliação indisponível no momento.");
+    expect(statusText({ state: "unavailable" })).not.toMatch(/agora não|recus|\d{2}\/\d{2}/i);
+    expect(statusText({ state: "none" })).toBe("Nenhuma avaliação pendente para este aluno agora.");
+    expect(statusText({ state: "not_yet", reason: "few_sessions", sessions_done: 5, sessions_needed: 8 })).toContain("8 treinos concluídos; até agora são 5");
+    expect(statusText({ state: "not_yet", reason: "too_early", available_on: "2026-11-15", days_needed: 30, sessions_done: 3, sessions_needed: 8 })).toContain(
+      "30 dias depois do primeiro treino concluído, a partir de 15/11/2026 (3 de 8",
+    );
+    expect(statusText({ state: "not_yet", reason: "too_early", available_on: null, days_needed: 30, sessions_needed: 8 })).toContain("nenhum treino");
+  });
+
+  it("resultado do lembrete", () => {
+    expect(reminderOutcome({ state: "pending", sent: true, reminded_at: "2026-10-29T12:00:00Z" })).toEqual({ ok: true, text: "Lembrete enviado: o aluno verá no cartão de avaliação." });
+    expect(reminderOutcome({ state: "pending", sent: false, already: true, reminded_at: "2026-10-20T12:00:00Z" }).text).toBe("Lembrete já enviado em 20/10/2026.");
+    expect(reminderOutcome({ state: "unavailable", sent: false })).toEqual({ ok: false, text: "Avaliação indisponível no momento." });
   });
 });

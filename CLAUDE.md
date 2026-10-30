@@ -584,21 +584,29 @@ effective_status =
   de treino). `students_with_status` recriada (o `s.*` congela). **Nada de agenda, presença ou cobrança** — proposta e
   riscos em `docs/planos/modulo-presencial.md`, aguardando aprovação. e2e `e2e/fase1-modalidade.e2e.mjs`.
 
-### NPS identificado do aluno (29/10/2026, migration `20261029130000`)
-- `nps_responses` (org, aluno, `trainer_id` = professor responsável **no momento** da resposta, nota 0–10, comentário
-  ≤ 300, `submitted_at`, `submitted_on` = dia civil de SP pelo gatilho). **Sem UPDATE/DELETE** (sem grant; gatilho recusa
-  update, exceto o `set null` do banco quando o usuário do professor é apagado); a exclusão do aluno apaga em cascata.
-  **Uma resposta a cada 90 dias garantida no banco** (exclusion constraint `daterange(submitted_on, +90)`, `btree_gist`).
-  RLS: o aluno lê as próprias; a equipe **não** lê a tabela — só `get_nps_summary`.
-- Critérios (`private.nps_eligibility`): conta de aluno, status efetivo `active`, **30 dias desde o primeiro treino
-  concluído**, 8+ treinos concluídos, 90 dias desde a última resposta.
-- Cartão na Hoje (`NpsPromptCard`): "Como está sendo treinar com {primeiro nome}?", 0–10, comentário opcional, aviso de
-  que **não é anônimo**, "Agora não" (14 dias, `nps_prompts.snoozed_until`), confirmação "Enviar nota X?" antes de
-  enviar (a nota não pode ser editada). Aparece sozinho quando o aluno está apto; o "Pedir avaliação" do professor (em
-  `/alunos/[id]/treinos`, um aluno por vez) mostra o motivo quando o aluno ainda não pode e **não fura o "Agora não"**
-  (não grava; `reason = 'snoozed'` com o dia que libera). Nota e comentário do navegador direto para a RPC.
-- Card "NPS dos alunos" no Início (`NpsCard`): últimos 90 dias, "dados insuficientes" abaixo de 10 respostas, tendência
-  dos últimos 4 trimestres, detratores (nome, nota, data; comentário só para quem vê a saúde), owner também por professor.
+### NPS do aluno — v2 (29/10/2026, migrations `20261029130000` + `20261030120000`)
+- `nps_responses` (org, aluno, `trainer_id` = professor responsável **no momento** da resposta, nota 0–10,
+  `submitted_at`, `submitted_on` = dia civil de SP pelo gatilho; `comment` existe mas **não é mais coletado** —
+  `submit_nps` recusa texto). **Sem UPDATE/DELETE** (sem grant nem política; gatilho recusa update, exceto o `set null`
+  do banco quando o usuário do professor é apagado); a exclusão do aluno apaga em cascata. **Uma resposta a cada 90 dias
+  garantida no banco** (exclusion constraint `daterange(submitted_on, +90)`, `btree_gist`). RLS: o aluno lê as próprias;
+  a equipe **não** lê a tabela.
+- **Regras num só lugar:** `private.nps_settings` (linha única; muda só por migration): `min_sessions` 8,
+  `min_days_of_use` 30 (desde o primeiro treino concluído), `interval_days` 90 (piso 90 por causa da constraint),
+  `snooze_days` 14, `min_responses` 10. Lidas por `private.nps_config()`; a tela recebe os números do banco.
+- **Cartão automático** na Hoje (`NpsPromptCard`): aparece sozinho quando o aluno está apto; só a nota 0–10; aviso "No
+  app, seu professor vê apenas o resultado agrupado das avaliações, nunca a nota de cada aluno."; confirmação "Enviar
+  nota X?" (não pode ser editada); "Agora não" vale **sem exceção**.
+- **Lembrete** (`/alunos/[id]/treinos`, `NpsReminderPanel`; substitui o "Pedir avaliação"): o professor vê o estado do
+  aluno (`get_nps_status`: `pending` "pode avaliar e ainda não respondeu" · `unavailable` "indisponível no momento" = o
+  "Agora não", **sem data e sem revelar a recusa** · `not_yet` com o motivo · `none` "nenhuma avaliação pendente", que
+  cobre quem respondeu, sem data). `send_nps_reminder` só em `pending`, **um por aluno por ciclo**
+  (`nps_reminders`, `unique (student_id, cycle_key)`); não cria nem antecipa o cartão — só acrescenta "Sua opinião ajuda
+  a melhorar o atendimento." Nada vai por notificação externa. `request_nps` ficou sem EXECUTE.
+- **Card "NPS dos alunos" no Início (`NpsCard`): só agregados por trimestre FECHADO** (o trimestre em aberto não entra,
+  para a média não mudar a cada resposta e não permitir deduzir a nota de quem acabou de responder): NPS, média e
+  quantidade, só com ≥ `min_responses`; abaixo disso, "Poucas respostas para exibir." (nem a contagem). Professor = as
+  respostas sobre ele; owner = organização + por professor. Nunca aluno, nome, nota individual ou data.
   Lógica de exibição em `features/nps/nps.ts`.
 
 ### Métrica de engajamento
@@ -613,8 +621,9 @@ effective_status =
   (`trainer_announcements.body`) e a **resposta ao feedback** (`workout_sessions.coach_reply`): nunca em
   `audit_logs`, log, e-mail, URL ou (quando existir) conteúdo de notificação push — nenhuma RPC do chat/recado/
   resposta chama `private.audit()` com o texto; se precisar auditar o envio em si, só id/contagem, nunca o corpo.
-- **Comentário do NPS** (`nps_responses.comment`): texto livre do aluno, tratado como possível dado de saúde — nunca em
-  log, URL, notificação ou `audit_logs`; para a equipe, só via `get_nps_summary` e só para quem `can_view_student_health`.
+- **NPS:** a resposta fica registrada em nome do aluno (para garantir uma a cada 90 dias), mas **nunca é exibida à
+  equipe** — só agregados com mínimo de respostas. O comentário deixou de ser coletado (v2); os antigos não saem por
+  nenhuma RPC da equipe. A página de privacidade precisa dizer isso (pendente, `docs/decisoes-autonomas.md`).
 - **Nota de satisfação do aluno** (`workout_sessions.student_rating`, 1–5, 3.2): não é dado de saúde, mas também nunca vai
   para log, URL ou notificação (a RPC `rate_workout_session` não audita; erros só com códigos fixos).
 - **Exceção (a validar com advogado):** a triagem de sinais de alerta + encaminhamento + liberação usa a base legal do
@@ -667,8 +676,8 @@ sem efeitos colaterais).
 | Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()` e, desde a 3.3 (`20261028120000`), **`can_view_student_health`** (quem não lê o comentário não responde; recusa = `SESSION_NOT_FOUND`); `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
 | **Início com dados reais** | `get_dashboard_training_stats`, `get_dashboard_engagement_retention` | `require_staff()` + `private.dashboard_students()` (alunos não excluídos da org com `can_access_student`: owner = organização, professor = os seus) — conta pelo **acesso ao aluno**, não pelo RLS de `workout_sessions` (que exige `can_view_student_health` e faria o owner contar a menos). Saída só com contagens, datas, nome do aluno e rótulo/nome da divisão; satisfação só agregada (média, quantidade, distribuição). "Hoje"/"semana" em São Paulo (`private.sp_day`, `private.sp_day_start`), semana começando na segunda. Testes em `tests/db/dashboard.test.ts` (fuso, outro tenant, professor só os seus, aluno e anônimo recusados, nenhum dado de saúde) |
 | **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
-| **NPS — aluno (titular)** | `submit_nps`, `get_my_nps_prompt`, `snooze_nps_prompt` | escopo `students.user_id = auth.uid()` (staff/anônimo: `STUDENT_NOT_FOUND`/sem EXECUTE; `get_my_nps_prompt` devolve nulo). `submit_nps` exige `private.nps_eligibility` (conta, status `active`, 30 dias desde o 1º treino concluído, 8+ concluídos, 90 dias desde a última resposta → senão `NPS_NOT_ELIGIBLE` com o motivo no `detail`); nota 0–10 e comentário ≤ 300 (`INVALID_INPUT`); os 90 dias também pela exclusion constraint. Sem auditoria (o comentário nunca vai para log). `20261029130000`; testes em `tests/db/nps.test.ts` |
-| **NPS — equipe** | `request_nps`, `get_nps_summary` | `request_nps`: `lock_accessible_student` (owner ou responsável), **um aluno por chamada**; não apto → devolve o motivo sem gravar; aluno em "Agora não" → `reason = 'snoozed'` + `available_on`, sem gravar; só marca `nps_prompts.requested_at` (nada de texto, nada de notificação externa). `get_nps_summary`: `require_staff`; professor = respostas em que ele era o responsável **e** que ainda acompanha; owner = organização + `by_trainer`; NPS só com n ≥ 10; comentário de detrator só com `can_view_student_health` (senão `comment_hidden`) |
+| **NPS — aluno (titular)** | `submit_nps`, `get_my_nps_prompt`, `snooze_nps_prompt` | escopo `students.user_id = auth.uid()` (staff/anônimo: `STUDENT_NOT_FOUND`/sem EXECUTE; `get_my_nps_prompt` devolve nulo). `submit_nps` exige `private.nps_eligibility` (critérios de `private.nps_settings` → senão `NPS_NOT_ELIGIBLE` com o motivo no `detail`); nota 0–10; comentário recusado desde a v2 (`INVALID_INPUT`, `detail = 'comment'`); os 90 dias também pela exclusion constraint. Sem auditoria. `20261029130000` + `20261030120000`; testes em `tests/db/nps.test.ts` |
+| **NPS — equipe** | `get_nps_status`, `send_nps_reminder`, `get_nps_summary`, `request_nps` | `get_nps_status`: `require_staff` + `can_access_student` (owner ou responsável); devolve só o estado (`pending`/`unavailable`/`not_yet`/`no_account`/`inactive`/`none`) — nunca nota, data de resposta ou o "Agora não" (vira `unavailable`, sem data). `send_nps_reminder`: `lock_accessible_student`, **um aluno por chamada**, só em `pending`, um por ciclo (`nps_reminders`, unique); não cria nem antecipa o cartão. `get_nps_summary`: `require_staff`; só agregados por trimestre fechado com ≥ `min_responses` (senão `{enough:false}`); professor = respostas sobre ele; owner = organização + `by_trainer`. `request_nps` (v1): **sem EXECUTE** para `authenticated` desde `20261030120000` (substituída pelo lembrete) |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 

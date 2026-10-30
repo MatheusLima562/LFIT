@@ -1345,7 +1345,7 @@ export const messages = {
       privacy: (provider: string) => `O vídeo vem do ${provider} e só carrega quando você clicar. O passo a passo está logo abaixo.`,
     },
   },
-  /** NPS identificado (aluno → professor). Nada aqui interpola o comentário do aluno. */
+  /** NPS (aluno → equipe, só agregados para a equipe). Nada aqui interpola nota ou nome de aluno para a equipe. */
   nps: {
     prompt: {
       title: (trainer: string | null) => (trainer ? `Como está sendo treinar com ${trainer}?` : "Como está sendo treinar com a equipe do estúdio?"),
@@ -1354,12 +1354,12 @@ export const messages = {
       scoreOption: (n: number) => `Nota ${n} de 10`,
       low: "Nada provável",
       high: "Muito provável",
-      commentLabel: "Quer contar o motivo? (opcional)",
-      identified: "Não é anônimo: seu professor e a coordenação do estúdio veem o seu nome e a sua nota. O comentário fica visível para quem acompanha o seu treino.",
+      privacy: "No app, seu professor vê apenas o resultado agrupado das avaliações, nunca a nota de cada aluno.",
+      reminder: "Sua opinião ajuda a melhorar o atendimento.",
       send: "Enviar avaliação",
       sending: "Enviando…",
       confirmTitle: (score: number) => `Enviar nota ${score}?`,
-      confirmText: "Depois de enviada, a avaliação não pode ser alterada. Você poderá avaliar de novo daqui a 90 dias.",
+      confirmText: (days: number) => `Depois de enviada, a avaliação não pode ser alterada. Você poderá avaliar de novo daqui a ${days} dias.`,
       confirmSend: (score: number) => `Enviar nota ${score}`,
       confirmBack: "Voltar",
       notNow: "Agora não",
@@ -1369,45 +1369,44 @@ export const messages = {
     },
     card: {
       title: "NPS dos alunos",
-      period: "Últimos 90 dias",
-      responses: (n: number) => (n === 1 ? "1 resposta" : `${n} respostas`),
-      insufficient: (n: number, min: number) => `Dados insuficientes: o NPS aparece a partir de ${min} respostas (hoje ${n}).`,
-      formula: "NPS = % de promotores (notas 9–10) − % de detratores (0–6), nos últimos 90 dias.",
+      period: (quarter: string) => `Trimestre fechado · ${quarter}`,
+      few: "Poucas respostas para exibir.",
+      fewHint: (min: number) => `O resultado aparece quando o trimestre fechado tiver pelo menos ${min} respostas.`,
+      average: "Média",
+      nps: "NPS",
+      responsesLabel: "Respostas",
       promoters: "Promotores",
       passives: "Neutros",
       detractors: "Detratores",
       trend: "Por trimestre",
       quarter: (q: number, year: number) => `${q}º tri ${year}`,
       noValue: "—",
-      detractorList: "Detratores recentes",
-      noDetractors: "Nenhum detrator nos últimos 90 dias.",
-      score: (n: number) => `Nota ${n}`,
-      commentHidden: "Comentário visível só para quem acompanha a saúde do aluno.",
       byTrainer: "Por professor",
       noTrainer: "Sem professor",
-      footer: "Avaliação identificada: o aluno responde no app, no máximo uma vez a cada 90 dias.",
+      footer:
+        "Resultado agrupado por trimestre fechado: o app nunca mostra a nota de cada aluno. NPS = % de promotores (notas 9–10) − % de detratores (0–6).",
     },
-    request: {
+    reminder: {
       title: "Avaliação do acompanhamento (NPS)",
-      hint: "Mostra ao aluno o pedido de avaliação na próxima vez que ele abrir o app. Nada é enviado por WhatsApp, e-mail ou notificação.",
-      button: "Pedir avaliação",
-      sending: "Pedindo…",
-      sent: "Pronto: o aluno verá o pedido de avaliação na próxima vez que abrir o app.",
-      already: "O pedido já está feito: o aluno verá a avaliação na próxima vez que abrir o app.",
-      reasons: {
+      hint: "O cartão de avaliação aparece sozinho no app quando o aluno pode responder. O lembrete aparece dentro desse cartão; nada é enviado por WhatsApp, e-mail ou notificação.",
+      button: "Enviar lembrete",
+      sending: "Enviando…",
+      sent: "Lembrete enviado: o aluno verá no cartão de avaliação.",
+      alreadySent: (date: string) => `Lembrete já enviado em ${date}.`,
+      remindedAt: (date: string) => `Lembrete enviado em ${date}.`,
+      states: {
+        pending: "O aluno pode avaliar e ainda não respondeu.",
+        unavailable: "Avaliação indisponível no momento.",
+        none: "Nenhuma avaliação pendente para este aluno agora.",
         no_account: "O aluno ainda não tem acesso ao app.",
         inactive: "O acesso do aluno ao app não está ativo.",
-        recent_response: (date: string) => `O aluno já respondeu nos últimos 90 dias. Pode responder de novo a partir de ${date}.`,
-        too_early: (date: string | null, done: number) =>
-          date
-            ? `Ainda é cedo: a avaliação fica disponível 30 dias depois do primeiro treino concluído, a partir de ${date} (${done} de 8 treinos concluídos).`
-            : "Ainda é cedo: o aluno ainda não concluiu nenhum treino. São necessários 30 dias de uso e 8 treinos concluídos.",
-        few_sessions: (done: number) => `O aluno precisa de 8 treinos concluídos para avaliar; até agora são ${done}.`,
-        snoozed: (date: string) =>
-          `O aluno pediu para responder mais tarde ("Agora não"). O pedido não foi registrado; tente de novo a partir de ${date}.`,
-        not_found: "Aluno não encontrado.",
+        too_early: (days: number, date: string, done: number, needed: number) =>
+          `Ainda não disponível: a avaliação abre ${days} dias depois do primeiro treino concluído, a partir de ${date} (${done} de ${needed} treinos concluídos).`,
+        no_sessions: (days: number, needed: number) =>
+          `Ainda não disponível: o aluno ainda não concluiu nenhum treino. São necessários ${days} dias de uso e ${needed} treinos concluídos.`,
+        few_sessions: (done: number, needed: number) => `Ainda não disponível: o aluno precisa de ${needed} treinos concluídos; até agora são ${done}.`,
       },
-      failed: "Não deu para pedir agora. Confira a conexão e tente de novo.",
+      failed: "Não deu para enviar agora. Confira a conexão e tente de novo.",
     },
   },
   validation: {

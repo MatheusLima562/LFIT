@@ -55,7 +55,7 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
 - **Treinos da semana**: treinos concluídos por dia, de segunda a domingo, nesta semana e nas duas anteriores.
 - **Top 5 alunos**: quem mais concluiu treinos nos últimos 30 dias.
 - **Satisfação dos alunos**: a média das notas de 1 a 5 que os alunos dão ao terminar o treino, com a quantidade de notas. O card só aparece quando há alguma nota nos últimos 30 dias; com menos de 60 dias desde o primeiro treino concluído, mostra **Dados insuficientes** no lugar da média.
-- **NPS dos alunos**: das notas de 0 a 10 que os alunos dão ao acompanhamento nos últimos 90 dias, o NPS é a % de promotores (9–10) menos a % de detratores (0–6). Com menos de 10 respostas, mostra **Dados insuficientes**. Traz a tendência por trimestre e a lista de detratores com nome, nota e data; o comentário só aparece para quem acompanha a saúde do aluno. O administrador também vê o NPS de cada professor.
+- **NPS dos alunos**: o resultado agrupado das notas de 0 a 10 que os alunos dão ao acompanhamento, no último trimestre fechado. O NPS é a % de promotores (9–10) menos a % de detratores (0–6); o card também mostra a média e a quantidade de respostas. Com menos de 10 respostas no trimestre, mostra **Poucas respostas para exibir**. Traz a tendência dos últimos 4 trimestres e nunca mostra a nota de um aluno. O professor vê as avaliações sobre ele; o administrador vê a equipe toda e o resultado de cada professor.
 
 > O administrador vê os números de todos os alunos da conta; o professor, só dos alunos pelos quais é responsável. Os dias seguem o horário de Brasília.
 - **Personalizar**: escolha quais cards aparecem.
@@ -164,23 +164,27 @@ O comentário e o campo de resposta aparecem só para quem acompanha a saúde do
 qualquer pessoa da equipe depois que o aluno confirma o consentimento). Para os outros, a seção mostra o aviso **Você
 não pode ver nem responder ao feedback deste aluno**: nesse caso, fale com o professor responsável.
 
-### Pedir a avaliação do aluno (NPS)
+### Avaliação do acompanhamento (NPS)
 
-O aluno avalia o acompanhamento no app: "Como está sendo treinar com você?", com nota de 0 a 10 e um comentário
-opcional. A avaliação **não é anônima**, e o aluno é avisado disso. O cartão aparece sozinho quando ele já pode
-responder: 30 dias depois do primeiro treino concluído, com pelo menos 8 treinos concluídos e no máximo uma vez a cada
-90 dias. Se ele tocar em **Agora não**, o cartão volta em 14 dias.
+O aluno avalia o acompanhamento no app: "Como está sendo treinar com você?", com uma nota de 0 a 10. O cartão
+aparece **sozinho** quando ele já pode responder: 30 dias depois do primeiro treino concluído, com pelo menos 8 treinos
+concluídos e no máximo uma vez a cada 90 dias. Se ele tocar em **Agora não**, o cartão some por 14 dias. Antes de
+enviar, ele confirma a nota ("Enviar nota 8?"), porque depois ela não pode ser alterada.
 
-1. Na tela de treinos do aluno, em **Avaliação do acompanhamento (NPS)**, clique em **Pedir avaliação**.
-2. Se o aluno já puder responder, ele verá o pedido na próxima vez que abrir o app. Nada é enviado por WhatsApp,
-   e-mail ou notificação.
-3. Se ainda não puder, a tela mostra o motivo, por exemplo quantos treinos faltam ou a partir de quando ele pode responder.
-   Se o aluno tocou em **Agora não**, a escolha dele é respeitada: o pedido não é registrado, e a tela mostra a partir de
-   quando você pode pedir de novo.
+**Você nunca vê a nota de um aluno.** No Início, o card **NPS dos alunos** mostra só o resultado agrupado do último
+trimestre fechado (NPS, média e quantidade de respostas), e só a partir de 10 respostas. Abaixo disso, aparece **Poucas
+respostas para exibir**.
 
-Antes de enviar, o aluno confirma a nota ("Enviar nota 8?"), porque depois de enviada ela não pode ser alterada.
+Na tela de treinos do aluno, em **Avaliação do acompanhamento (NPS)**, você vê a situação dele:
 
-O pedido é feito para um aluno por vez. O professor responsável e o administrador podem pedir.
+- **O aluno pode avaliar e ainda não respondeu.** Aqui você pode clicar em **Enviar lembrete**. O lembrete não cria
+  nem antecipa a avaliação: só acrescenta ao cartão que o aluno já vê a frase "Sua opinião ajuda a melhorar o
+  atendimento.". É um lembrete por aluno a cada ciclo, e nada é enviado por WhatsApp, e-mail ou notificação.
+- **Avaliação indisponível no momento.** O aluno não está vendo o cartão agora.
+- **Ainda não disponível**, com o motivo: quantos treinos faltam ou a partir de quando ele pode avaliar.
+- **Nenhuma avaliação pendente para este aluno agora.**
+
+O professor responsável e o administrador veem essa situação. O lembrete é enviado para um aluno por vez.
 
 ### Responder o chat
 

@@ -16,7 +16,8 @@ import { Dumbbell, Lock, MessageSquareText } from "lucide-react";
 import { AnnouncementEditor } from "@/features/coach/components/AnnouncementEditor";
 import { CoachSessions } from "@/features/coach/components/CoachSessions";
 import { getCoachSessions, getStudentAnnouncement } from "@/features/coach/queries";
-import { RequestNpsButton } from "@/features/nps/components/RequestNpsButton";
+import { NpsReminderPanel } from "@/features/nps/components/NpsReminderPanel";
+import { getNpsStatus } from "@/features/nps/queries";
 
 const t = messages.plans.manage;
 const TABS = ["atuais", "futuros", "anteriores", "todos"] as const;
@@ -30,12 +31,13 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
   if (!z.uuid().safeParse(id).success) notFound();
   const student = await getStudentName(id);
   if (!student) notFound();
-  const [plans, templates, students, announcement, coach] = await Promise.all([
+  const [plans, templates, students, announcement, coach, npsStatus] = await Promise.all([
     listStudentPlans(id, session),
     listTemplateOptions(),
     listStudentOptions(),
     getStudentAnnouncement(id, session.userId),
     getCoachSessions(id),
+    getNpsStatus(id),
   ]);
 
   // Abas pela URL (?aba=). Agendado cuja data já chegou conta como atual até o job diário rodar.
@@ -133,10 +135,12 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
               </div>
             )}
           </section>
-          {/* NPS: mesmo escopo do recado (owner ou professor responsável — `request_nps` confere de novo). */}
-          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <RequestNpsButton studentId={student.id} />
-          </section>
+          {/* NPS: estado e lembrete (owner ou professor responsável — `get_nps_status`/`send_nps_reminder` conferem). */}
+          {npsStatus && (
+            <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+              <NpsReminderPanel studentId={student.id} initial={npsStatus} />
+            </section>
+          )}
         </div>
       )}
     </div>
