@@ -813,6 +813,12 @@ export type Database = {
           },
         ]
       }
+      student_pauses: {
+        Row: { created_at: string; created_by: string | null; organization_id: string; reason: string; student_id: string; until: string | null }
+        Insert: { created_at?: string; created_by?: string | null; organization_id: string; reason: string; student_id: string; until?: string | null }
+        Update: { created_at?: string; created_by?: string | null; organization_id?: string; reason?: string; student_id?: string; until?: string | null }
+        Relationships: []
+      }
       feed_likes: {
         Row: {
           created_at: string
@@ -3299,6 +3305,10 @@ export type Database = {
         Returns: { expires_at: string; sent_at: string; status: string; student_id: string }[]
       }
       get_invite_quota: { Args: never; Returns: Json }
+      set_student_pause: { Args: { p_reason: string; p_student_id: string; p_until: string | null }; Returns: undefined }
+      end_student_pause: { Args: { p_student_id: string }; Returns: undefined }
+      get_inactive_students: { Args: never; Returns: Json }
+      claim_my_nudge: { Args: never; Returns: Json }
       get_access_link_branding: { Args: { p_token: string }; Returns: Json }
       export_account_data: { Args: { p_include_health: boolean; p_kind: string }; Returns: Json }
       log_account_export: { Args: { p_count: number; p_include_health: boolean; p_kind: string }; Returns: undefined }

@@ -77,6 +77,13 @@ function sqlLinkedDev(sql) {
   });
 }
 
+/** Esquece o último aviso de ausência do aluno (`private.student_nudges`, fora da API) e tira a pausa dele. */
+export async function resetAbsence(admin, studentId) {
+  if (!/^[0-9a-f-]{36}$/.test(studentId)) throw new Error("id inválido");
+  sqlLinkedDev(`delete from private.student_nudges where student_id = '${studentId}';`);
+  must(await admin.from("student_pauses").delete().eq("student_id", studentId), "tirar pausa");
+}
+
 /** PNG RGB válido gerado na hora (o navegador decodifica, redimensiona e gera WebP/JPEG nos envios de imagem). */
 export function makePng(w, h) {
   const crcTable = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });

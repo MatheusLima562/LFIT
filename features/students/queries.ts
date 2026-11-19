@@ -12,6 +12,8 @@ export type EffectiveStatus = Database["public"]["Enums"]["effective_status"];
 export interface StudentRow {
   /** Status do convite (1.4), preenchido pela página a partir de `student_invite_statuses`. */
   invite?: import("./invites").InviteStatus;
+  /** Pausa (1.5): ausente = sem pausa; null = em pausa sem data de volta; "aaaa-mm-dd" = volta nessa data. */
+  pausedUntil?: string | null;
   id: string;
   fullName: string;
   firstName: string;

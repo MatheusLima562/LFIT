@@ -105,6 +105,10 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     // Convites (20261120140000): equipe com acesso ao aluno.
     ["create_student_invites", () => ({ p_student_ids: [otherId] })],
     ["get_invite_quota", () => ({})],
+    // Ausência e pausa (20261120150000).
+    ["set_student_pause", () => ({ p_student_id: studentId, p_reason: "viagem", p_until: null })],
+    ["end_student_pause", () => ({ p_student_id: studentId })],
+    ["get_inactive_students", () => ({})],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -157,6 +161,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "get_my_subscription", "get_platform_support", "get_my_access_limits",
     "update_my_profile", "update_organization_profile", "get_my_branding", "get_access_link_branding", "export_account_data",
     "log_account_export", "create_student_invites", "student_invite_statuses", "get_invite_quota",
+    "set_student_pause", "end_student_pause", "get_inactive_students", "claim_my_nudge",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

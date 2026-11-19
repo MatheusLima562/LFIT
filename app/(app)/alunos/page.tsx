@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Globe, SearchX, Send, UserPlus, Users } from "lucide-react";
 import { getInviteStatuses } from "@/features/students/invite-queries";
+import { getPauses } from "@/features/students/pause-queries";
 import { requireStaff } from "@/lib/auth/session";
 import { createClient } from "@/lib/db/server";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
@@ -67,8 +68,16 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
   ]);
 
   // Status do convite (1.4) de quem ainda não tem login.
-  const invites = await getInviteStatuses(baseRows.filter((r) => !r.hasAccount).map((r) => r.id));
-  const rows = baseRows.map((r) => ({ ...r, invite: r.hasAccount ? ("accepted" as const) : (invites.get(r.id)?.status ?? "none") }));
+  const [invites, pauses] = await Promise.all([
+    getInviteStatuses(baseRows.filter((r) => !r.hasAccount).map((r) => r.id)),
+    getPauses(baseRows.map((r) => r.id)),
+  ]);
+  const rows = baseRows.map((r) => ({
+    ...r,
+    invite: r.hasAccount ? ("accepted" as const) : (invites.get(r.id)?.status ?? "none"),
+    // Pausa (1.5): undefined = sem pausa; null = sem data de volta.
+    pausedUntil: pauses.has(r.id) ? (pauses.get(r.id) ?? null) : undefined,
+  }));
 
   const [formOptions, editing] = dialog
     ? await Promise.all([getStudentFormOptions(), dialog.id ? getStudentForEdit(dialog.id) : Promise.resolve(null)])

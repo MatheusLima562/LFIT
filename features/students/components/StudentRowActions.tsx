@@ -10,16 +10,20 @@ import {
   MailPlus,
   MessageCircle,
   MoreHorizontal,
+  PauseCircle,
   Pencil,
+  PlayCircle,
   Send,
   Trash2,
   TimerOff,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { messages } from "@/messages/pt-BR";
+import { createClient } from "@/lib/db/client";
+import { dbErrorMessage, messages } from "@/messages/pt-BR";
+import { PauseDialog } from "./PauseDialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -82,6 +86,16 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
   const runStatus = (action: StudentStatusAction) =>
     startTransition(async () => {
       if (report(await changeStudentStatus(action, student.id))) setConfirm(null);
+    });
+
+  const [pausing, setPausing] = useState(false);
+  const router = useRouter();
+  const endPause = () =>
+    startTransition(async () => {
+      const { error } = await createClient().rpc("end_student_pause", { p_student_id: student.id });
+      if (error) return void toast.error(dbErrorMessage(error));
+      toast.success(messages.pause.ended);
+      router.refresh();
     });
 
   const copyLink = () =>
@@ -148,6 +162,17 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          {student.pausedUntil === undefined ? (
+            <DropdownMenuItem onSelect={() => setPausing(true)}>
+              <PauseCircle aria-hidden />
+              {messages.pause.save}
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onSelect={endPause}>
+              <PlayCircle aria-hidden />
+              {messages.pause.end}
+            </DropdownMenuItem>
+          )}
           {!student.hasAccount && (
             <DropdownMenuItem asChild>
               <Link href={`/alunos/convites?aluno=${student.id}`}>
@@ -206,6 +231,7 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
         pending={pending}
         onConfirm={() => runStatus("deactivate")}
       />
+      {pausing && <PauseDialog studentId={student.id} name={student.firstName} open onOpenChange={setPausing} />}
       <ConfirmDialog
         open={confirm === "expire"}
         onOpenChange={(open) => !open && setConfirm(null)}

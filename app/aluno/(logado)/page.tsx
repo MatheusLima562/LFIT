@@ -6,6 +6,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { itemSummary } from "@/features/student-app/format";
 import { consistency, greeting, workoutDayLabel } from "@/features/student-app/humanize";
 import { StartWorkoutButton } from "@/features/student-app/components/StartWorkoutButton";
+import { NudgeCard } from "@/features/student-app/components/NudgeCard";
 import { TrainerAvatar } from "@/features/student-app/components/TrainerAvatar";
 import { getMyAccessLimits, getMyActivePlan, getMyAnnouncement, getMyHistory, getMyProfile } from "@/features/student-app/queries";
 import { AnnouncementSeen } from "@/features/notifications/AnnouncementSeen";
@@ -126,6 +127,8 @@ export default async function StudentTodayPage() {
   const humane = profile && (
     <>
       <Hello profile={profile} />
+      {/* 7+ dias sem treinar (1.5): o banco decide e limita a 1 vez a cada 7 dias. */}
+      {!readOnly && active && <NudgeCard neverTrained={history.length === 0} />}
       {announcement && (
         <>
           <Announcement body={announcement.body} />

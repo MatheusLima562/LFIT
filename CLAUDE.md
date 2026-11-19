@@ -794,6 +794,16 @@ effective_status =
 - Aceitar = o fluxo de sempre do link de acesso (`/acesso/[token]` → POST consome → definir senha → consentimento de
   saúde se o professor declarou → `/acesso/pronto`). A tela do link mostra "Convite de {negócio}" e o logo.
 
+### Aluno ausente e pausa (1.5, migration `20261120150000` — escrita, ainda não aplicada; e2e `e2e/ausencia-pausa.e2e.mjs`)
+- **Pausa** (`student_pauses`, uma por aluno): motivo viagem/férias/outro (sem saúde), volta opcional. Em pausa = sem data
+  ou data ≥ hoje. "Colocar em pausa"/"Encerrar pausa" no menu da linha de Meus alunos e no card do Início; a lista
+  mostra "Em pausa (até dd/mm)". Tabela com o gatilho `org_writable`.
+- **Início — "Sem treinar há 7+ dias"** (`InactiveStudentsCard`, abaixo do AO VIVO): ativos, com plano ativo, fora de
+  pausa, desde o último treino iniciado (ou o início do plano). Limite = maior entre 7 e 1,5 × (dias do plano ÷ sessões
+  previstas) — `absenceThreshold` repete a regra do banco. Botões "Enviar mensagem" (chat) e "Colocar em pausa".
+- **App do aluno:** card gentil no Hoje ("Sentimos sua falta!"), sem push/e-mail, no máximo 1 vez a cada 7 dias
+  (`claim_my_nudge` decide e marca); nada para aluno em pausa, sem plano ou de conta limitada.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -873,6 +883,7 @@ sem efeitos colaterais).
 | **Assinatura — personal / aluno** | `get_my_subscription`, `get_platform_support`, `get_my_access_limits` | `get_my_subscription`: `require_staff()`; situação, estado (`private.org_access_state`), datas de tolerância/fim e contato da plataforma — sem pagamentos nem observação. `get_platform_support`: qualquer logado (só o contato). `get_my_access_limits`: escopo `students.user_id = auth.uid()`; devolve `ok`/`limited`/`closed` e o primeiro nome de quem acompanha — nunca valores ou cobrança |
 | **Configurações (1.3)** | `update_my_profile`, `update_organization_profile`, `get_my_branding`, `export_account_data`, `log_account_export` | `update_my_profile`: `require_staff()` + conta gravável (`private.assert_org_writable`); foto só da própria pasta (`<org>/avatar-<uid>-…`) e já enviada. `update_organization_profile`: `require_owner()` + gravável; logo da pasta da org, WhatsApp E.164; auditado sem os valores. `get_my_branding`: equipe ou aluno da org (nome, logo, WhatsApp de contato do negócio). `export_account_data`: `require_owner()`; saúde (grupos, observações do cadastro; dor e comentário do treino) só com `p_include_health` **e** `can_view_student_health`; funciona com a conta encerrada. `log_account_export`: só tipo, contagem e opt-in. `20261120130000`; testes em `tests/db/account-settings.test.ts` |
 | **Convites dos alunos (1.4)** | `create_student_invites`, `student_invite_statuses`, `get_invite_quota` | `create_student_invites`: `require_staff()` + `lock_accessible_student` por aluno (owner ou responsável), só sem login (`STUDENT_HAS_ACCOUNT`); 1–200 por chamada; limite diário da conta (`private.account_rules.invite_daily_limit`, dia civil, trava por organização) → lote inteiro recusado com `INVITE_LIMIT_REACHED` (detail = quantos cabem); token só na resposta (banco guarda o hash), auditado sem o token. `student_invite_statuses`: só alunos com `can_access_student` (vazio para quem não acessa). `get_invite_quota`: `require_staff()`. `20261120140000`; testes em `tests/db/student-invites.test.ts` |
+| **Ausência e pausa (1.5)** | `set_student_pause`, `end_student_pause`, `get_inactive_students`, `claim_my_nudge` | Pausa: `lock_accessible_student` (owner ou responsável), motivo só `viagem`/`ferias`/`outro` (nunca saúde), volta ≥ hoje; auditadas. `get_inactive_students`: `require_staff()` + `private.dashboard_students()`; só nome, dias e limite. `claim_my_nudge`: escopo `students.user_id = auth.uid()`; ativo, com plano ativo, fora de pausa, conta sem limitação, 7+ dias e último aviso há 7+ dias (marca a hora em `private.student_nudges`). `20261120150000`; testes em `tests/db/pause-absence.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `get_access_link_branding` (nome/logo do negócio na tela do link, só com token válido, sem consumir), `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 

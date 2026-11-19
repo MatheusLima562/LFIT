@@ -1,4 +1,4 @@
-import { formatEnrollment } from "@/lib/format";
+import { formatDate, formatEnrollment } from "@/lib/format";
 import { messages } from "@/messages/pt-BR";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import type { StudentRow } from "../queries";
@@ -29,7 +29,18 @@ const columns: DataTableColumn<StudentRow>[] = [
     ),
     hideBelow: "lg",
   },
-  { id: "status", header: c.status, cell: (s) => <StudentStatus student={s} /> },
+  {
+    id: "status",
+    header: c.status,
+    cell: (s) => (
+      <span className="flex flex-col items-start gap-1">
+        <StudentStatus student={s} />
+        {s.pausedUntil !== undefined && (
+          <span className="text-[11px] whitespace-nowrap text-ink-3">{messages.pause.badge(s.pausedUntil ? formatDate(s.pausedUntil) : null)}</span>
+        )}
+      </span>
+    ),
+  },
   {
     id: "invite",
     header: messages.invites.column,

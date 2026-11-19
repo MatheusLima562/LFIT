@@ -13,6 +13,8 @@ import {
 import { completedComparison, completedToday, satisfaction, topStudents, trainingMetrics, weekPoints } from "@/features/dashboard/stats";
 import { LiveBoardCard } from "@/features/live/components/LiveBoardCard";
 import { getLiveBoard } from "@/features/live/queries";
+import { InactiveStudentsCard } from "@/features/students/components/InactiveStudentsCard";
+import { getInactiveStudents } from "@/features/students/pause-queries";
 import { getNpsSummary } from "@/features/nps/queries";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
 import type { OverviewMetric } from "@/types/dashboard";
@@ -40,7 +42,7 @@ export const metadata: Metadata = {
  */
 export default async function DashboardPage() {
   const session = await requireStaff();
-  const [plan, tracking, newStudents, expiring, training, engagement, nps, live] = await Promise.all([
+  const [plan, tracking, newStudents, expiring, training, engagement, nps, live, inactive] = await Promise.all([
     getOrganizationPlanUsage(),
     getTrackingTabs(),
     getNewStudentTabs(),
@@ -49,6 +51,7 @@ export default async function DashboardPage() {
     getEngagementStats(),
     getNpsSummary(),
     getLiveBoard(),
+    getInactiveStudents(),
   ]);
 
   const active: OverviewMetric = {
@@ -67,7 +70,15 @@ export default async function DashboardPage() {
       // Oferta "Conteúdos Prontos + Limite em Dobro": só aparece quando o destino existir (nada de promessa sem recurso).
       banner={isAvailableRoute(banner.href) ? banner : null}
       // AO VIVO: se a RPC falhar (ex.: migration ainda não aplicada), o card some.
-      live={live ? <LiveBoardCard initial={live} organizationId={session.organizationId} /> : null}
+      // + "Sem treinar há 7+ dias" (1.5) logo abaixo; some se a RPC falhar.
+      live={
+        live || inactive ? (
+          <div className="flex flex-col gap-4">
+            {live && <LiveBoardCard initial={live} organizationId={session.organizationId} />}
+            {inactive && <InactiveStudentsCard students={inactive} />}
+          </div>
+        ) : null
+      }
       cards={{
         overview: <OverviewMetrics metrics={metrics} />,
         tracking: <StudentTrackingCard tabs={tracking} />,

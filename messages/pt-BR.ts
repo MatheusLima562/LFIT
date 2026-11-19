@@ -1703,6 +1703,37 @@ export const messages = {
     status: { none: "Sem convite", sent: "Convite enviado", accepted: "Aceito", expired: "Convite expirado" } as Record<string, string>,
     column: "Convite",
   },
+  /** Aluno ausente e pausa (1.5). Motivo da pausa nunca é dado de saúde. */
+  absence: {
+    title: "Sem treinar há 7+ dias",
+    hint: "Alunos com treino ativo, fora de pausa. O prazo considera a frequência prevista do treino quando ela existe.",
+    empty: "Ninguém sumido. Todos treinaram dentro do esperado.",
+    days: (n: number) => (n === 1 ? "há 1 dia" : `há ${n} dias`),
+    never: "ainda não treinou",
+    message: "Enviar mensagem",
+    pause: "Colocar em pausa",
+    messageLabel: (name: string) => `Enviar mensagem para ${name}`,
+    pauseLabel: (name: string) => `Colocar ${name} em pausa`,
+  },
+  pause: {
+    title: (name: string) => `Colocar ${name} em pausa`,
+    hint: "Em pausa, o aluno não conta como ausente e não recebe o aviso no app. Não informe motivo de saúde.",
+    reason: "Motivo",
+    reasons: { viagem: "Viagem", ferias: "Férias", outro: "Outro" } as Record<string, string>,
+    until: "Volta em (opcional)",
+    save: "Colocar em pausa",
+    saved: "Aluno em pausa.",
+    end: "Encerrar pausa",
+    ended: "Pausa encerrada.",
+    badge: (until: string | null) => (until ? `Em pausa até ${until}` : "Em pausa"),
+    cancel: "Cancelar",
+  },
+  nudge: {
+    title: "Sentimos sua falta!",
+    text: (days: number) => `Faz ${days} dias desde o seu último treino. Que tal voltar hoje, no seu ritmo?`,
+    textNever: "Seu treino já está pronto. Que tal começar hoje, no seu ritmo?",
+    dismiss: "Fechar aviso",
+  },
   /** Configurações do personal (1.3). */
   settings: {
     title: "Configurações",
