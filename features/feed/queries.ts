@@ -50,6 +50,17 @@ export async function getMyFeed(): Promise<{ lastSeenAt: string | null; posts: S
   return { lastSeenAt: feed.lastSeenAt, posts: await signImages(feed.posts) };
 }
 
+/** Hoje do aluno: post fixado mais recente que ele vê (null se não houver ou se a RPC recusar). */
+export async function getMyPinnedPost(): Promise<{ id: string; kind: "text" | "image" | "video"; body: string; authorFirstName: string } | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_my_pinned_post");
+  if (error || !data) return null;
+  const r = data as { id?: string; kind?: string; body?: string; author_first_name?: string };
+  if (typeof r.id !== "string") return null;
+  const kind = r.kind === "image" || r.kind === "video" ? r.kind : "text";
+  return { id: r.id, kind, body: r.body ?? "", authorFirstName: r.author_first_name ?? "" };
+}
+
 /** Quantos posts novos desde a última visita (marcador da aba). Falha = 0 (o marcador é só um aviso). */
 export async function getMyFeedNewCount(): Promise<number> {
   const supabase = await createClient();

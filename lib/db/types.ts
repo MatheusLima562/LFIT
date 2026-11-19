@@ -3309,6 +3309,7 @@ export type Database = {
       end_student_pause: { Args: { p_student_id: string }; Returns: undefined }
       get_inactive_students: { Args: never; Returns: Json }
       claim_my_nudge: { Args: never; Returns: Json }
+      get_my_pinned_post: { Args: never; Returns: Json }
       get_access_link_branding: { Args: { p_token: string }; Returns: Json }
       export_account_data: { Args: { p_include_health: boolean; p_kind: string }; Returns: Json }
       log_account_export: { Args: { p_count: number; p_include_health: boolean; p_kind: string }; Returns: undefined }

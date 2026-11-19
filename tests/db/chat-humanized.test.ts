@@ -228,11 +228,16 @@ describe.runIf(dbTestsEnabled)("App humanizado: chat, recados, resumo e resposta
     const forS2 = await rpc<Row>(otherUser.client, "get_my_announcement", {});
     expect(forS2.id).toBeNull(); // não vaza para outro aluno do mesmo professor
 
-    await rpc(trainer.client, "set_trainer_announcement", { p_body: "Recado para todo mundo do professor" });
+    // Desde o sprint de venda (1.6, 20261120160000) o recado PARA TODOS sai pelo Feed (post fixado): a RPC recusa.
+    await expect(rpc(trainer.client, "set_trainer_announcement", { p_body: "Recado para todo mundo do professor" })).rejects.toThrow("INVALID_INPUT");
+    // Recados para todos já gravados antes da mudança (linhas antigas) continuam lidos com as mesmas regras: insere direto.
+    const legacy = (trainerId: string, body: string) =>
+      fx.db.from("trainer_announcements").insert({ organization_id: org.id, trainer_id: trainerId, student_id: null, body });
+    await legacy(trainer.id, "Recado para todo mundo do professor");
     expect((await rpc<Row>(otherUser.client, "get_my_announcement", {})).body).toBe("Recado para todo mundo do professor");
 
     // Aluno sem professor (trainer_id nulo): cai no recado do owner — dois owners na org, não pode estourar "more than one row".
-    await rpc(owner.client, "set_trainer_announcement", { p_body: "Recado do owner para quem não tem professor" });
+    await legacy(owner.id, "Recado do owner para quem não tem professor");
     const forS3 = await rpc<Row>(noTrainerUser.client, "get_my_announcement", {});
     expect(forS3.body).toBe("Recado do owner para quem não tem professor");
 

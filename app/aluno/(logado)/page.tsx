@@ -7,6 +7,8 @@ import { itemSummary } from "@/features/student-app/format";
 import { consistency, greeting, workoutDayLabel } from "@/features/student-app/humanize";
 import { StartWorkoutButton } from "@/features/student-app/components/StartWorkoutButton";
 import { NudgeCard } from "@/features/student-app/components/NudgeCard";
+import { PinnedPostCard } from "@/features/feed/components/PinnedPostCard";
+import { getMyPinnedPost } from "@/features/feed/queries";
 import { TrainerAvatar } from "@/features/student-app/components/TrainerAvatar";
 import { getMyAccessLimits, getMyActivePlan, getMyAnnouncement, getMyHistory, getMyProfile } from "@/features/student-app/queries";
 import { AnnouncementSeen } from "@/features/notifications/AnnouncementSeen";
@@ -113,13 +115,14 @@ function TrainerCard({ profile }: { profile: AppProfile }) {
 
 export default async function StudentTodayPage() {
   // A página roda em paralelo ao layout: com acesso suspenso a RPC recusa e quem mostra a tela é o layout.
-  const [profile, active, announcement, history, nps, limits] = await Promise.all([
+  const [profile, active, announcement, history, nps, limits, pinned] = await Promise.all([
     getMyProfile(),
     getMyActivePlan().catch(() => null),
     getMyAnnouncement(),
     getMyHistory(),
     getMyNpsPrompt(),
     getMyAccessLimits(),
+    getMyPinnedPost(),
   ]);
   // Conta do personal limitada: o último treino aparece só para leitura (sem iniciar nem retomar).
   const readOnly = limits.state !== "ok";
@@ -135,6 +138,8 @@ export default async function StudentTodayPage() {
           <AnnouncementSeen id={announcement.id} />
         </>
       )}
+      {/* Recado para todos = post fixado mais recente do feed (1.6). */}
+      {pinned && <PinnedPostCard post={pinned} />}
       {reply && <ReplyNotice entry={reply} />}
       {nps && (
         <NpsPromptCard

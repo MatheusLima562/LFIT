@@ -1870,7 +1870,22 @@ export const messages = {
     modality: { consultoria: "Consultoria", presencial: "Presencial", hibrido: "Híbrido" },
     pin: "Fixar no topo",
     pinned: "Fixado",
+    pinnedUntil: (date: string) => `Fixado até ${date}`,
     unpin: "Desafixar",
+    unpinAt: {
+      label: "Fixado até (opcional)",
+      hint: "No fim desse dia o post sai do topo sozinho (não é apagado). Vazio: fica fixado até você desafixar.",
+      invalid: "Escolha um dia depois da publicação.",
+    },
+    broadcast: {
+      open: "Recado para todos",
+      hint: "Recados para todos os alunos agora são posts fixados no Feed.",
+    },
+    today: {
+      title: "Fixado pelo seu personal",
+      more: "Ver na Comunidade",
+      media: { image: "Post com imagem", video: "Post com vídeo" },
+    },
     schedule: {
       label: "Agendar publicação",
       hint: "Deixe em branco para publicar agora. O aluno só vê a partir da data e hora escolhidas.",

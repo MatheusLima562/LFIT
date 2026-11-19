@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Megaphone } from "lucide-react";
 import { StudentAvatar } from "@/components/students/StudentAvatar";
 import { ChatInbox } from "@/features/chat/components/ChatInbox";
 import { ChatThread } from "@/features/chat/components/ChatThread";
 import { getChatMessages, getInbox, getStaffNames } from "@/features/chat/queries";
-import { BroadcastButton } from "@/features/coach/components/BroadcastButton";
-import { getMyBroadcast } from "@/features/coach/queries";
+import { Button } from "@/components/ui/button";
 import { requireStaff } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
@@ -23,7 +22,7 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
   const { aluno } = await searchParams;
   const requested = typeof aluno === "string" && UUID.test(aluno) ? aluno : null;
 
-  const [inbox, broadcast] = await Promise.all([getInbox(), getMyBroadcast(session.userId)]);
+  const inbox = await getInbox();
   // Só abre conversa de aluno que o chamador acessa (a caixa já vem filtrada por can_access_student).
   const selected = requested ? (inbox.find((e) => e.studentId === requested) ?? null) : null;
   const [initial, staffNames] = selected
@@ -43,7 +42,13 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
             </h1>
             <p className="text-xs text-ink-3">{t.inbox.subtitle}</p>
           </div>
-          <BroadcastButton current={broadcast} />
+          {/* Recado para todos = post fixado do Feed (1.6): abre o editor já fixado por 7 dias. */}
+          <Button asChild variant="outline" size="sm">
+            <Link href="/feed?novo=fixado" title={messages.feed.broadcast.hint}>
+              <Megaphone aria-hidden />
+              {messages.feed.broadcast.open}
+            </Link>
+          </Button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <ChatInbox initial={inbox} selectedId={selected?.studentId ?? null} />

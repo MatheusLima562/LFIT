@@ -87,16 +87,21 @@ try {
   await settle(sp);
   ok("aluna: recado encerrado não aparece mais", (await sp.getByText(RECADO).count()) === 0);
 
-  // --- Recado para todos (caixa de conversas) ------------------------------------------------------------------
+  // --- Recado para todos = post fixado do Feed (1.6) -----------------------------------------------------------
   await caio.goto(`${BASE}/chat`);
   await settle(caio);
-  await caio.getByRole("button", { name: "Recado para todos" }).click();
+  await caio.getByRole("link", { name: "Recado para todos" }).click();
+  await caio.waitForURL(`${BASE}/feed?novo=fixado`);
   const dialog = caio.getByRole("dialog");
-  await dialog.getByLabel("Novo recado").fill(GERAL);
-  await dialog.getByRole("button", { name: "Publicar recado" }).click();
-  ok("professor: recado para todos publicado", (await toastWith(caio, "Recado publicado.")) && (await dialog.getByText(GERAL).waitFor({ timeout: 10000 }).then(() => true, () => false)));
-  await dialog.getByRole("button", { name: "Encerrar recado" }).click();
-  ok("professor: recado para todos encerrado", await toastWith(caio, "Recado encerrado."));
+  await dialog.waitFor();
+  ok("editor do feed já fixado, com 'Fixado até' preenchido", (await dialog.getByLabel("Fixar no topo").isChecked()) && /^\d{4}-\d{2}-\d{2}$/.test(await dialog.getByLabel("Fixado até (opcional)").inputValue()));
+  await dialog.getByLabel("Texto", { exact: true }).fill(GERAL);
+  await dialog.getByRole("button", { name: "Publicar" }).click();
+  ok("professor: recado para todos publicado como post fixado", await toastWith(caio, "Post publicado."));
+  ok("lista do feed: 'Fixado até'", await caio.getByText(/Fixado até \d{2}\/\d{2}\/\d{4}/).first().waitFor({ timeout: 10000 }).then(() => true, () => false));
+  await sp.goto(`${BASE}/aluno`);
+  await settle(sp);
+  ok("aluna: o fixado aparece no Hoje com 'Ver na Comunidade'", (await waitText(sp, GERAL)) && (await sp.getByRole("link", { name: "Ver na Comunidade" }).count()) === 1);
 
   // --- Owner sem acesso à saúde da Camila: recado sim, comentário e resposta não ------------------------------
   const owner = await login("owner.seed@example.com", "/entrar", { width: 1440, height: 900 });
@@ -121,6 +126,7 @@ try {
 } finally {
   await admin.from("workout_sessions").delete().eq("id", session.id);
   await admin.from("trainer_announcements").delete().in("body", [RECADO, GERAL]);
+  await admin.from("feed_posts").delete().eq("body", GERAL);
   await browser.close();
 }
 if (fails) { console.log(`\n${fails} falha(s).`); process.exit(1); }

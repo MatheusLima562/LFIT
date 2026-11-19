@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FeedManager } from "@/features/feed/components/FeedManager";
+import { spDayFromNow } from "@/features/feed/feed";
 import { listFeedClasses, listStaffFeed } from "@/features/feed/queries";
 import { requireStaff } from "@/lib/auth/session";
 import { messages } from "@/messages/pt-BR";
@@ -8,9 +9,13 @@ const t = messages.feed;
 
 export const metadata: Metadata = { title: t.title };
 
-/** Feed (Comunidade) do painel: o personal (e professores da equipe) publica para os alunos. */
-export default async function FeedPage() {
+/**
+ * Feed (Comunidade) do painel: o personal (e professores da equipe) publica para os alunos. `?novo=fixado` (botão
+ * "Recado para todos" do Chat) abre o editor já fixado por 7 dias.
+ */
+export default async function FeedPage({ searchParams }: PageProps<"/feed">) {
   const session = await requireStaff();
+  const sp = await searchParams;
   const [posts, classes] = await Promise.all([listStaffFeed(), listFeedClasses()]);
 
   return (
@@ -25,6 +30,7 @@ export default async function FeedPage() {
         isOwner={session.role === "owner"}
         classes={classes}
         now={new Date().toISOString()}
+        startPinned={sp.novo === "fixado" ? spDayFromNow(7) : null}
       />
     </div>
   );
