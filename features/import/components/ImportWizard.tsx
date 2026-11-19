@@ -9,7 +9,7 @@ import { createClient } from "@/lib/db/client";
 import { cn } from "@/lib/utils";
 import { uuidV4 } from "@/lib/uuid";
 import { messages } from "@/messages/pt-BR";
-import { IMPORT_FIELDS, missingRequired, REQUIRED_FIELDS, suggestMapping, type ColumnMapping, type ImportField } from "../fields";
+import { IMPORT_FIELDS, looksLikeHealth, missingRequired, REQUIRED_FIELDS, suggestMapping, type ColumnMapping, type ImportField } from "../fields";
 import { checkSheet, decodeText, fileKind, MAX_FILE_BYTES, MAX_ROWS, parseCsv, toSheet, type Encoding, type Sheet } from "../parse";
 import {
   batches,
@@ -197,6 +197,7 @@ export function ImportWizard({ role, seatsLeft }: { role: "owner" | "trainer"; s
       {step === 0 && (
         <section className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-card">
           <p className="text-[13px] text-ink-2">{t.privacy}</p>
+          <HealthNotice />
           <div className="flex flex-wrap items-center gap-3">
             <input
               ref={inputRef}
@@ -238,6 +239,7 @@ export function ImportWizard({ role, seatsLeft }: { role: "owner" | "trainer"; s
               {t.fileInfo(sheet.rows.length, encoding)} {t.mapHint}
             </p>
           </div>
+          <HealthNotice />
           <div className="grid gap-3 md:grid-cols-2">
             {IMPORT_FIELDS.map((field) => (
               <MappingField key={field} field={field} sheet={sheet} value={mapping[field]} onChange={(v) => setMapping({ ...mapping, [field]: v })} />
@@ -373,13 +375,23 @@ function MappingField({
         <option value="">{t.notImported}</option>
         {sheet.headers.map((h, i) => (
           <option key={i} value={i}>
-            {h}
+            {looksLikeHealth(h) ? t.healthColumn(h) : h}
           </option>
         ))}
       </select>
       {sample && <p className="truncate text-xs text-ink-3">{t.example(sample)}</p>}
       {hint && <p className="text-xs text-ink-3">{hint}</p>}
     </div>
+  );
+}
+
+/** Aviso fixo (passos 1 e 2): saúde não entra pela importação. */
+function HealthNotice() {
+  return (
+    <p className="flex items-start gap-2 rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-[13px] text-warning-ink">
+      <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
+      {t.healthWarning}
+    </p>
   );
 }
 

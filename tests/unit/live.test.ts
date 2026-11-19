@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createRefetchDebouncer } from "@/features/live/debounce";
 import {
   attentionHref,
   attentionLabel,
@@ -105,5 +106,75 @@ describe("aluno: batimento e banner", () => {
     expect(bannerMessage(m1, m2, new Set())?.id).toBe("2");
     expect(bannerMessage(null, m2, new Set(["2"]))).toBeNull();
     expect(bannerMessage(m2, m1, new Set())?.id).toBe("2");
+  });
+});
+
+describe("debounce das recargas do Realtime", () => {
+  /** Relógio e timers falsos: `advance` dispara os timers vencidos em ordem. */
+  function fakeClock() {
+    let now = 0;
+    let seq = 0;
+    const timers = new Map<number, { at: number; fn: () => void }>();
+    return {
+      now: () => now,
+      setTimer: (fn: () => void, ms: number) => {
+        const id = ++seq;
+        timers.set(id, { at: now + ms, fn });
+        return id;
+      },
+      clearTimer: (id: unknown) => void timers.delete(id as number),
+      advance(ms: number) {
+        const end = now + ms;
+        for (;;) {
+          const due = [...timers.entries()].filter(([, t]) => t.at <= end).sort((a, b) => a[1].at - b[1].at)[0];
+          if (!due) break;
+          timers.delete(due[0]);
+          now = due[1].at;
+          due[1].fn();
+        }
+        now = end;
+      },
+    };
+  }
+
+  it("rajada de eventos vira uma recarga, depois de 5 s", () => {
+    const c = fakeClock();
+    const runs: number[] = [];
+    const d = createRefetchDebouncer(() => runs.push(c.now()), { minGapMs: 5000, ...c });
+    for (let i = 0; i < 30; i++) d.trigger();
+    c.advance(4999);
+    expect(runs).toEqual([]);
+    c.advance(1);
+    expect(runs).toEqual([5000]);
+  });
+
+  it("nunca duas recargas a menos de 5 s, contando a busca periódica", () => {
+    const c = fakeClock();
+    const runs: number[] = [];
+    const d = createRefetchDebouncer(() => runs.push(c.now()), { minGapMs: 5000, ...c });
+    d.trigger();
+    c.advance(5000); // recarga em 5000
+    d.trigger();
+    c.advance(1000);
+    d.trigger();
+    c.advance(10_000); // próxima só em 10000 (5 s depois da anterior); relógio em 16000
+    c.advance(1000);
+    d.markFetched(); // busca periódica em 17000
+    d.trigger();
+    c.advance(20_000);
+    expect(runs).toEqual([5000, 10_000, 22_000]);
+    for (let i = 1; i < runs.length; i++) expect(runs[i] - runs[i - 1]).toBeGreaterThanOrEqual(5000);
+  });
+
+  it("dispose cancela a recarga agendada", () => {
+    const c = fakeClock();
+    const runs: number[] = [];
+    const d = createRefetchDebouncer(() => runs.push(c.now()), { minGapMs: 5000, ...c });
+    d.trigger();
+    d.dispose();
+    c.advance(10_000);
+    d.trigger();
+    c.advance(10_000);
+    expect(runs).toEqual([]);
   });
 });

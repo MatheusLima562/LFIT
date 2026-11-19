@@ -1,6 +1,19 @@
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { anon, dbTestsEnabled, Fixture, rpc, studentData, type TestOrg, type TestUser } from "./helpers";
+
+const CLI_TIMEOUT_MS = 60_000;
+/** SQL no banco linkado (lfit-dev, mesma trava dos testes de banco) pelo Management API, com prazo (regra 7). */
+function sqlLinked(sql: string) {
+  execFileSync(join(process.cwd(), "node_modules", ".bin", "supabase"), ["db", "query", "--linked", sql], {
+    encoding: "utf8",
+    cwd: process.cwd(),
+    timeout: CLI_TIMEOUT_MS,
+    killSignal: "SIGKILL",
+  });
+}
 
 /**
  * AO VIVO (migration 20261119120000): eventos reais do treino → `live_sessions`; batimento com limite de taxa; painel só
@@ -123,6 +136,45 @@ describe.runIf(dbTestsEnabled)("ao vivo (get_live_board, live_heartbeat, set_liv
     expect(none).toHaveLength(0);
     await rpc(owner.client, "set_live_enabled", { p_enabled: true });
   });
+
+  it("falha no registro ao vivo NÃO impede gravar sessão, item e série", async () => {
+    // Constraint temporária, só para a organização deste teste: todo insert/update em live_sessions dela falha. NOT
+    // VALID não confere as linhas antigas, mas vale para as novas. Removida no finally (e só afeta a org de teste).
+    const name = `live_test_fail_${org.id.replace(/-/g, "").slice(0, 12)}`;
+    sqlLinked(`alter table public.live_sessions add constraint ${name} check (organization_id <> '${org.id}') not valid;`);
+    try {
+      const { data: s, error: e1 } = await fx.db
+        .from("workout_sessions")
+        .insert({ organization_id: org.id, student_id: s1, workout_label: "F", snapshot: {}, status: "in_progress" })
+        .select("id")
+        .single();
+      expect(e1).toBeNull();
+      const { data: item, error: e2 } = await fx.db
+        .from("session_item_logs")
+        .insert({ organization_id: org.id, session_id: s!.id, item_id: null, exercise_name: "Teste" })
+        .select("id")
+        .single();
+      expect(e2).toBeNull();
+      const { error: e3 } = await fx.db
+        .from("session_set_logs")
+        .insert({ organization_id: org.id, item_log_id: item!.id, set_index: 1, quantity_value: 10 });
+      expect(e3).toBeNull();
+      const { error: e4 } = await fx.db.from("session_item_logs").update({ completed_at: new Date().toISOString() }).eq("id", item!.id);
+      expect(e4).toBeNull();
+      const { error: e5 } = await fx.db
+        .from("workout_sessions")
+        .update({ status: "completed", finished_at: new Date().toISOString() })
+        .eq("id", s!.id);
+      expect(e5).toBeNull();
+      // O treino ficou gravado; o registro ao vivo, não.
+      const { data: done } = await fx.db.from("workout_sessions").select("status").eq("id", s!.id).single();
+      expect(done!.status).toBe("completed");
+      const { data: live } = await fx.db.from("live_sessions").select("session_id").eq("session_id", s!.id);
+      expect(live).toHaveLength(0);
+    } finally {
+      sqlLinked(`alter table public.live_sessions drop constraint if exists ${name};`);
+    }
+  }, CLI_TIMEOUT_MS * 3);
 
   it("retenção: registros com mais de 30 dias são apagados (só servidor)", async () => {
     const { data: s } = await fx.db

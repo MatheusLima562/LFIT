@@ -27,6 +27,7 @@ import {
   type AttentionEntry,
   type LiveBoard,
 } from "../live";
+import { createRefetchDebouncer, type RefetchDebouncer } from "../debounce";
 
 const t = messages.live;
 
@@ -44,11 +45,10 @@ export function LiveBoardCard({ initial, organizationId }: { initial: LiveBoard;
   const [now, setNow] = useState(() => Date.now());
   const [confirmOff, setConfirmOff] = useState(false);
   const [pending, startTransition] = useTransition();
-  const lastFetch = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncer = useRef<RefetchDebouncer | null>(null);
 
   const refetch = useCallback(async () => {
-    lastFetch.current = Date.now();
+    debouncer.current?.markFetched();
     const { data, error } = await supabase.rpc("get_live_board");
     if (error) return;
     const next = parseLiveBoard(data);
@@ -58,31 +58,24 @@ export function LiveBoardCard({ initial, organizationId }: { initial: LiveBoard;
     setNow(Date.now());
   }, [supabase]);
 
-  // Junta rajadas (cada série registrada gera um evento): no máximo uma busca a cada 5 s.
-  const schedule = useCallback(() => {
-    if (timer.current) return;
-    const wait = Math.max(0, REFETCH_MIN_GAP_MS - (Date.now() - lastFetch.current));
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      if (isVisible()) void refetch();
-    }, wait);
-  }, [refetch]);
-
+  // Realtime → recarga com debounce: rajadas viram uma recarga, nunca a menos de 5 s da anterior.
   useEffect(() => {
     if (!board.enabled) return;
+    const d = createRefetchDebouncer(() => isVisible() && void refetch(), { minGapMs: REFETCH_MIN_GAP_MS });
+    debouncer.current = d;
     const leave = joinWithAuth(supabase, () =>
       supabase
         .channel(`live:${organizationId}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "live_sessions", filter: `organization_id=eq.${organizationId}` }, schedule)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `organization_id=eq.${organizationId}` }, schedule)
+        .on("postgres_changes", { event: "*", schema: "public", table: "live_sessions", filter: `organization_id=eq.${organizationId}` }, () => d.trigger())
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `organization_id=eq.${organizationId}` }, () => d.trigger())
         .subscribe(),
     );
     return () => {
       leave();
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = null;
+      d.dispose();
+      debouncer.current = null;
     };
-  }, [supabase, organizationId, board.enabled, schedule]);
+  }, [supabase, organizationId, board.enabled, refetch]);
 
   useEffect(() => {
     const id = window.setInterval(() => {

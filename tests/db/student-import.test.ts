@@ -73,6 +73,32 @@ describe.runIf(dbTestsEnabled)("importação de alunos (import_students)", () =>
     await fx.db.from("organizations").update({ student_limit: 50 }).eq("id", org.id);
   });
 
+  it("concorrência: dois lotes ao mesmo tempo não passam do limite do plano (uma importação por vez por organização)", async () => {
+    const { count } = await fx.db.from("students").select("id", { count: "exact", head: true }).eq("organization_id", org.id).eq("status", "active").is("deleted_at", null);
+    await fx.db.from("organizations").update({ student_limit: count! + 1 }).eq("id", org.id);
+    try {
+      const [a, b] = await Promise.all([run(owner, [person(2)]), run(trainer, [person(2)])]);
+      const outcomes = [...a.results, ...b.results].map((r) => r.error ?? "ok").sort();
+      expect(outcomes).toEqual(["PLAN_LIMIT_REACHED", "ok"]);
+      const { count: after } = await fx.db.from("students").select("id", { count: "exact", head: true }).eq("organization_id", org.id).eq("status", "active").is("deleted_at", null);
+      expect(after).toBe(count! + 1);
+    } finally {
+      await fx.db.from("organizations").update({ student_limit: 50 }).eq("id", org.id);
+    }
+  });
+
+  it("unicidade que não é a do e-mail vira INVALID_INPUT, não DUPLICATE_EMAIL", async () => {
+    // Força a matrícula seguinte a colidir com uma existente (contador volta 1 número).
+    const { data: c } = await fx.db.from("organization_counters").select("last_enrollment_number").eq("organization_id", org.id).single();
+    await fx.db.from("organization_counters").update({ last_enrollment_number: c!.last_enrollment_number - 1 }).eq("organization_id", org.id);
+    try {
+      const res = await run(owner, [person(2)]);
+      expect(res.results[0]).toMatchObject({ ok: false, error: "INVALID_INPUT" });
+    } finally {
+      await fx.db.from("organization_counters").update({ last_enrollment_number: c!.last_enrollment_number }).eq("organization_id", org.id);
+    }
+  });
+
   it("resposta e auditoria não trazem dados da linha", async () => {
     const res = await run(owner, [person(2, { notes: "canário-importação" }), person(3, { email: "x" })]);
     expect(JSON.stringify(res)).not.toMatch(/canário|example\.com|Importado/);

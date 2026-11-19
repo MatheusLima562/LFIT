@@ -39,6 +39,24 @@ const SYNONYMS: Record<ImportField, string[]> = {
 
 const norm = (s: string) => searchKey(s).replace(/[^a-z0-9]+/g, " ").trim();
 
+/**
+ * Cabeçalhos com cara de dado de saúde NUNCA são sugeridos (a pessoa pode escolher à mão, com o aviso fixo da tela).
+ * Palavras inteiras, sem acento; plurais e variações comuns incluídos. "dor" não casa com "endereço" nem "dorsal".
+ */
+const HEALTH_TERMS = [
+  "lesao", "lesoes", "restricao", "restricoes", "patologia", "patologias", "anamnese", "dor", "dores", "doenca",
+  "doencas", "medicamento", "medicamentos", "remedio", "remedios", "medicacao", "cirurgia", "cirurgias",
+  "observacoes medicas", "observacao medica", "obs medicas", "historico clinico", "historico de saude",
+  "historico medico", "saude", "condicao de saude", "condicoes de saude", "clinico", "clinica", "diagnostico",
+  "alergia", "alergias", "gestante", "gravidez", "laudo", "cid", "health", "medical", "injury", "injuries",
+  "medication", "surgery", "disease", "condition", "conditions", "pain",
+].map(norm);
+
+export function looksLikeHealth(header: string): boolean {
+  const k = ` ${norm(header)} `;
+  return HEALTH_TERMS.some((term) => k.includes(` ${term} `));
+}
+
 const NORMALIZED: Record<ImportField, string[]> = Object.fromEntries(
   IMPORT_FIELDS.map((f) => [f, SYNONYMS[f].map(norm)]),
 ) as Record<ImportField, string[]>;
@@ -62,7 +80,8 @@ export function emptyMapping(): ColumnMapping {
  */
 export function suggestMapping(headers: string[], preset: PlatformPreset = PLATFORM_PRESETS[0]): ColumnMapping {
   const mapping = emptyMapping();
-  const used = new Set<number>();
+  // Colunas com cara de saúde já entram como "usadas": nenhum campo é sugerido nelas, nem por modelo de plataforma.
+  const used = new Set<number>(headers.flatMap((h, i) => (looksLikeHealth(h) ? [i] : [])));
   const keys = headers.map(norm);
   const assign = (field: ImportField, idx: number) => {
     if (mapping[field] === null && !used.has(idx)) {

@@ -1414,6 +1414,8 @@ export const messages = {
     title: "Importar alunos",
     subtitle: "Traga seus alunos de outra plataforma ou de uma planilha (CSV ou XLSX).",
     privacy: "O arquivo é lido aqui no seu navegador e não fica guardado. Só os alunos válidos são enviados para o cadastro.",
+    healthWarning: "Não importe dados de saúde nas observações; cadastre-os depois na ficha do aluno.",
+    healthColumn: (header: string) => `${header} (parece dado de saúde)`,
     steps: ["Arquivo", "Colunas", "Revisão", "Resultado"],
     template: "Baixar planilha-modelo",
     templateHint: "Use a planilha-modelo se a sua plataforma não exportar direto. Nome e e-mail são obrigatórios.",

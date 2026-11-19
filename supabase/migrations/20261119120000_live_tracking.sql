@@ -59,6 +59,8 @@ alter publication supabase_realtime add table public.live_sessions;
 -- 3) Eventos reais do treino → last_event_at -------------------------------------------------------------------------
 -- Sessão em andamento de organização com o ao vivo ligado: cria/atualiza. Qualquer outro caso (finalizou, abandonou):
 -- só atualiza a linha que já existir (o card sai na próxima busca).
+-- NUNCA aborta a gravação do treino: qualquer erro aqui é engolido (bloco com exceção = subtransação só do registro
+-- ao vivo) e nada é logado (nem ids, nem a mensagem do erro).
 create function private.live_touch(p_session_id uuid)
 returns void
 language plpgsql
@@ -66,15 +68,19 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.live_sessions (session_id, organization_id, student_id, last_event_at)
-  select w.id, w.organization_id, w.student_id, now()
-  from public.workout_sessions w
-  join public.organizations o on o.id = w.organization_id
-  where w.id = p_session_id and w.status = 'in_progress' and o.live_enabled
-  on conflict (session_id) do update set last_event_at = now(), updated_at = now();
-  if not found then
-    update public.live_sessions set last_event_at = now(), updated_at = now() where session_id = p_session_id;
-  end if;
+  begin
+    insert into public.live_sessions (session_id, organization_id, student_id, last_event_at)
+    select w.id, w.organization_id, w.student_id, now()
+    from public.workout_sessions w
+    join public.organizations o on o.id = w.organization_id
+    where w.id = p_session_id and w.status = 'in_progress' and o.live_enabled
+    on conflict (session_id) do update set last_event_at = now(), updated_at = now();
+    if not found then
+      update public.live_sessions set last_event_at = now(), updated_at = now() where session_id = p_session_id;
+    end if;
+  exception when others then
+    null;
+  end;
 end;
 $$;
 

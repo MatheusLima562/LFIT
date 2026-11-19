@@ -87,6 +87,7 @@ declare
   v_results jsonb := '[]'::jsonb;
   v_created integer := 0;
   v_code text;
+  v_constraint text;
 begin
   if p_batch_id is null or p_rows is null or jsonb_typeof(p_rows) <> 'array' then
     raise exception 'INVALID_INPUT' using errcode = 'P0001', detail = 'rows';
@@ -94,6 +95,10 @@ begin
   if jsonb_array_length(p_rows) = 0 or jsonb_array_length(p_rows) > 200 then
     raise exception 'INVALID_INPUT' using errcode = 'P0001', detail = 'batch_size';
   end if;
+
+  -- Uma importação por vez por organização (até o fim desta transação): sem isso, dois lotes simultâneos liam a mesma
+  -- contagem de vagas e passavam juntos do limite do plano. Chave = (classe fixa da importação, hash da organização).
+  perform pg_advisory_xact_lock(hashtext('lfit.import_students'), hashtext(v_org::text));
 
   for v_item in select value from jsonb_array_elements(p_rows) loop
     v_row := case when jsonb_typeof(v_item -> 'row') = 'number' then (v_item ->> 'row')::integer end;
@@ -120,7 +125,12 @@ begin
       ));
     exception
       when unique_violation then
-        v_results := v_results || jsonb_build_array(jsonb_build_object('row', v_row, 'ok', false, 'error', 'DUPLICATE_EMAIL'));
+        -- Só o índice do e-mail vira DUPLICATE_EMAIL; qualquer outra unicidade (matrícula etc.) é INVALID_INPUT.
+        get stacked diagnostics v_constraint = constraint_name;
+        v_results := v_results || jsonb_build_array(jsonb_build_object(
+          'row', v_row, 'ok', false,
+          'error', case when v_constraint = 'students_org_email_unique' then 'DUPLICATE_EMAIL' else 'INVALID_INPUT' end
+        ));
       when check_violation or invalid_text_representation or invalid_datetime_format or datetime_field_overflow
         or string_data_right_truncation or not_null_violation then
         v_results := v_results || jsonb_build_array(jsonb_build_object('row', v_row, 'ok', false, 'error', 'INVALID_INPUT'));

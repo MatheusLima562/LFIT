@@ -612,7 +612,9 @@ effective_status =
 ### Ao vivo no Início (19/11/2026, migration `20261119120000` — escrita, aguardando push)
 - **"Treinando agora" vem de eventos reais do treino**, não de presença: gatilhos em `workout_sessions` (iniciou/mudou
   status), `session_item_logs` (concluiu exercício) e `session_set_logs` (série) carimbam `live_sessions.last_event_at`
-  (`private.live_touch`). Nenhuma RPC de treino mudou.
+  (`private.live_touch`). Nenhuma RPC de treino mudou. **`live_touch` nunca aborta a gravação do treino**: o corpo roda
+  num bloco `exception when others` (sem logar nada); teste em `tests/db/live.test.ts` força a falha com uma constraint
+  temporária só da org de teste.
 - **Sessão ao vivo** = `in_progress` (gravado e efetivo) + último evento < 90 min + batimento < 10 min. Batimento
   (`live_heartbeat`) só com a tela de execução aberta e visível, a cada 60 s; o banco grava no máximo 1 a cada 30 s. Sem
   batimento, a sessão sai do card sozinha — **calculado; nada é gravado na sessão** (o "abandonada" de 6 h segue igual).
@@ -622,7 +624,7 @@ effective_status =
   "aviso no treino"), última mensagem do aluno sem resposta há 5+ min, sessão ao vivo parada há 20+ min. Limites só na
   RPC `get_live_board` (a tela recebe os números). O card mostra estado, nunca promete resposta.
 - Atualização: Realtime em `live_sessions` e `chat_messages` filtrado por `organization_id` (o RLS decide; o evento só
-  dispara a busca, no máximo 1 a cada 5 s) + busca a cada 30 s com a aba visível.
+  dispara a busca, com debounce de 5 s: `features/live/debounce.ts`, testado) + busca a cada 30 s com a aba visível.
 - **Aluno:** na tela de execução (`LiveCompanion`, no fluxo, acima do exercício — não cobre "Feita" nem "Finalizar"),
   aviso de transparência até "Entendi" (`private.live_notice_acks`, vale em qualquer aparelho) e banner com a última
   mensagem do professor desde o início da sessão ainda não lida (sem push).
@@ -646,7 +648,13 @@ effective_status =
   data inválidos ficam em branco). Relatório por número de linha do arquivo + "Baixar linhas recusadas" (CSV gerado no
   navegador). Conexão caindo no meio: "Tentar de novo" continua do lote pendente (e-mail único impede duplicar).
 - **Modelos por plataforma** (`PLATFORM_PRESETS` em `fields.ts`): hoje só o genérico; o do MFIT entra com um arquivo
-  real exportado (cabeçalhos exatos). Treinos do MFIT ficam para depois. Sem grupos especiais/dado de saúde na importação.
+  real exportado (cabeçalhos exatos). Treinos do MFIT ficam para depois. Sem grupos especiais/dado de saúde na importação:
+  colunas com cara de saúde (`looksLikeHealth`: lesão, restrição, patologia, anamnese, dor, doença, medicamento, cirurgia,
+  observações médicas, histórico clínico…) **nunca são sugeridas** e aparecem marcadas; aviso fixo "Não importe dados de
+  saúde nas observações; cadastre-os depois na ficha do aluno."
+- **Uma importação por vez por organização** (`pg_advisory_xact_lock` dentro de `import_students`), para dois lotes
+  simultâneos não passarem do limite do plano. `DUPLICATE_EMAIL` só quando a violação é do índice
+  `students_org_email_unique`; outra unicidade vira `INVALID_INPUT`.
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos

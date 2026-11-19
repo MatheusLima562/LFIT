@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyMapping, missingRequired, suggestMapping } from "@/features/import/fields";
+import { emptyMapping, looksLikeHealth, missingRequired, suggestMapping } from "@/features/import/fields";
 import { checkSheet, decodeText, detectDelimiter, fileKind, parseCsv, toSheet } from "@/features/import/parse";
 import { batches, parseFlexibleDate, parseImportResponse, rejectedCsv, templateCsv, validateAll } from "@/features/import/validate";
 import { messages } from "@/messages/pt-BR";
@@ -67,6 +67,32 @@ describe("sugestão de colunas", () => {
     expect(m.name).toBe(0);
     expect(missingRequired(m)).toEqual(["email"]);
     expect(missingRequired(emptyMapping())).toEqual(["name", "email"]);
+  });
+});
+
+describe("colunas com cara de saúde", () => {
+  it("nenhuma é sugerida, nem a de observações médicas", () => {
+    const headers = [
+      "Nome", "E-mail", "Lesões", "Restrição", "Patologias", "Anamnese", "Dor", "Doença", "Medicamentos", "Cirurgia",
+      "Observações médicas", "Histórico clínico", "Observações",
+    ];
+    const m = suggestMapping(headers);
+    expect(m.name).toBe(0);
+    expect(m.email).toBe(1);
+    expect(m.notes).toBe(12); // a de observações comum, não a médica
+    const suggested = Object.values(m).filter((v): v is number => v !== null);
+    for (let i = 2; i <= 11; i++) expect(suggested).not.toContain(i);
+    expect(headers.slice(2, 12).every(looksLikeHealth)).toBe(true);
+  });
+  it("só as médicas existindo: observações ficam sem sugestão", () => {
+    expect(suggestMapping(["Nome", "Email", "Observações médicas"]).notes).toBeNull();
+    expect(suggestMapping(["Nome", "Email", "Obs. de saúde"]).notes).toBeNull();
+  });
+  it("sem falso positivo em palavras parecidas", () => {
+    for (const h of ["Endereço", "Dorsal", "Condomínio", "Data de início", "Objetivo", "Celular"]) expect(looksLikeHealth(h)).toBe(false);
+  });
+  it("o aviso fixo existe com o texto pedido", () => {
+    expect(messages.importer.healthWarning).toBe("Não importe dados de saúde nas observações; cadastre-os depois na ficha do aluno.");
   });
 });
 
