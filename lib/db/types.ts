@@ -3262,6 +3262,25 @@ export type Database = {
       get_dashboard_engagement_retention: { Args: never; Returns: Json }
       get_dashboard_training_stats: { Args: never; Returns: Json }
       get_live_board: { Args: never; Returns: Json }
+      is_platform_admin: { Args: never; Returns: boolean }
+      platform_list_accounts: { Args: never; Returns: Json }
+      platform_account_detail: { Args: { p_org: string }; Returns: Json }
+      platform_create_account: {
+        Args: { p_org_name: string; p_owner_name: string; p_plan: Database["public"]["Enums"]["plan_tier"]; p_student_limit: number; p_user_id: string }
+        Returns: string
+      }
+      platform_account_owner: { Args: { p_org: string }; Returns: { email: string; user_id: string }[] }
+      platform_log_invite: { Args: { p_org: string }; Returns: undefined }
+      platform_update_plan: { Args: { p_org: string; p_plan: Database["public"]["Enums"]["plan_tier"]; p_student_limit: number }; Returns: undefined }
+      platform_record_payment: {
+        Args: { p_amount_cents: number; p_note: string; p_org: string; p_paid_on: string; p_period_end: string; p_period_start: string }
+        Returns: string
+      }
+      platform_set_status: { Args: { p_org: string; p_status: string }; Returns: undefined }
+      platform_set_note: { Args: { p_note: string; p_org: string }; Returns: undefined }
+      get_my_subscription: { Args: never; Returns: Json }
+      get_platform_support: { Args: never; Returns: Json }
+      get_my_access_limits: { Args: never; Returns: Json }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_announcement: {
         Args: { p_student_id?: string }

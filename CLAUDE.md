@@ -748,6 +748,29 @@ effective_status =
 - `trainer_announcements` (recado) continua; proposta de unificar e a fase 2 (comentários moderados, denúncia, nome de
   exibição) em `docs/planos/feed.md` — só plano.
 
+### Plataforma e inadimplência (sprint de venda, migration `20261120120000` — escrita, ainda não aplicada)
+- **Plataforma** = quem vende o app. Área `/plataforma` (fora do AppShell; `requirePlatformAdmin()` → 404 para quem não
+  está na lista). Entrar na lista: **só por SQL** (`insert into private.platform_admins (user_id) values (...)`). O admin
+  pode não ter perfil em organização: o login cai em `/plataforma` (`requireStaff` redireciona).
+- Vê por conta: negócio, personal (nome/e-mail), plano, vagas usadas/limite, criação, último acesso (Auth), situação.
+  Ações: criar conta de personal (link de convite para criar a senha — **sem e-mail**: copiar/WhatsApp), novo link de
+  acesso, plano e limite, pagamento manual, situação, observação interna. Tudo auditado (`private.platform_audit`).
+  Gateway: só plano (`docs/planos/cobranca.md`).
+- **Regras** em `private.account_rules` (linha única, muda por SQL): tolerância 10 dias, acesso de cancelada 30 dias,
+  100 convites/dia, ausência 7 dias, aviso ao aluno a cada 7 dias, contato de suporte (WhatsApp/e-mail).
+- **Estado** (`private.org_access_state`): `ok` · `grace` (em atraso < 10 dias: banner com os dias) · `suspended` (em
+  atraso depois disso, ou suspensa) · `canceled` (cancelada < 30 dias) · `closed` (depois: só o personal entra, só
+  Configurações/Regularizar/Suporte — regra de tela, `closedAllows`).
+- **Somente leitura no banco:** gatilho `org_writable` (`private.enforce_org_writable`) em toda tabela de negócio com
+  `organization_id` recusa gravação com sessão de usuário (equipe **e aluno**) em `suspended`/`canceled`/`closed` →
+  `ACCOUNT_READ_ONLY`. Ficam de fora: `audit_logs` (a exportação registra), `profiles`, `feed_reads`, `live_sessions`,
+  `organization_counters`, `ai_usage_daily`, `ai_session_state`, `nps_prompts`. Sem sessão (servidor, cron) e admin da
+  plataforma passam. **Tabela nova com `organization_id`: crie o gatilho `org_writable` na migration dela.** Nada é
+  apagado.
+- Telas: banner no painel (`SubscriptionNotice`), `/regularizar` (contato da plataforma). Aluno de conta limitada:
+  "Seu acesso está temporariamente limitado. Fale com {nome}." no topo, último treino só leitura (sem iniciar), chat sem
+  caixa de envio; conta encerrada: tela de acesso indisponível. e2e `e2e/plataforma-inadimplencia.e2e.mjs`.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -823,6 +846,8 @@ sem efeitos colaterais).
 | **Ao vivo — tela de execução** | `live_heartbeat`, `ack_live_notice` | `live_heartbeat`: chamador duplo por `private.training_mode` da sessão (titular ou staff presencial; senão `SESSION_NOT_FOUND`); grava no máximo 1 batimento a cada 30 s por sessão (`private.live_heartbeats`) e só se a sessão tem registro ao vivo; só para o titular devolve `show_notice` e a última mensagem do staff não lida desde o início da sessão (o banner). `ack_live_notice`: escopo `students.user_id = auth.uid()` |
 | **Feed — personal / equipe** | `save_feed_post`, `delete_feed_post`, `set_feed_post_pinned`, `list_feed_posts` | `private.require_staff()`; editar/apagar/fixar via `private.lock_editable_feed_post` (mesma org, não apagado, **owner ou autor**; senão `FEED_POST_NOT_FOUND`). `save_feed_post` valida tipo, texto sem HTML (≤ 2000), link de vídeo (só https de YouTube/Vimeo/Instagram), imagem na pasta da org **já enviada** ao bucket `feed-media`, turma da org e agendamento (≤ 365 dias; criar no passado = agora). Professor da equipe publica só para os próprios alunos (`scope_trainer_id`). `list_feed_posts` devolve só a contagem de curtidas, nunca quem curtiu. Sem auditoria de conteúdo. `20261119160000`; testes em `tests/db/feed.test.ts` |
 | **Feed — aluno (titular)** | `get_my_feed`, `get_my_feed_new_count`, `mark_feed_seen`, `toggle_feed_like` | `private.feed_me()` (`students.user_id = auth.uid()`, status efetivo `active`, senão `STUDENT_NOT_FOUND`/`ACCESS_SUSPENDED`); visibilidade única em `private.feed_visible_posts` (mesma org, publicado, não apagado, autor = owner ou o professor do aluno, público todos/modalidade/turma). Curtir só post visível (`FEED_POST_NOT_FOUND`); devolve contagem + o próprio estado, nunca quem curtiu |
+| **Plataforma (quem vende o app)** | `is_platform_admin`, `platform_list_accounts`, `platform_account_detail`, `platform_create_account`, `platform_account_owner`, `platform_log_invite`, `platform_update_plan`, `platform_record_payment`, `platform_set_status`, `platform_set_note` | `private.require_platform_admin()` = usuário em `private.platform_admins` (lista só por SQL; nunca papel da organização) → senão `FORBIDDEN` (`is_platform_admin` devolve só o booleano). Só dados de conta (nome do negócio, dono, plano, contagem de vagas, datas, situação, pagamentos manuais, observação interna) — **nunca** nome/contato/dado de aluno; o admin sem perfil não lê tabela nenhuma de aluno (RLS por `current_org_id`). Toda ação em `private.platform_audit` (observação sem o texto). Criar conta: o servidor autoriza (`is_platform_admin`), cria o usuário do Auth por convite com a secret key e só então `platform_create_account` (sessão do admin) cria organização + owner. `20261120120000`; testes em `tests/db/platform-billing.test.ts` |
+| **Assinatura — personal / aluno** | `get_my_subscription`, `get_platform_support`, `get_my_access_limits` | `get_my_subscription`: `require_staff()`; situação, estado (`private.org_access_state`), datas de tolerância/fim e contato da plataforma — sem pagamentos nem observação. `get_platform_support`: qualquer logado (só o contato). `get_my_access_limits`: escopo `students.user_id = auth.uid()`; devolve `ok`/`limited`/`closed` e o primeiro nome de quem acompanha — nunca valores ou cobrança |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 

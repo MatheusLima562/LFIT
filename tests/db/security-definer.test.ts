@@ -86,6 +86,17 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["delete_feed_post", () => ({ p_id: randomUUID() })],
     ["set_feed_post_pinned", () => ({ p_id: randomUUID(), p_pinned: true })],
     ["list_feed_posts", () => ({})],
+    // Plataforma (20261120120000): nenhum usuário de organização (nem aluno) está na lista da plataforma.
+    ["platform_list_accounts", () => ({})],
+    ["platform_account_detail", () => ({ p_org: randomUUID() })],
+    ["platform_update_plan", () => ({ p_org: randomUUID(), p_plan: "gold", p_student_limit: 10 })],
+    ["platform_set_status", () => ({ p_org: randomUUID(), p_status: "active" })],
+    ["platform_set_note", () => ({ p_org: randomUUID(), p_note: "x" })],
+    ["platform_account_owner", () => ({ p_org: randomUUID() })],
+    ["platform_log_invite", () => ({ p_org: randomUUID() })],
+    ["platform_record_payment", () => ({ p_org: randomUUID(), p_paid_on: "2026-11-01", p_amount_cents: 1, p_period_start: "2026-11-01", p_period_end: "2026-11-02", p_note: "" })],
+    ["platform_create_account", () => ({ p_user_id: randomUUID(), p_org_name: "X Y", p_owner_name: "X Y", p_plan: "pro", p_student_limit: 1 })],
+    ["get_my_subscription", () => ({})],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -132,6 +143,9 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "submit_nps", "get_my_nps_prompt", "snooze_nps_prompt", "request_nps", "get_nps_summary", "get_nps_status", "send_nps_reminder",
     "save_feed_post", "delete_feed_post", "set_feed_post_pinned", "list_feed_posts", "get_my_feed", "get_my_feed_new_count",
     "mark_feed_seen", "toggle_feed_like",
+    "is_platform_admin", "platform_list_accounts", "platform_account_detail", "platform_create_account", "platform_account_owner",
+    "platform_log_invite", "platform_update_plan", "platform_record_payment", "platform_set_status", "platform_set_note",
+    "get_my_subscription", "get_platform_support", "get_my_access_limits",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

@@ -21,6 +21,18 @@ export const getMyProfile = cache(async (): Promise<AppProfile | null> => {
   return (data?.[0] as AppProfile | undefined) ?? null;
 });
 
+/**
+ * A conta do personal limita o app? (assinatura em atraso após a tolerância, suspensa ou cancelada). `limited`: só leitura
+ * do último treino e do histórico, sem chat nem feed novos; `closed`: sem acesso. Falha → "ok" (o banco recusa gravações).
+ */
+export const getMyAccessLimits = cache(async (): Promise<{ state: "ok" | "limited" | "closed"; personalName: string | null }> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_my_access_limits");
+  const r = (error ? {} : (data ?? {})) as { state?: unknown; personal_name?: unknown };
+  const state = r.state === "limited" || r.state === "closed" ? r.state : "ok";
+  return { state, personalName: typeof r.personal_name === "string" && r.personal_name ? r.personal_name : null };
+});
+
 export async function getMyConsentRequest() {
   const supabase = await createClient();
   const { data } = await supabase.rpc("get_my_health_consent_request");

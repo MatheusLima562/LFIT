@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/db/server";
 import type { Database } from "@/lib/db/types";
 
@@ -45,10 +45,27 @@ export async function requireStaff(): Promise<Session> {
   if (!session) {
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
-    redirect(data?.claims?.sub ? "/auth/sair?motivo=perfil" : "/entrar");
+    if (!data?.claims?.sub) redirect("/entrar");
+    // Admin da plataforma sem perfil de organização: vai para o painel da plataforma (não é "perfil ausente").
+    if ((await supabase.rpc("is_platform_admin")).data === true) redirect("/plataforma");
+    redirect("/auth/sair?motivo=perfil");
   }
   if (session.role === "student") redirect("/aluno");
   return session;
+}
+
+/**
+ * Exige admin da PLATAFORMA (lista `private.platform_admins`, nunca papel da organização). Sem sessão → login; logado
+ * fora da lista → 404 (a área nem aparece). Devolve só o id e o e-mail.
+ */
+export async function requirePlatformAdmin(): Promise<{ userId: string; email: string }> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub;
+  if (!userId) redirect("/entrar?next=/plataforma");
+  const { data: ok } = await supabase.rpc("is_platform_admin");
+  if (ok !== true) notFound();
+  return { userId, email: typeof data?.claims?.email === "string" ? data.claims.email : "" };
 }
 
 /** Exige aluno (app do aluno). Sem sessão → login do app; staff → painel. */

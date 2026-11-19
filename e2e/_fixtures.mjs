@@ -76,6 +76,23 @@ function sqlLinkedDev(sql) {
   });
 }
 
+/** Põe (ou tira) um usuário na lista da plataforma — `private.platform_admins` só muda por SQL (sem tela, sem RPC). */
+export function setPlatformAdmin(userId, on = true) {
+  if (!/^[0-9a-f-]{36}$/.test(userId)) throw new Error("id inválido");
+  sqlLinkedDev(on
+    ? `insert into private.platform_admins (user_id) values ('${userId}') on conflict do nothing;`
+    : `delete from private.platform_admins where user_id = '${userId}';`);
+}
+
+/** Situação da assinatura da org do seed (padrão: em dia), opcionalmente "mudada há N dias" (para passar da tolerância). */
+export async function setSeedSubscription(admin, status = "active", changedDaysAgo = 0) {
+  const { org } = await seedIds(admin);
+  must(
+    await admin.from("organizations").update({ subscription_status: status, status_changed_at: new Date(Date.now() - changedDaysAgo * 86_400_000).toISOString() }).eq("id", org),
+    "situação da assinatura do seed",
+  );
+}
+
 /**
  * Aviso de transparência do AO VIVO ainda não visto (`private.live_notice_acks` fica fora da API; por isso o SQL
  * direto). Sem isso, o AO VIVO só mostrava o aviso na primeira execução depois do seed.

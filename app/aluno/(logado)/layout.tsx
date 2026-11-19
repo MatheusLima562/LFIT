@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { signOutStudent } from "@/features/student-app/actions";
 import { StudentBrand } from "@/features/student-app/components/StudentBrand";
 import { StudentNav } from "@/features/student-app/components/StudentNav";
-import { getMyConsentRequest, getMyProfile } from "@/features/student-app/queries";
+import { getMyAccessLimits, getMyConsentRequest, getMyProfile } from "@/features/student-app/queries";
 import { getStudentUnread } from "@/features/chat/queries";
 import { getMyFeedNewCount } from "@/features/feed/queries";
 import { HealthConsentForm } from "@/features/students/components/HealthConsentForm";
@@ -100,11 +100,32 @@ export default async function StudentLoggedLayout({ children }: LayoutProps<"/al
     );
   }
 
-  const [unread, feedNew] = await Promise.all([getStudentUnread(profile.student_id), getMyFeedNewCount()]);
+  const [unread, feedNew, limits] = await Promise.all([getStudentUnread(profile.student_id), getMyFeedNewCount(), getMyAccessLimits()]);
+
+  // Conta do personal encerrada (cancelada há mais de 30 dias): sem acesso, com a mensagem do personal.
+  if (limits.state === "closed") {
+    return (
+      <>
+        <Header name={name} signOut />
+        <main className="mx-auto flex max-w-md flex-col items-center px-6 pt-16 text-center">
+          <span aria-hidden className="grid size-14 place-items-center rounded-full bg-surface text-ink-2 ring-1 ring-line">
+            <PauseCircle className="size-7" />
+          </span>
+          <h1 className="mt-5 text-xl font-semibold text-ink">{t.limited.closedTitle}</h1>
+          <p className="mt-2 text-sm text-ink-2">{t.limited.banner(limits.personalName)}</p>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
       <Header name={name} />
+      {limits.state === "limited" && (
+        <p role="status" className="mx-auto max-w-md border-b border-warning-line bg-warning-soft px-4 py-2 text-[13px] text-warning-ink">
+          {t.limited.banner(limits.personalName)}
+        </p>
+      )}
       <main className="mx-auto max-w-md px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</main>
       <StudentNav studentId={profile.student_id} initialUnread={unread} initialFeedNew={feedNew} />
     </>
