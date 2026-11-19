@@ -115,6 +115,7 @@ export type Database = {
           organization_id: string
           reply_to: string | null
           role: string
+          seq: number
           session_id: string
           student_id: string
         }
@@ -127,6 +128,7 @@ export type Database = {
           organization_id: string
           reply_to?: string | null
           role: string
+          seq?: never
           session_id: string
           student_id: string
         }
@@ -139,6 +141,7 @@ export type Database = {
           organization_id?: string
           reply_to?: string | null
           role?: string
+          seq?: never
           session_id?: string
           student_id?: string
         }

@@ -6,7 +6,7 @@ Tutoriais passo a passo para quem usa o app. Os do professor aparecem no painel 
 
 | Pasta | Público | Onde aparece |
 |---|---|---|
-| `professor/` | personal trainer e administrador da conta | painel, menu **Ajuda** (`/ajuda/<slug>`) |
+| `professor/` | personal (dono da conta) e professores da equipe | painel, menu **Ajuda** (`/ajuda/<slug>`) |
 | `aluno/` | aluno (app) | ainda não exibido no app — reservado |
 
 O nome do arquivo (sem `.md`) é o **slug** e vira a URL: `professor/01-tour-pela-interface.md` → `/ajuda/01-tour-pela-interface`.

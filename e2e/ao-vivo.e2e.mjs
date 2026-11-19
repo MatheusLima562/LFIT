@@ -1,5 +1,6 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
+import { resetLiveNotice, seedIds } from "./_fixtures.mjs";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
@@ -28,6 +29,8 @@ const login = async (path, email, viewport = { width: 375, height: 812 }) => {
 let sessionId = null;
 let aluna = null;
 try {
+  // Dados próprios (A4): o aviso de transparência volta a "não visto" para o roteiro passar em qualquer ordem.
+  resetLiveNotice((await seedIds(admin)).camila);
   aluna = await login("/aluno", "aluno.seed@example.com");
   // Depois do f3 pode haver um treino aberto ("Retomar treino"): usa ele e não o apaga no fim.
   const resume = aluna.getByRole("link", { name: "Retomar treino" });

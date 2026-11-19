@@ -1,5 +1,6 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
+import { resetCamilaChat } from "./_fixtures.mjs";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -68,6 +69,9 @@ async function desk(email) {
   await settle(page);
   return page;
 }
+// Dados próprios (A4): conversa e cursores de leitura da Camila no estado do seed, qualquer que seja o roteiro anterior
+// (o AO VIVO abre a conversa como o Caio e o cursor dele andava; o próprio k212 também lê).
+await resetCamilaChat(admin);
 const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
 const userId = (email) => users.users.find((x) => x.email === email).id;
 const CAMILA = (await admin.from("students").select("id").eq("user_id", userId("aluno.seed@example.com")).single()).data.id;

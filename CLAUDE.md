@@ -130,6 +130,9 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
   1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
 - `inicio-professor-cards`: confere os cards do Início (logado como o professor do seed) contra as RPCs e salva o print em
   `tutoriais-video/inicio-professor.png`; rode depois do f3 ou do `db:seed:demo`, com `--no-reseed`.
+- **Dados próprios por roteiro** (`e2e/_fixtures.mjs`): no começo, cada roteiro devolve ao estado do seed só o que usa
+  (`resetCamilaChat`: conversa + cursores de leitura da Camila; `resetLiveNotice`: aviso do AO VIVO, por SQL direto com
+  a trava do lfit-dev). Assim passam sozinhos e em qualquer ordem com `--no-reseed` (ex.: `ao-vivo` e depois `k212`).
 - Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`, `nps-`), idempotentes (limpam o que
   criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
@@ -621,7 +624,8 @@ effective_status =
 - **Card AO VIVO** no topo do Início (`features/live/`, fora do "Personalizar"): nome, divisão, progresso (exercícios
   concluídos / itens da cópia da divisão) e há quanto tempo treina; "Enviar mensagem" abre `/chat?aluno=`. **Precisa de
   atenção** (janela de 24 h): dor (dor > 5 ou "ainda incomoda", sessão não revisada — só nível completo; restrito vê
-  "aviso no treino"), última mensagem do aluno sem resposta há 5+ min, sessão ao vivo parada há 20+ min. Limites só na
+  "aviso no treino"), última mensagem do aluno sem resposta há 5+ min (**fica até o professor responder**, sem a janela
+  de 24 h; no máximo 14 dias — `20261119150000`, `tests/db/live-ai-fixes.test.ts`), sessão ao vivo parada há 20+ min. Limites só na
   RPC `get_live_board` (a tela recebe os números). O card mostra estado, nunca promete resposta.
 - Atualização: Realtime em `live_sessions` e `chat_messages` filtrado por `organization_id` (o RLS decide; o evento só
   dispara a busca, com debounce de 5 s: `features/live/debounce.ts`, testado) + busca a cada 30 s com a aba visível.
@@ -676,7 +680,9 @@ effective_status =
 - **PL/pgSQL:** num `IF`, a condição acaba no primeiro `THEN` — inclusive o de um `CASE` dentro dela (quebrou o
   primeiro push da importação). Calcule o `CASE` numa variável antes do `IF`.
 - Mensagem do aluno e resposta de segurança são gravadas na mesma transação (mesmo `created_at`): a ordem da conversa
-  na tela é horário + pergunta antes da resposta (`conversationOrder` em `features/assistant/state.ts`).
+  é **`ai_messages.seq`** (identidade, `generated always`, `20261119150000`) em todo lugar que lê — painel
+  (`get_ai_assistant_state`), contexto do provedor (`ai_submit_message`), histórico do professor (`order("seq")`). O
+  `conversationOrder` do cliente segue o `seq` (horário + pergunta antes da resposta só sem `seq`).
 - Botão "Enviar" do painel com `onPointerDown/onMouseDown` + `preventDefault`: mantém o foco no campo durante o toque
   (sem isso, a barra de abas — que some com o teclado — voltava por cima do botão e o toque caía nela).
 - `organizations.ai_assistant_enabled` padrão **false**; nenhuma organização ligada e **sem tela/RPC para ligar** até a

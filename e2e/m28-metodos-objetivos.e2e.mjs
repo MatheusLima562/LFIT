@@ -42,7 +42,7 @@ ok("arquivado", await toastWith(page, "Item arquivado"));
 await page.screenshot({ path: `${OUT}/01-listas.png`, fullPage: true });
 const t1 = await login("trainer1.seed@example.com");
 await t1.goto(`${BASE}/treinos/listas`); await settle(t1);
-ok("trainer: só leitura", (await t1.getByText("Somente o administrador altera estas listas.").count()) === 1 && (await t1.getByRole("button", { name: "Adicionar" }).count()) === 0);
+ok("trainer: só leitura", (await t1.getByText("Somente o personal altera estas listas.").count()) === 1 && (await t1.getByRole("button", { name: "Adicionar" }).count()) === 0);
 
 // Montador: substitutos, método/objetivo, dica
 await page.goto(`${BASE}/treinos/${p0.id}/editar`); await settle(page);

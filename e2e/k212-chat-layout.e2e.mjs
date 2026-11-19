@@ -1,9 +1,13 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
+import { resetCamilaChat } from "./_fixtures.mjs";
 import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
+const { createClient } = require("@supabase/supabase-js");
+// Dados próprios (A4): a conversa da Camila volta às 3 mensagens do seed (a altura medida depende delas).
+await resetCamilaChat(createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } }));
 const BASE = process.env.BASE ?? "http://localhost:3000", PW = process.env.SEED_USER_PASSWORD;
 // Prints para conferência do dono (fora do git, como os vídeos).
 const SHOTS = "tutoriais-video";

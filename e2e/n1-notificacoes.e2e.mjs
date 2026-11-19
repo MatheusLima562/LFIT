@@ -1,5 +1,6 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
+import { resetCamilaChat } from "./_fixtures.mjs";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -18,6 +19,7 @@ const toastsText = async (p) => (await p.locator("[data-sonner-toast]").allInner
 const RUN = `${Date.now()}`;
 const BODY = `Mensagem N1 ${RUN} — joelho dolorido`, BODY2 = `Na conversa ${RUN}`, STAFF_BODY = `Do aluno N1 ${RUN}`, RECADO = `Recado N1 ${RUN}`;
 
+await resetCamilaChat(admin); // dados próprios (A4): conversa da Camila no estado do seed
 const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
 const id = (email) => users.users.find((x) => x.email === email).id;
 const { data: camila } = await admin.from("students").select("id, organization_id").eq("user_id", id("aluno.seed@example.com")).single();
