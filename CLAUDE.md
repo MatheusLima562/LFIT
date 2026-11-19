@@ -130,6 +130,10 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
   1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
 - `inicio-professor-cards`: confere os cards do Início (logado como o professor do seed) contra as RPCs e salva o print em
   `tutoriais-video/inicio-professor.png`; rode depois do f3 ou do `db:seed:demo`, com `--no-reseed`.
+- **Rastro automático de falha** (`e2e/_trace.mjs`, carregado pelo `_guard.mjs`): todo contexto do Playwright grava
+  trace; se o roteiro falhar (linha "✗", exceção não tratada ou saída ≠ 0) salva `test-results/<roteiro>-<data>/` com
+  `trace-N.zip` (`npx playwright show-trace`), captura de cada página aberta e `console.log` (console, erros de página e
+  requisições que falharam). Roteiro que passa não grava nada. `test-results/` fica fora do git.
 - **Dados próprios por roteiro** (`e2e/_fixtures.mjs`): no começo, cada roteiro devolve ao estado do seed só o que usa
   (`resetCamilaChat`: conversa + cursores de leitura da Camila; `resetCamilaSessions`: Camila sem treinos;
   `resetDiegoConsent`: consentimento pendente; `resetLiveNotice`: aviso do AO VIVO, por SQL direto com a trava do

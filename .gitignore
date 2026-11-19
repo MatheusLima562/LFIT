@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+# rastro dos roteiros e2e que falharam (e2e/_trace.mjs)
+/test-results/
 
 # next.js
 /.next/
