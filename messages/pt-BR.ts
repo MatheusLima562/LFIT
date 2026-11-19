@@ -1120,7 +1120,7 @@ export const messages = {
       otherWorkouts: "Outras divisões",
       planNotes: "Observações do seu personal",
       trainerTitle: "Seu professor",
-      noTrainer: "Seu estúdio",
+      noTrainer: "Seu personal",
       message: "Mandar mensagem",
       officeHours: (hours: string) => `Atendimento: ${hours}`,
       announcement: "Recado do seu professor",
@@ -1149,7 +1149,9 @@ export const messages = {
       title: "Perfil",
       organization: "Estúdio",
       trainer: "Seu professor",
-      noTrainer: "A coordenação do estúdio acompanha você.",
+      personalTitle: "Seu personal",
+      /** Sem professor da equipe designado: quem acompanha é o personal (nome; vazio → "Seu personal"). */
+      noTrainer: (personal: string | null) => (personal ? `${personal} acompanha você.` : "Seu personal acompanha você."),
       officeHours: "Atendimento",
       access: "Acesso ao app",
       active: "Ativo",
@@ -1238,10 +1240,14 @@ export const messages = {
   chat: {
     title: "Chat",
     emergency: "Não é canal de emergência. Dor forte, falta de ar ou dor no peito: ligue 192.",
-    visibility: "Sua conversa é vista pelo seu professor e pela coordenação do estúdio",
+    /** Quem lê a conversa: o professor designado (se houver e não for o próprio personal) e o personal, pelo nome. */
+    visibility: (trainer: string | null, owner: string | null) => {
+      const personal = owner ? `por ${owner}` : "pelo seu personal";
+      return trainer && trainer !== owner ? `Sua conversa é vista por ${trainer} e ${personal}` : `Sua conversa é vista ${personal}`;
+    },
     officeHours: (hours: string) => `Atendimento: ${hours}`,
     yourTrainer: "Seu professor",
-    studioTeam: "Equipe do estúdio",
+    yourPersonal: "Seu personal",
     noticeMore: "Ver aviso completo",
     noticeLess: "Recolher aviso",
     emergencyShort: "Não é canal de emergência · ligue 192",
@@ -1357,7 +1363,7 @@ export const messages = {
   /** NPS (aluno → equipe, só agregados para a equipe). Nada aqui interpola nota ou nome de aluno para a equipe. */
   nps: {
     prompt: {
-      title: (trainer: string | null) => (trainer ? `Como está sendo treinar com ${trainer}?` : "Como está sendo treinar com a equipe do estúdio?"),
+      title: (trainer: string | null) => (trainer ? `Como está sendo treinar com ${trainer}?` : "Como está sendo treinar com seu personal?"),
       question: "De 0 a 10, quanto você recomendaria esse acompanhamento a um amigo?",
       scaleLabel: "Sua nota, de 0 a 10",
       scoreOption: (n: number) => `Nota ${n} de 10`,

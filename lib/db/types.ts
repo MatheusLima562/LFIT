@@ -3159,7 +3159,7 @@ export type Database = {
       list_feed_posts: { Args: never; Returns: Json }
       mark_feed_seen: { Args: never; Returns: undefined }
       save_feed_post: { Args: { p_data: Json; p_id?: string }; Returns: Json }
-      delete_feed_post: { Args: { p_id: string }; Returns: undefined }
+      delete_feed_post: { Args: { p_id: string }; Returns: Json }
       set_feed_post_pinned: { Args: { p_id: string; p_pinned: boolean }; Returns: undefined }
       toggle_feed_like: { Args: { p_like: boolean; p_post_id: string }; Returns: Json }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
@@ -3200,6 +3200,8 @@ export type Database = {
           first_name: string
           last_name: string
           organization_name: string
+          owner_first_name: string
+          personal_name: string
           photo_path: string
           sessions_this_month: number
           student_id: string

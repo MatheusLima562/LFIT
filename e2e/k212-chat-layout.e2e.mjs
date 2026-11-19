@@ -98,7 +98,7 @@ try {
     const notice = page.getByRole("button", { name: /Não é canal de emergência/ });
 
     // Primeiro acesso neste aparelho: aviso aberto (sem exigência de altura mínima — é a vez em que ele precisa ser lido).
-    ok(`${w}×${h} primeiro acesso: aviso aberto com a nota de privacidade`, (await notice.getAttribute("aria-expanded")) === "true" && (await page.getByText("Sua conversa é vista pelo seu professor e pela coordenação do estúdio").isVisible()));
+    ok(`${w}×${h} primeiro acesso: aviso aberto com a nota de privacidade`, (await notice.getAttribute("aria-expanded")) === "true" && (await page.getByText("Sua conversa é vista por Caio e por Rafael").isVisible()));
     checkLayout(`${w}×${h} aberto`, await measure(page), { minRatio: 0 });
     await page.screenshot({ path: `${SHOTS}/chat-aluno-${w}x${h}-aberto.png` });
     shots.push(`${SHOTS}/chat-aluno-${w}x${h}-aberto.png`);

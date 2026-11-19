@@ -50,16 +50,30 @@ function setCollapsed(value: boolean) {
  * aviso de emergência: aberto no primeiro acesso; depois recolhido em uma linha que mantém "Não é canal de emergência ·
  * ligue 192" sempre visível. Os dois ficam no fluxo (nunca sobre a lista de mensagens).
  */
-export function StudentChatHeader({ trainerName, officeHours }: { trainerName: string | null; officeHours: string | null }) {
+export function StudentChatHeader({
+  trainerName,
+  personalName,
+  ownerFirstName,
+  officeHours,
+}: {
+  trainerName: string | null;
+  /** Primeiro nome de quem acompanha (professor designado, senão o personal). */
+  personalName: string | null;
+  ownerFirstName: string | null;
+  officeHours: string | null;
+}) {
   const collapsed = useSyncExternalStore(subscribe, readCollapsed, () => false);
   const id = useId();
+  // Sem professor da equipe: o nome do personal; sem nome nenhum: "Seu personal".
+  const title = trainerName ?? personalName ?? t.yourPersonal;
+  const trainerFirst = trainerName ? trainerName.trim().split(/\s+/)[0] : null;
 
   return (
     <div className="flex shrink-0 flex-col gap-1 border-b border-line px-4 pb-1.5">
       <div className="flex h-11 items-center gap-2.5">
-        <TrainerAvatar name={trainerName ?? t.studioTeam} className="size-8 text-xs" />
-        <p className="sr-only">{trainerName ? t.yourTrainer : t.title}</p>
-        <h1 className="max-w-[60%] shrink-0 truncate text-[15px] font-semibold text-ink">{trainerName ?? t.studioTeam}</h1>
+        <TrainerAvatar name={title} className="size-8 text-xs" />
+        <p className="sr-only">{trainerName ? t.yourTrainer : t.yourPersonal}</p>
+        <h1 className="max-w-[60%] shrink-0 truncate text-[15px] font-semibold text-ink">{title}</h1>
         {officeHours && (
           <p className="flex min-w-0 flex-1 items-center gap-1 text-xs text-ink-3">
             <Clock aria-hidden className="size-3.5 shrink-0" />
@@ -85,7 +99,7 @@ export function StudentChatHeader({ trainerName, officeHours }: { trainerName: s
           <span className="sr-only">{collapsed ? t.noticeMore : t.noticeLess}</span>
         </button>
         <div id={id} hidden={collapsed} className="px-3 pb-2.5 pl-9 text-ink-2">
-          {t.visibility}
+          {t.visibility(trainerFirst, ownerFirstName)}
         </div>
       </div>
     </div>

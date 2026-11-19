@@ -278,3 +278,65 @@ revoke execute on function public.get_live_board(), public.get_ai_assistant_stat
 from public, anon;
 grant execute on function public.get_live_board(), public.get_ai_assistant_state(uuid), public.ai_submit_message(uuid, uuid, text)
 to authenticated;
+
+-- A3 (app do aluno): o dono da conta é o PERSONAL. Sem "coordenação/equipe do estúdio": o app mostra o NOME de quem
+-- acompanha — o primeiro nome do professor designado, senão o do personal (owner mais antigo da conta). Nunca
+-- sobrenome, e-mail ou outro dado do perfil. Mudar o RETURNS TABLE exige drop + create (e repetir os grants).
+drop function public.get_my_student_profile();
+
+create function public.get_my_student_profile()
+returns table (
+  student_id uuid, first_name text, last_name text, photo_path text,
+  organization_name text, trainer_name text, trainer_avatar_url text, trainer_office_hours text,
+  effective_status public.effective_status,
+  sessions_this_month integer, week_streak integer,
+  owner_first_name text, personal_name text
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    s.id, s.first_name, s.last_name, s.photo_path, o.name, t.full_name, t.avatar_url, t.preferences ->> 'office_hours',
+    public.student_effective_status(s),
+    (
+      select count(*)::integer from public.workout_sessions ws
+      where ws.student_id = s.id and ws.status = 'completed'
+        and date_trunc('month', ws.started_at at time zone 'America/Sao_Paulo')
+          = date_trunc('month', now() at time zone 'America/Sao_Paulo')
+    ),
+    coalesce((
+      -- Semanas (seg–dom, em SP) consecutivas terminando na mais recente — só conta se a mais recente com sessão
+      -- concluída for a semana atual ou a anterior; senão a sequência "quebrou" e o streak é 0.
+      with weeks as (
+        select distinct date_trunc('week', ws.started_at at time zone 'America/Sao_Paulo')::date as wk
+        from public.workout_sessions ws
+        where ws.student_id = s.id and ws.status = 'completed'
+      ),
+      islands as (
+        select wk, wk + (row_number() over (order by wk desc) * 7)::int as grp from weeks
+      )
+      select case
+        when (select max(wk) from weeks) >= date_trunc('week', now() at time zone 'America/Sao_Paulo')::date - 7
+        then (select count(*)::integer from islands where grp = (select grp from islands order by wk desc limit 1))
+        else 0
+      end
+    ), 0),
+    ow.first_name,
+    coalesce(nullif(split_part(trim(t.full_name), ' ', 1), ''), ow.first_name)
+  from public.students s
+  join public.organizations o on o.id = s.organization_id
+  left join public.profiles t on t.id = s.trainer_id
+  left join lateral (
+    select nullif(split_part(trim(p.full_name), ' ', 1), '') as first_name
+    from public.profiles p
+    where p.organization_id = s.organization_id and p.role = 'owner'
+    order by p.created_at, p.id
+    limit 1
+  ) ow on true
+  where s.user_id = (select auth.uid()) and s.deleted_at is null
+$$;
+
+revoke execute on function public.get_my_student_profile() from public, anon;
+grant execute on function public.get_my_student_profile() to authenticated;

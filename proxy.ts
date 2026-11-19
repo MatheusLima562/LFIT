@@ -5,6 +5,8 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PATHS = [
   "/entrar", "/esqueci-senha", "/redefinir-senha", "/convite", "/criar-conta", "/auth", "/cadastro", "/acesso",
   "/aluno/entrar", "/manifest.webmanifest", "/pwa", "/privacidade", "/termos",
+  // Vercel Cron: sem sessão; a própria rota exige `Authorization: Bearer $CRON_SECRET`.
+  "/api/cron",
 ];
 /** Rotas de autenticação: quem já está logado vai para o início. */
 const AUTH_ONLY_PATHS = ["/entrar", "/esqueci-senha", "/criar-conta", "/aluno/entrar"];

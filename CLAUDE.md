@@ -551,7 +551,10 @@ effective_status =
     professor, horário, acesso e "Sair da conta". "Sair" saiu do cabeçalho (fica só nas telas de portão, sem abas).
   - **`StudentNav`:** 4 abas (Hoje · Histórico · Chat · Perfil), `aria-current`, toque de 56 px; **some com o teclado**
     (campo de texto focado em aparelho de toque, ou `visualViewport` bem menor que a janela).
-  - **Chat do aluno:** cabeçalho compacto em uma linha (≤ 56 px: avatar, nome do professor ou "Equipe do estúdio",
+  - **Nome de quem acompanha (desde o sprint do feed):** o app do aluno não fala em "coordenação/equipe do estúdio".
+  `get_my_student_profile` devolve `personal_name` (primeiro nome do professor designado, senão do personal = owner
+  mais antigo) e `owner_first_name`; vazio → "seu personal". "Quem vê a conversa" cita os dois pelo nome.
+- **Chat do aluno:** cabeçalho compacto em uma linha (≤ 56 px: avatar, nome do professor ou do personal,
     horário em texto menor); aviso de emergência **aberto no primeiro acesso do aparelho e recolhido depois** (uma
     linha "Não é canal de emergência · ligue 192"; a nota de quem vê a conversa fica no conteúdo expandido). Preferência
     por aparelho em `localStorage` (só "1"/"0"; storage falhando = aberto). Cabeçalho e aviso no fluxo, nunca sobre a
@@ -726,9 +729,16 @@ effective_status =
   navegador para 1600 px — `features/feed/image.ts`, sem EXIF; caminho `<org>/<uuid>.(jpg|webp)`; URL assinada de 1 h
   com a sessão do usuário, sem cache compartilhado) e **vídeo só por link** (YouTube/Vimeo com embed só no toque —
   youtube-nocookie/`dnt=1`; Instagram como cartão de link). **Sem upload de vídeo** (custo de armazenamento e banda).
-- Storage: envio por staff na pasta da org; leitura por staff da org ou por aluno que **vê o post agora**
-  (`private.student_can_read_feed_media`); remoção por staff se nenhum post ativo de outra pessoa usa a imagem (owner
-  sempre). O editor apaga a imagem enviada e não usada (troca, falha, cancelar) e a anterior ao trocar.
+- Storage: envio por staff na pasta da org; leitura por staff da org ou por aluno **com acesso ativo** que **vê o post
+  agora** (`private.student_can_read_feed_media`, mesma regra de `feed_me`); remoção por staff se nenhum post ativo de
+  outra pessoa usa a imagem (owner sempre). O editor apaga a imagem enviada e não usada (troca, falha, cancelar) e a
+  anterior ao trocar.
+- **Apagar post apaga o arquivo:** server action `deleteFeedPost` (`features/feed/actions.ts`) — a RPC autoriza com a
+  sessão e devolve o caminho (só se nenhum outro post ativo o usa); depois a secret key remove pela **API do Storage**
+  (nunca SQL em `storage.objects`). **Limpeza diária** (Vercel Cron em `vercel.json` → `GET /api/cron/feed-media`,
+  `Authorization: Bearer $CRON_SECRET`, fail-closed sem a variável): `purgeFeedMedia` remove imagem de post apagado e
+  imagem enviada há mais de 24 h que nenhum post usa (regra pura `pickFeedMediaToRemove`); nunca a de post ativo ou
+  agendado. Testes: `tests/unit/feed.test.ts` e `tests/db/feed.test.ts`.
 - `trainer_announcements` (recado) continua; proposta de unificar e a fase 2 (comentários moderados, denúncia, nome de
   exibição) em `docs/planos/feed.md` — só plano.
 

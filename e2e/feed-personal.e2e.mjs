@@ -117,6 +117,13 @@ try {
   await page.getByRole("alertdialog").getByRole("button", { name: "Apagar" }).click();
   ok("apagado", await toast(page, "Post apagado."));
   ok("some da lista", await scheduledItem.waitFor({ state: "detached", timeout: 10000 }).then(() => true, () => false));
+  // Apagar post com imagem: o servidor remove o arquivo do Storage na hora.
+  await imageItem.getByRole("button", { name: "Apagar" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Apagar" }).click();
+  ok("post com imagem apagado", await imageItem.waitFor({ state: "detached", timeout: 10000 }).then(() => true, () => false));
+  const fileName = imageRow.image_path.split("/")[1];
+  const { data: left } = await admin.storage.from("feed-media").list(org, { search: fileName });
+  ok("arquivo da imagem removido do Storage", !(left ?? []).some((f) => f.name === fileName));
   ok("sem rolagem horizontal", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   ok("sem erro de página", page.errors.length === 0, page.errors.join(" | "));
 } catch (e) {

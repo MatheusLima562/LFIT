@@ -95,7 +95,8 @@ try {
   await sp.waitForURL(`${BASE}/aluno/chat`);
   await settle(sp);
   ok("aviso de emergência fixo", await waitText(sp, "Não é canal de emergência. Dor forte, falta de ar ou dor no peito: ligue 192."));
-  ok("aviso de quem vê a conversa", await waitText(sp, "Sua conversa é vista pelo seu professor e pela coordenação do estúdio"));
+  // Professor designado (Caio) + o personal (Rafael, dono da conta), pelo nome — sem "coordenação do estúdio".
+  ok("aviso de quem vê a conversa", await waitText(sp, "Sua conversa é vista por Caio e por Rafael"));
   ok("mensagens do seed aparecem", (await waitText(sp, "Combinado, obrigada!")) && (await waitText(sp, "Pode sim, Camila.", 3000)));
   const input = sp.getByRole("textbox", { name: "Mensagem" });
   ok("campo com fonte de 16 px (sem zoom no iOS)", (await input.evaluate((el) => getComputedStyle(el).fontSize)) === "16px");

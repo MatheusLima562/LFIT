@@ -88,6 +88,32 @@ describe.runIf(dbTestsEnabled)("correções: mensagem sem resposta (A1) e ordem 
     });
   });
 
+  describe("App do aluno — nome do personal no lugar de 'coordenação/equipe do estúdio'", () => {
+    type Profile = { trainer_name: string | null; owner_first_name: string | null; personal_name: string | null };
+    const profile = async () => (await rpc<Profile[]>(studentUser.client, "get_my_student_profile"))[0];
+
+    it("com professor da equipe designado: o primeiro nome dele; o do personal também vem (quem vê a conversa)", async () => {
+      await fx.db.from("profiles").update({ full_name: "Rafaela Dona Exemplo" }).eq("id", owner.id);
+      await fx.db.from("profiles").update({ full_name: "Caio Professor" }).eq("id", trainer.id);
+      expect(await profile()).toMatchObject({ trainer_name: "Caio Professor", personal_name: "Caio", owner_first_name: "Rafaela" });
+    });
+
+    it("sem professor designado: o primeiro nome do personal (dono da conta)", async () => {
+      await fx.db.from("students").update({ trainer_id: null }).eq("id", s1);
+      expect(await profile()).toMatchObject({ trainer_name: null, personal_name: "Rafaela", owner_first_name: "Rafaela" });
+    });
+
+    it("nome vazio → nulo (a tela usa 'seu personal'); nunca sobrenome", async () => {
+      await fx.db.from("profiles").update({ full_name: "   " }).eq("id", owner.id);
+      const p = await profile();
+      expect(p.personal_name).toBeNull();
+      expect(p.owner_first_name).toBeNull();
+      expect(JSON.stringify(p)).not.toMatch(/Dona Exemplo/);
+      await fx.db.from("profiles").update({ full_name: "Rafaela Dona Exemplo" }).eq("id", owner.id);
+      await fx.db.from("students").update({ trainer_id: trainer.id }).eq("id", s1);
+    });
+  });
+
   describe("A2 — ordem da conversa com a IA", () => {
     beforeAll(async () => {
       await fx.db.from("organizations").update({ ai_assistant_enabled: true }).eq("id", org.id);

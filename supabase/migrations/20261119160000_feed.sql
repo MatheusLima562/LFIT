@@ -181,7 +181,8 @@ as $$
     ))
 $$;
 
--- Leitura pelo aluno: só a imagem de um post que ele vê agora (público, publicado, não apagado).
+-- Leitura pelo aluno: só a imagem de um post que ele vê agora (público, publicado, não apagado) e só com acesso ATIVO
+-- (mesma regra de `private.feed_me`: inativo, expirado ou bloqueado não abre a imagem nem por URL assinada nova).
 create function private.student_can_read_feed_media(p_name text)
 returns boolean
 language sql
@@ -193,7 +194,10 @@ as $$
     select 1
     from public.students s
     cross join lateral private.feed_visible_posts(s.id) p
-    where s.user_id = (select auth.uid()) and s.deleted_at is null and p.image_path = p_name
+    where s.user_id = (select auth.uid())
+      and s.deleted_at is null
+      and public.student_effective_status(s) = 'active'
+      and p.image_path = p_name
   )
 $$;
 
@@ -330,9 +334,11 @@ begin
 end;
 $$;
 
--- Apagar = soft delete (some para o aluno na hora; as curtidas ficam até a exclusão em cascata da org).
+-- Apagar = soft delete (some para o aluno na hora; as curtidas ficam até a exclusão em cascata da org). Devolve o
+-- caminho da imagem que pode sair do Storage (nenhum outro post ativo a usa): o SERVIDOR apaga o arquivo pela API do
+-- Storage logo depois (`features/feed/actions.ts`); o que falhar ali a limpeza diária remove.
 create function public.delete_feed_post(p_id uuid)
-returns void
+returns jsonb
 language plpgsql
 security definer
 set search_path = ''
@@ -341,6 +347,12 @@ declare
   p public.feed_posts := private.lock_editable_feed_post(p_id);
 begin
   update public.feed_posts set deleted_at = now(), pinned = false, updated_at = now() where id = p.id;
+  return jsonb_build_object(
+    'image_path',
+    case when p.image_path is not null and not exists (
+      select 1 from public.feed_posts o where o.image_path = p.image_path and o.id <> p.id and o.deleted_at is null
+    ) then p.image_path end
+  );
 end;
 $$;
 

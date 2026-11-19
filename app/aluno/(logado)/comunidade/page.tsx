@@ -15,7 +15,7 @@ export default async function StudentCommunityPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-ink">{t.title}</h1>
-        <p className="mt-0.5 text-sm text-ink-2">{t.subtitle(profile?.trainer_name ?? null)}</p>
+        <p className="mt-0.5 text-sm text-ink-2">{t.subtitle(profile?.personal_name ?? null)}</p>
       </div>
       <StudentFeed posts={feed.posts} lastSeenAt={feed.lastSeenAt} />
     </div>

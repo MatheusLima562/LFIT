@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { callAction } from "@/lib/action";
 import { createClient } from "@/lib/db/client";
+import { deleteFeedPost } from "../actions";
 import { formatDate, formatTime } from "@/lib/format";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
 import { isScheduled } from "../feed";
@@ -155,7 +157,19 @@ export function FeedManager({ posts, orgId, isOwner, classes, now }: { posts: St
           const p = deleting;
           if (!p) return;
           setDeleting(null);
-          void run(p.id, () => supabase.rpc("delete_feed_post", { p_id: p.id }), t.deleted);
+          // Server action: a RPC autoriza com a sessão; depois o servidor apaga o arquivo da imagem no Storage.
+          void (async () => {
+            setBusy(p.id);
+            try {
+              const r = await callAction(() => deleteFeedPost(p.id));
+              if (!r) return;
+              if (!r.ok) return void toast.error(r.error);
+              toast.success(t.deleted);
+              router.refresh();
+            } finally {
+              setBusy(null);
+            }
+          })();
         }}
       />
     </div>

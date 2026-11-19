@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { purgeFeedMedia } from "@/features/feed/media-cleanup";
 import { anon, dbTestsEnabled, Fixture, rpc, studentData, type TestOrg, type TestUser } from "./helpers";
 
 /**
@@ -24,7 +25,6 @@ describe.runIf(dbTestsEnabled)("feed (save_feed_post, get_my_feed, toggle_feed_l
   const ids = async (u: TestUser) => (await feed(u)).posts.map((p) => p.id);
   const staffList = (u: TestUser) => rpc<(Post & { can_edit: boolean })[]>(u.client, "list_feed_posts");
   const text = (body: string, extra: Record<string, unknown> = {}) => ({ kind: "text", body, audience: "all", ...extra });
-
   const linkStudent = async (o: TestOrg, client: TestUser, studentUser: TestUser, trainerId: string | null, modality = "consultoria") => {
     const id = (await rpc<{ id: string }>(client.client, "create_student", { p_data: studentData() })).id;
     const { error } = await fx.db.from("students").update({ trainer_id: trainerId, user_id: studentUser.id, modality }).eq("id", id);
@@ -240,6 +240,56 @@ describe.runIf(dbTestsEnabled)("feed (save_feed_post, get_my_feed, toggle_feed_l
     await fx.db.from("students").update({ status: "inactive" }).eq("id", s2);
     await expect(feed(alunoT2)).rejects.toThrow("ACCESS_SUSPENDED");
     await fx.db.from("students").update({ status: "active" }).eq("id", s2);
+  });
+
+  it("imagem: aluno com acesso suspenso (inativo ou expirado) não abre a imagem de um post que via", async () => {
+    const { path } = await upload(owner, org.id);
+    await save(owner, { kind: "image", image_path: path, audience: "all" });
+    expect(await canSign(alunoT1, path)).toBe(true);
+    await fx.db.from("students").update({ status: "inactive" }).eq("id", s1);
+    expect(await canSign(alunoT1, path)).toBe(false);
+    await fx.db.from("students").update({ status: "active", access_expires_at: new Date(Date.now() - 60_000).toISOString() }).eq("id", s1);
+    expect(await canSign(alunoT1, path)).toBe(false);
+    await fx.db.from("students").update({ access_expires_at: null }).eq("id", s1);
+    expect(await canSign(alunoT1, path)).toBe(true);
+  });
+
+  it("apagar devolve o caminho da imagem a remover (nulo se outro post ativo usa o mesmo arquivo)", async () => {
+    const { path } = await upload(owner, org.id);
+    const a = await save(owner, { kind: "image", image_path: path, audience: "all" });
+    const b = await save(owner, { kind: "image", image_path: path, audience: "all" });
+    expect(await rpc(owner.client, "delete_feed_post", { p_id: a.id })).toEqual({ image_path: null });
+    expect(await rpc(owner.client, "delete_feed_post", { p_id: b.id })).toEqual({ image_path: path });
+    const plain = await save(owner, text("sem imagem"));
+    expect(await rpc(owner.client, "delete_feed_post", { p_id: plain.id })).toEqual({ image_path: null });
+  });
+
+  it("limpeza diária (API do Storage): órfã > 24 h e imagem de post apagado saem; post ativo e agendado ficam", async () => {
+    const exists = async (p: string) => {
+      const name = p.split("/")[1];
+      const { data } = await fx.db.storage.from("feed-media").list(org.id, { search: name });
+      return (data ?? []).some((f) => f.name === name);
+    };
+    const orphan = (await upload(owner, org.id)).path;
+    const active = (await upload(owner, org.id)).path;
+    const scheduled = (await upload(owner, org.id)).path;
+    const deleted = (await upload(owner, org.id)).path;
+    await save(owner, { kind: "image", image_path: active, audience: "all" });
+    await save(owner, { kind: "image", image_path: scheduled, audience: "all", published_at: new Date(Date.now() + 86_400_000).toISOString() });
+    const gone = await save(owner, { kind: "image", image_path: deleted, audience: "all" });
+    // Simula a falha da remoção logo após apagar: o post fica apagado e o arquivo continua no bucket.
+    await rpc(owner.client, "delete_feed_post", { p_id: gone.id });
+    expect(await exists(deleted)).toBe(true);
+
+    // Agora: só a imagem do post apagado sai (a órfã é recente).
+    await purgeFeedMedia(fx.db, { orgIds: [org.id] });
+    expect(await exists(deleted)).toBe(false);
+    expect(await exists(orphan)).toBe(true);
+    // 25 h depois: a órfã sai; as de post ativo e agendado ficam.
+    await purgeFeedMedia(fx.db, { orgIds: [org.id], now: Date.now() + 25 * 3_600_000 });
+    expect(await exists(orphan)).toBe(false);
+    expect(await exists(active)).toBe(true);
+    expect(await exists(scheduled)).toBe(true);
   });
 
   it("conteúdo do post nunca vai para a auditoria", async () => {

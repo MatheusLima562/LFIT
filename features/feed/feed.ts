@@ -155,6 +155,35 @@ export function fitWithin(width: number, height: number, max = FEED_IMAGE_MAX_DI
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
 }
 
+/** Imagem enviada e ainda não usada por nenhum post: só sai depois deste prazo (o editor pode estar aberto). */
+export const FEED_ORPHAN_GRACE_MS = 24 * 3_600_000;
+
+/**
+ * Limpeza diária do bucket `feed-media` (lógica pura). Remove:
+ *  - imagem de post APAGADO que nenhum post ativo usa (qualquer idade);
+ *  - imagem enviada há mais de 24 h que nenhum post usa (nem ativo nem apagado).
+ * Nunca remove imagem de post ativo (inclusive agendado).
+ */
+export function pickFeedMediaToRemove(
+  files: { path: string; createdAt: string | null }[],
+  usage: { path: string; deleted: boolean }[],
+  now: number,
+): string[] {
+  const active = new Set(usage.filter((u) => !u.deleted).map((u) => u.path));
+  const deletedOnly = new Set(usage.filter((u) => u.deleted && !active.has(u.path)).map((u) => u.path));
+  const used = new Set(usage.map((u) => u.path));
+  return files
+    .filter((f) => {
+      if (active.has(f.path)) return false;
+      if (deletedOnly.has(f.path)) return true;
+      if (used.has(f.path)) return false;
+      const created = f.createdAt ? new Date(f.createdAt).getTime() : NaN;
+      // Sem data confiável: não arrisca.
+      return Number.isFinite(created) && now - created > FEED_ORPHAN_GRACE_MS;
+    })
+    .map((f) => f.path);
+}
+
 // Leitura defensiva das RPCs ------------------------------------------------------------------------------------------
 export interface StudentFeedPost {
   id: string;

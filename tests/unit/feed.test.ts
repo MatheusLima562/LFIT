@@ -13,6 +13,7 @@ import {
   linkify,
   parseMyFeed,
   parseStaffFeed,
+  pickFeedMediaToRemove,
   safeHref,
   sanitizeFeedText,
   spLocalToISO,
@@ -122,6 +123,43 @@ describe("agendamento, novidades e imagem", () => {
   });
 });
 
+describe("limpeza diária do bucket", () => {
+  const now = new Date("2026-11-20T12:00:00Z").getTime();
+  const h = (n: number) => new Date(now - n * 3_600_000).toISOString();
+  const files = [
+    { path: "o/active.webp", createdAt: h(100) },
+    { path: "o/scheduled.webp", createdAt: h(100) },
+    { path: "o/deleted.webp", createdAt: h(1) },
+    { path: "o/shared.webp", createdAt: h(100) },
+    { path: "o/orphan-old.webp", createdAt: h(25) },
+    { path: "o/orphan-new.webp", createdAt: h(23) },
+    { path: "o/no-date.webp", createdAt: null },
+  ];
+  const usage = [
+    { path: "o/active.webp", deleted: false },
+    { path: "o/scheduled.webp", deleted: false },
+    { path: "o/deleted.webp", deleted: true },
+    { path: "o/shared.webp", deleted: true },
+    { path: "o/shared.webp", deleted: false },
+  ];
+  it("remove imagem de post apagado (qualquer idade) e órfã com mais de 24 h; nunca a de post ativo", () => {
+    expect(pickFeedMediaToRemove(files, usage, now).sort()).toEqual(["o/deleted.webp", "o/orphan-old.webp"]);
+  });
+  it("órfã recente e sem data ficam", () => {
+    const out = pickFeedMediaToRemove(files, usage, now);
+    expect(out).not.toContain("o/orphan-new.webp");
+    expect(out).not.toContain("o/no-date.webp");
+  });
+  it("vercel.json agenda a rota 1×/dia e a rota exige o segredo", () => {
+    const cfg = JSON.parse(readFileSync(join(process.cwd(), "vercel.json"), "utf8")) as { crons: { path: string; schedule: string }[] };
+    const cron = cfg.crons.find((c) => c.path === "/api/cron/feed-media");
+    expect(cron?.schedule).toMatch(/^\d+ \d+ \* \* \*$/);
+    const route = readFileSync(join(process.cwd(), "app/api/cron/feed-media/route.ts"), "utf8");
+    expect(route).toContain("CRON_SECRET");
+    expect(route).toMatch(/status: 401/);
+  });
+});
+
 describe("leitura das RPCs", () => {
   it("aluno: só contagem e o próprio estado — campos de quem curtiu são ignorados", () => {
     const f = parseMyFeed({
@@ -137,6 +175,26 @@ describe("leitura das RPCs", () => {
     const [p] = parseStaffFeed([{ id: "1", kind: "image", image_path: "o/a.webp", audience: "class", audience_class_name: "Turma A", can_edit: true, like_count: 2 }]);
     expect(p).toMatchObject({ kind: "image", imagePath: "o/a.webp", audience: "class", audienceClassName: "Turma A", canEdit: true, likeCount: 2 });
     expect(parseStaffFeed(null)).toEqual([]);
+  });
+});
+
+describe("app do aluno: nome do personal (sem 'coordenação/equipe do estúdio')", () => {
+  it("quem vê a conversa", () => {
+    expect(messages.chat.visibility("Caio", "Rafael")).toBe("Sua conversa é vista por Caio e por Rafael");
+    expect(messages.chat.visibility(null, "Rafael")).toBe("Sua conversa é vista por Rafael");
+    expect(messages.chat.visibility("Rafael", "Rafael")).toBe("Sua conversa é vista por Rafael");
+    expect(messages.chat.visibility(null, null)).toBe("Sua conversa é vista pelo seu personal");
+  });
+  it("perfil, Hoje e NPS sem nome usam 'seu personal'", () => {
+    expect(messages.aluno.profile.noTrainer("Rafael")).toBe("Rafael acompanha você.");
+    expect(messages.aluno.profile.noTrainer(null)).toBe("Seu personal acompanha você.");
+    expect(messages.aluno.today.noTrainer).toBe("Seu personal");
+    expect(messages.nps.prompt.title(null)).toBe("Como está sendo treinar com seu personal?");
+  });
+  it("nenhum texto do app fala em 'coordenação do estúdio' ou 'equipe do estúdio'", () => {
+    const src = readFileSync(join(process.cwd(), "messages/pt-BR.ts"), "utf8");
+    // ("Crie a conta do seu estúdio ou consultoria." é o cadastro do próprio personal, fora do app do aluno.)
+    expect(src).not.toMatch(/coordenação do estúdio|equipe do estúdio|"Seu estúdio"/i);
   });
 });
 
