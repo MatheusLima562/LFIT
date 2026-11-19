@@ -2809,6 +2809,10 @@ export type Database = {
           unread_count: number
         }[]
       }
+      import_students: {
+        Args: { p_batch_id: string; p_rows: Json }
+        Returns: Json
+      }
       live_heartbeat: { Args: { p_session_id: string }; Returns: Json }
       log_set: {
         Args: {
@@ -3164,7 +3168,7 @@ export type Database = {
       sex: "M" | "F"
       signup_status: "pending" | "approved" | "rejected"
       speed_preset: "slow" | "moderate" | "fast" | "explosive"
-      student_source: "manual" | "public_link"
+      student_source: "manual" | "public_link" | "import"
       student_status: "active" | "inactive"
       user_role: "owner" | "trainer" | "student"
     }
@@ -3317,7 +3321,7 @@ export const Constants = {
       sex: ["M", "F"],
       signup_status: ["pending", "approved", "rejected"],
       speed_preset: ["slow", "moderate", "fast", "explosive"],
-      student_source: ["manual", "public_link"],
+      student_source: ["manual", "public_link", "import"],
       student_status: ["active", "inactive"],
       user_role: ["owner", "trainer", "student"],
     },

@@ -632,6 +632,22 @@ effective_status =
 - "Alerta da IA" em "Precisa de atenção": **não implementado** (Pacote 3 sem especificação; ver
   `docs/decisoes-autonomas.md`).
 
+### Importação genérica de alunos (19/11/2026, migration `20261119130000` — escrita, aguardando push)
+- Rota `/importar` (staff; menu Alunos → "Importar alunos"). Código em `features/import/` (lógica pura em `parse.ts`,
+  `fields.ts`, `validate.ts`, testada em `tests/unit/import.test.ts`; XLSX pelo ExcelJS carregado só quando preciso).
+- **O arquivo nunca sai do navegador nem é guardado**: CSV/XLSX até 5 MB e 2000 linhas; CSV em UTF-8 (com/sem BOM) ou
+  Windows-1252, separador `;`/`,`/tab detectado. Só linhas válidas vão para `import_students`, em lotes de 200.
+- **Colunas:** sugestão por sinônimos pt-BR/en (nome, sobrenome, e-mail, telefone/celular, nascimento, objetivo,
+  observações, data de início, modalidade, status); obrigatórios nome e e-mail (o cadastro exige nome, sobrenome e
+  e-mail — sem coluna de sobrenome, a primeira palavra é o nome). **Objetivo e data de início não têm coluna no
+  cadastro: entram nas observações** ("Objetivo: …", "Início (importado): dd/mm/aaaa"). Modalidade/status por sinônimos
+  (padrão consultoria/ativo; inativo não ocupa vaga). Planilha-modelo CSV (`;` + BOM) gerada no navegador.
+- Erro bloqueia a linha (sem sobrenome, e-mail inválido/repetido, observações > 2000); aviso não bloqueia (telefone ou
+  data inválidos ficam em branco). Relatório por número de linha do arquivo + "Baixar linhas recusadas" (CSV gerado no
+  navegador). Conexão caindo no meio: "Tentar de novo" continua do lote pendente (e-mail único impede duplicar).
+- **Modelos por plataforma** (`PLATFORM_PRESETS` em `fields.ts`): hoje só o genérico; o do MFIT entra com um arquivo
+  real exportado (cabeçalhos exatos). Treinos do MFIT ficam para depois. Sem grupos especiais/dado de saúde na importação.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -701,6 +717,7 @@ sem efeitos colaterais).
 | **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
 | **NPS — aluno (titular)** | `submit_nps`, `get_my_nps_prompt`, `snooze_nps_prompt` | escopo `students.user_id = auth.uid()` (staff/anônimo: `STUDENT_NOT_FOUND`/sem EXECUTE; `get_my_nps_prompt` devolve nulo). `submit_nps` exige `private.nps_eligibility` (critérios de `private.nps_settings` → senão `NPS_NOT_ELIGIBLE` com o motivo no `detail`); nota 0–10; comentário recusado desde a v2 (`INVALID_INPUT`, `detail = 'comment'`); os 90 dias também pela exclusion constraint. Sem auditoria. `20261029130000` + `20261030120000`; testes em `tests/db/nps.test.ts` |
 | **NPS — equipe** | `get_nps_status`, `send_nps_reminder`, `get_nps_summary`, `request_nps` | `get_nps_status`: `require_staff` + `can_access_student` (owner ou responsável); devolve só o estado (`pending`/`unavailable`/`not_yet`/`no_account`/`inactive`/`none`) — nunca nota, data de resposta ou o "Agora não" (vira `unavailable`, sem data). `send_nps_reminder`: `lock_accessible_student`, **um aluno por chamada**, só em `pending`, um por ciclo (`nps_reminders`, unique); não cria nem antecipa o cartão. `get_nps_summary`: `require_staff`; só agregados por trimestre fechado com ≥ `min_responses` (senão `{enough:false}`); professor = respostas sobre ele; owner = organização + `by_trainer`. `request_nps` (v1): **sem EXECUTE** para `authenticated` desde `20261030120000` (substituída pelo lembrete) |
+| **Importação de alunos** | `import_students` | `require_staff()`; professor importa para si (`trainer_id` = ele; o do arquivo é ignorado), owner sem professor. Cada linha passa por `private.import_one_student` (mesmas regras de `insert_student`: obrigatórios, e-mail único, `assert_trainer_in_org`, vaga só para ativo, matrícula, `student.created` auditado) num bloco próprio; 1–200 linhas por chamada (senão `INVALID_INPUT`). Resposta só com linha + código (`DUPLICATE_EMAIL`, `PLAN_LIMIT_REACHED`, `INVALID_INPUT`, `INVALID_TRAINER`, `IMPORT_ROW_FAILED`); auditoria `students.imported` só com contagens. `20261119130000`; testes em `tests/db/student-import.test.ts` |
 | **Ao vivo — painel (Início)** | `get_live_board`, `set_live_enabled` | `get_live_board`: `require_staff()` + `private.dashboard_students()` (owner = organização; professor = os seus); só nome, rótulo da divisão, horários e contagens; dor só com `can_view_student_health` (`pain`), restrito sem o tipo (`session_alert`, via `is_restricted_health_viewer`), oculto = nada; nunca texto do chat. `set_live_enabled`: `require_owner()`, auditado (`live_settings_update`, só o booleano); desligar apaga `live_sessions` da organização. `20261119120000`; testes em `tests/db/live.test.ts` |
 | **Ao vivo — tela de execução** | `live_heartbeat`, `ack_live_notice` | `live_heartbeat`: chamador duplo por `private.training_mode` da sessão (titular ou staff presencial; senão `SESSION_NOT_FOUND`); grava no máximo 1 batimento a cada 30 s por sessão (`private.live_heartbeats`) e só se a sessão tem registro ao vivo; só para o titular devolve `show_notice` e a última mensagem do staff não lida desde o início da sessão (o banner). `ack_live_notice`: escopo `students.user_id = auth.uid()` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
@@ -726,7 +743,8 @@ Checklist para toda função `SECURITY DEFINER` nova:
 ## Backlog e decisões adiadas
 - **Importação do MFIT** (alunos e treinos via CSV/planilha) — etapa obrigatória **antes do uso com
   alunos reais**, depois da Fase 3 mínima. Deve respeitar limite do plano, matrícula, consentimento de saúde (importar grupos só
-  como "declarado") e auditoria; relatório de linhas rejeitadas.
+  como "declarado") e auditoria; relatório de linhas rejeitadas. **Alunos: importação genérica pronta** (ver
+  "Importação genérica de alunos"); faltam o modelo do MFIT (com um arquivo real), os grupos especiais e os treinos.
 - **Exercício personalizado × regra global:** a cópia congela as regras globais. Mostrar o aviso "regra global
   atualizada — revise sua cópia" quando uma regra global do exercício de origem mudar depois da personalização.
 - **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por

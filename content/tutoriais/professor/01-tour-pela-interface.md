@@ -132,6 +132,18 @@ O botão **Recado para todos** publica um recado que aparece na tela Hoje de tod
 
 O convite não chegou? No menu **⋯** do aluno, use **Copiar link de acesso** e envie o link pelo WhatsApp. O link vale por 30 minutos e só pode ser usado uma vez.
 
+### Importar alunos de outra plataforma
+
+1. No menu, abra **Alunos → Importar alunos**.
+2. Escolha o arquivo exportado da outra plataforma (CSV ou XLSX, até 5 MB e 2000 alunos). Se a plataforma não exporta,
+   use **Baixar planilha-modelo**, preencha e envie. O arquivo é lido no seu navegador e não fica guardado.
+3. Confira as colunas sugeridas (nome e e-mail são obrigatórios) e toque em **Continuar**.
+4. Na revisão, veja as linhas com problema e os avisos (ex.: telefone inválido entra em branco) e toque em **Importar**.
+5. No resultado, use **Baixar linhas recusadas** para corrigir e importar de novo só essas linhas.
+
+Objetivo e data de início entram nas observações do aluno. Alunos importados por um professor ficam com ele; pelo
+administrador, ficam sem professor designado.
+
 ### Montar e ativar um treino
 
 1. Em [Meus alunos](/alunos), abra o menu **⋯** do aluno e clique em **Treinos**.

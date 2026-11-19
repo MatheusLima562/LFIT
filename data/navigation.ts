@@ -34,6 +34,7 @@ export const navigation: NavSection[] = [
           { label: "Cadastros públicos", href: "/alunos/cadastros-publicos" },
           { label: "Anamneses", href: "/alunos/anamneses", status: "soon" },
           { label: "Grupos especiais", href: "/alunos/grupos" },
+          { label: "Importar alunos", href: "/importar" },
         ],
       },
       { id: "turmas", label: "Turmas", href: "/turmas", icon: UsersRound, status: "available" },
