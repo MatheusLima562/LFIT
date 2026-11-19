@@ -595,6 +595,60 @@ export type Database = {
           },
         ]
       }
+      import_batches: {
+        Row: {
+          archived_count: number | null
+          created_at: string
+          created_by: string | null
+          created_count: number
+          declaration_version: string
+          declared_at: string
+          id: string
+          kept_count: number | null
+          organization_id: string
+          rejected_count: number
+          rows_expected: number
+          rows_sent: number
+          source_label: string
+          undone_at: string | null
+          undone_by: string | null
+        }
+        Insert: {
+          archived_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_count?: number
+          declaration_version: string
+          declared_at: string
+          id?: string
+          kept_count?: number | null
+          organization_id: string
+          rejected_count?: number
+          rows_expected: number
+          rows_sent?: number
+          source_label: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Update: {
+          archived_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_count?: number
+          declaration_version?: string
+          declared_at?: string
+          id?: string
+          kept_count?: number | null
+          organization_id?: string
+          rejected_count?: number
+          rows_expected?: number
+          rows_sent?: number
+          source_label?: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Relationships: []
+      }
       health_conditions: {
         Row: {
           archived_at: string | null
@@ -3039,6 +3093,10 @@ export type Database = {
         Returns: undefined
       }
       staff_total_unread_count: { Args: never; Returns: number }
+      start_import_batch: {
+        Args: { p_declaration_version: string; p_rows_expected: number; p_source_label: string }
+        Returns: string
+      }
       start_workout_session: {
         Args: { p_plan_id: string; p_student_id?: string; p_workout_id: string }
         Returns: {
@@ -3106,6 +3164,7 @@ export type Database = {
         Args: { p_consent: boolean; p_payload: Json; p_token: string }
         Returns: string
       }
+      undo_import_batch: { Args: { p_batch_id: string }; Returns: Json }
       update_student: {
         Args: { p_patch: Json; p_student_id: string }
         Returns: {

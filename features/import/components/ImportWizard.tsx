@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { isNetworkError } from "@/features/student-app/queue";
 import { createClient } from "@/lib/db/client";
 import { cn } from "@/lib/utils";
-import { uuidV4 } from "@/lib/uuid";
-import { messages } from "@/messages/pt-BR";
+import { dbErrorMessage, messages } from "@/messages/pt-BR";
+import { IMPORT_DECLARATION_VERSION } from "../declaration";
 import { IMPORT_FIELDS, looksLikeHealth, missingRequired, REQUIRED_FIELDS, suggestMapping, type ColumnMapping, type ImportField } from "../fields";
 import { checkSheet, decodeText, fileKind, MAX_FILE_BYTES, MAX_ROWS, parseCsv, toSheet, type Encoding, type Sheet } from "../parse";
 import {
@@ -60,6 +63,11 @@ export function ImportWizard({ role, seatsLeft }: { role: "owner" | "trainer"; s
   // Lotes ainda não confirmados pelo servidor (para "Tentar de novo" continuar de onde parou) e id da importação.
   const pendingRef = useRef<ValidatedRow[][]>([]);
   const batchIdRef = useRef<string>("");
+  const router = useRouter();
+  const [declared, setDeclared] = useState(false);
+  const [sourceLabel, setSourceLabel] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const reset = () => {
     setStep(0);
@@ -72,6 +80,8 @@ export function ImportWizard({ role, seatsLeft }: { role: "owner" | "trainer"; s
     setServerRejected([]);
     setProblem(null);
     setEncoding(null);
+    setDeclared(false);
+    setStartError(null);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -131,6 +141,11 @@ export function ImportWizard({ role, seatsLeft }: { role: "owner" | "trainer"; s
           p_batch_id: batchIdRef.current,
           p_rows: batch.map((b) => b.payload!) as never,
         });
+        if (error && isNetworkError(error)) {
+          // O supabase-js devolve a queda de rede em `error` (não lança): o lote fica para "Tentar de novo".
+          setInterrupted(true);
+          return;
+        }
         if (error) {
           // Recusa do lote inteiro (sessão expirada, permissão): todas as linhas do lote como falha.
           setServerRejected((r) => [...r, ...sent.map((line) => ({ line, reason: errorText("IMPORT_ROW_FAILED") }))]);
@@ -150,11 +165,28 @@ export function ImportWizard({ role, seatsLeft }: { role: "owner" | "trainer"; s
     setStep(3);
   };
 
-  const startImport = () => {
-    batchIdRef.current = uuidV4();
+  // Abre o lote (declaração + origem registradas no banco) e só então envia as linhas.
+  const startImport = async () => {
+    if (!declared) return setStartError(t.declarationRequired);
+    setStartError(null);
+    setStarting(true);
+    try {
+      const { data, error } = await supabase.rpc("start_import_batch", {
+        p_source_label: sourceLabel.trim() || t.sourceDefault,
+        p_declaration_version: IMPORT_DECLARATION_VERSION,
+        p_rows_expected: valid.length,
+      });
+      if (error || !data) return setStartError(error && !isNetworkError(error) ? dbErrorMessage(error) : t.startFailed);
+      batchIdRef.current = data;
+    } catch {
+      return setStartError(t.startFailed);
+    } finally {
+      setStarting(false);
+    }
     pendingRef.current = batches(valid);
     setProgress({ done: 0, total: valid.length });
-    void runBatches();
+    await runBatches();
+    router.refresh(); // histórico de importações
   };
 
   const rejections: Rejection[] = [
@@ -298,17 +330,50 @@ export function ImportWizard({ role, seatsLeft }: { role: "owner" | "trainer"; s
             </p>
           )}
 
+          {!importing && valid.length > 0 && (
+            <div className="flex flex-col gap-3 border-t border-line pt-4">
+              <label htmlFor="import-source" className="flex flex-col gap-1 text-[13px] font-medium text-ink">
+                {t.sourceLabel}
+                <input
+                  id="import-source"
+                  type="text"
+                  maxLength={60}
+                  value={sourceLabel}
+                  placeholder={t.sourcePlaceholder}
+                  onChange={(e) => setSourceLabel(e.target.value)}
+                  className="h-10 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-[16px] font-normal text-ink outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-[14px]"
+                />
+              </label>
+              <p className="text-xs text-ink-3">{t.preRegistration}</p>
+              <label htmlFor="import-declaration" className="flex items-start gap-2.5 text-[13px] text-ink">
+                <Checkbox id="import-declaration" className="mt-0.5" checked={declared} onCheckedChange={(v) => setDeclared(v === true)} />
+                <span>{t.declaration}</span>
+              </label>
+              {startError && (
+                <p role="alert" className="text-[13px] text-danger-ink">
+                  {startError}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap justify-between gap-2">
             <Button type="button" variant="ghost" disabled={importing} onClick={() => setStep(1)}>
               {t.back}
             </Button>
             {interrupted ? (
-              <Button type="button" onClick={() => void runBatches()}>
+              <Button
+                type="button"
+                onClick={async () => {
+                  await runBatches();
+                  router.refresh();
+                }}
+              >
                 {t.retry}
               </Button>
             ) : (
-              <Button type="button" disabled={valid.length === 0 || importing} onClick={startImport}>
-                {importing && <Loader2 aria-hidden className="animate-spin" />}
+              <Button type="button" disabled={valid.length === 0 || importing || starting || !declared} onClick={() => void startImport()}>
+                {(importing || starting) && <Loader2 aria-hidden className="animate-spin" />}
                 {t.importButton(valid.length)}
               </Button>
             )}

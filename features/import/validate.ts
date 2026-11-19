@@ -6,6 +6,7 @@
 import { toE164 } from "@/lib/phone";
 import { parseBRDate, isoToBR, todayISO } from "@/lib/dates";
 import { searchKey } from "@/lib/text";
+import { toCsv } from "@/lib/spreadsheet";
 import type { ColumnMapping, ImportField } from "./fields";
 
 export type RowError =
@@ -15,7 +16,22 @@ export type RowError =
   | "email_missing"
   | "email_invalid"
   | "email_duplicate_in_file"
-  | "notes_too_long";
+  | "notes_too_long"
+  | "cell_too_long";
+
+/** Limite por célula (o banco repete): e-mail 254, objetivo/observações 2000, o resto 120. */
+export const CELL_LIMITS: Record<ImportField, number> = {
+  name: 120,
+  last_name: 120,
+  email: 254,
+  phone: 120,
+  birth_date: 120,
+  goal: 2000,
+  notes: 2000,
+  start_date: 120,
+  modality: 120,
+  status: 120,
+};
 
 export type RowWarning = "phone_invalid" | "birth_date_invalid" | "start_date_invalid" | "modality_unknown" | "status_unknown";
 
@@ -107,6 +123,10 @@ export function validateRow(
   const get = (f: ImportField) => (mapping[f] === null ? "" : collapse(cells[mapping[f]!] ?? ""));
   const errors: RowError[] = [];
   const warnings: RowWarning[] = [];
+
+  // Célula gigante (arquivo malformado ou malicioso) recusa a linha antes de qualquer outra regra.
+  const tooLong = (Object.keys(CELL_LIMITS) as ImportField[]).some((f) => get(f).length > CELL_LIMITS[f]);
+  if (tooLong) return { line, errors: ["cell_too_long"], warnings: [], payload: null };
 
   // Nome: com coluna de sobrenome, "nome" é o primeiro nome; sem ela, primeira palavra + resto.
   const name = get("name");
@@ -224,14 +244,11 @@ export function parseImportResponse(raw: unknown, sentRows: number[]): ServerRow
 export function templateCsv(headers: Record<ImportField, string>): string {
   const cols: ImportField[] = ["name", "email", "phone", "birth_date", "goal", "notes", "start_date", "modality", "status"];
   const example = ["Maria Exemplo da Silva", "maria.exemplo@example.com", "(41) 99999-0000", "31/12/1990", "Hipertrofia", "", "01/03/2026", "presencial", "ativo"];
-  const esc = (s: string) => (/[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
-  return `﻿${[cols.map((c) => esc(headers[c])).join(";"), example.map(esc).join(";")].join("\r\n")}\r\n`;
+  return toCsv([cols.map((c) => headers[c]), example]);
 }
 
 /** Linhas recusadas para baixar (dados do próprio arquivo, gerado no navegador; nada vai ao servidor). */
 export function rejectedCsv(headers: string[], rows: { line: number; cells: string[]; reason: string }[], labels: { line: string; reason: string }): string {
-  const esc = (s: string) => (/[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
-  const head = [labels.line, labels.reason, ...headers].map(esc).join(";");
-  const body = rows.map((r) => [String(r.line), r.reason, ...r.cells].map(esc).join(";"));
-  return `﻿${[head, ...body].join("\r\n")}\r\n`;
+  // As células vêm do arquivo de outra pessoa/plataforma: neutralizar fórmula aqui é o que mais importa.
+  return toCsv([[labels.line, labels.reason, ...headers], ...rows.map((r) => [String(r.line), r.reason, ...r.cells])]);
 }

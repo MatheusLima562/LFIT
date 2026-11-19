@@ -138,11 +138,18 @@ O convite não chegou? No menu **⋯** do aluno, use **Copiar link de acesso** e
 2. Escolha o arquivo exportado da outra plataforma (CSV ou XLSX, até 5 MB e 2000 alunos). Se a plataforma não exporta,
    use **Baixar planilha-modelo**, preencha e envie. O arquivo é lido no seu navegador e não fica guardado.
 3. Confira as colunas sugeridas (nome e e-mail são obrigatórios) e toque em **Continuar**.
-4. Na revisão, veja as linhas com problema e os avisos (ex.: telefone inválido entra em branco) e toque em **Importar**.
+4. Na revisão, veja as linhas com problema e os avisos (ex.: telefone inválido entra em branco), diga de onde vêm os
+   alunos (ex.: MFIT), marque a declaração de que você tem base legal para cadastrá-los e vai informá-los, e toque em
+   **Importar**.
 5. No resultado, use **Baixar linhas recusadas** para corrigir e importar de novo só essas linhas.
 
-Objetivo e data de início entram nas observações do aluno. Alunos importados por um professor ficam com ele; pelo
-administrador, ficam sem professor designado.
+Não importe dados de saúde (lesões, restrições, medicamentos…) nas observações: cadastre-os depois na ficha do aluno.
+Colunas com cara de dado de saúde não são sugeridas. Objetivo e data de início entram nas observações do aluno. Alunos
+importados por um professor ficam com ele; pelo administrador, ficam sem professor designado.
+
+Os alunos entram em **pré-cadastro**, sem acesso ao app: nenhum e-mail ou convite é enviado na importação. Mande o
+acesso depois, aluno por aluno. Errou a importação? Em **Importações recentes**, **Desfazer** (até 7 dias) arquiva os
+alunos daquele arquivo que ainda não tiveram nenhuma atividade.
 
 ### Montar e ativar um treino
 

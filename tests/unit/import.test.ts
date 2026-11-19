@@ -1,4 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { IMPORT_DECLARATION_VERSION } from "@/features/import/declaration";
+import { canUndo, undoDeadline } from "@/features/import/undo";
 import { emptyMapping, looksLikeHealth, missingRequired, suggestMapping } from "@/features/import/fields";
 import { checkSheet, decodeText, detectDelimiter, fileKind, parseCsv, toSheet } from "@/features/import/parse";
 import { batches, parseFlexibleDate, parseImportResponse, rejectedCsv, templateCsv, validateAll } from "@/features/import/validate";
@@ -126,7 +130,8 @@ describe("validação", () => {
         row(["Caio Reis", "caio@", "", "", "", "", "", "", ""], 4),
         row(["Dani Alves", "dani@x.com", "123", "31/02/1990", "", "", "amanhã", "yoga", "talvez"], 5),
         row(["Eva Melo", "DANI@x.com", "", "", "", "", "", "", ""], 6),
-        row(["Fabi Lins", "fabi@x.com", "", "", "", "x".repeat(2001), "", "", "inativo"], 7),
+        // Cada célula cabe (≤ 2000), mas observações + "Objetivo: …" juntas passam de 2000.
+        row(["Fabi Lins", "fabi@x.com", "", "", "Hipertrofia", "x".repeat(1995), "", "", "inativo"], 7),
       ],
       mapping,
       TODAY,
@@ -155,6 +160,35 @@ describe("validação", () => {
     expect(parseFlexibleDate("1990-02-01T00:00:00")).toBe("1990-02-01");
     expect(parseFlexibleDate("01/02/90")).toBeNull();
     expect(parseFlexibleDate("30/02/1990")).toBeNull();
+  });
+});
+
+describe("limite por célula, declaração e desfazer", () => {
+  const mapping = suggestMapping(["Nome", "E-mail", "Observações"]);
+  it("célula acima do limite recusa a linha", () => {
+    const [ok] = validateAll([{ line: 2, cells: ["Ana Lima", "a@x.com", "x".repeat(2000)] }], mapping, TODAY);
+    expect(ok.errors).toEqual([]);
+    const [big] = validateAll([{ line: 2, cells: ["Ana Lima", "a@x.com", "x".repeat(2001)] }], mapping, TODAY);
+    expect(big.errors).toEqual(["cell_too_long"]);
+    const [name] = validateAll([{ line: 2, cells: [`Ana ${"y".repeat(130)}`, "a@x.com", ""] }], mapping, TODAY);
+    expect(name.errors).toEqual(["cell_too_long"]);
+    const [mail] = validateAll([{ line: 2, cells: ["Ana Lima", `${"z".repeat(250)}@x.com`, ""] }], mapping, TODAY);
+    expect(mail.errors).toEqual(["cell_too_long"]);
+  });
+  it("a versão da declaração do código está aceita na migration", () => {
+    const sql = readFileSync(join(process.cwd(), "supabase/migrations/20261119130000_student_import.sql"), "utf8");
+    expect(sql).toContain(`insert into private.import_declarations (version) values ('${IMPORT_DECLARATION_VERSION}')`);
+    expect(messages.importer.declaration).toMatch(/base legal/);
+    expect(messages.importer.declaration).toMatch(/informá-los/);
+  });
+  it("desfazer só até 7 dias, não desfeito e com alunos criados", () => {
+    const created = "2026-11-10T12:00:00Z";
+    const at = (iso: string) => Date.parse(iso);
+    expect(undoDeadline(created)).toBe("2026-11-17T12:00:00.000Z");
+    expect(canUndo({ createdAt: created, undoneAt: null, created: 3 }, at("2026-11-17T11:59:59Z"))).toBe(true);
+    expect(canUndo({ createdAt: created, undoneAt: null, created: 3 }, at("2026-11-17T12:00:00Z"))).toBe(false);
+    expect(canUndo({ createdAt: created, undoneAt: "2026-11-11T00:00:00Z", created: 3 }, at("2026-11-12T00:00:00Z"))).toBe(false);
+    expect(canUndo({ createdAt: created, undoneAt: null, created: 0 }, at("2026-11-12T00:00:00Z"))).toBe(false);
   });
 });
 
