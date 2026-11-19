@@ -25,8 +25,13 @@ export interface LiveEntry {
   total: number;
 }
 
-export type AttentionKind = "pain" | "session_alert" | "unanswered" | "stalled";
-const ATTENTION_KINDS: readonly AttentionKind[] = ["pain", "session_alert", "unanswered", "stalled"];
+export type AttentionKind = "pain" | "session_alert" | "unanswered" | "stalled" | "ai_safety" | "ai_failed";
+const ATTENTION_KINDS: readonly AttentionKind[] = ["pain", "session_alert", "unanswered", "stalled", "ai_safety", "ai_failed"];
+
+/** Alertas que pedem cuidado (cor de cautela) e levam aos treinos do aluno, onde está a conversa com a IA. */
+export function isWarningKind(kind: AttentionKind): boolean {
+  return kind === "pain" || kind === "session_alert" || kind === "ai_safety" || kind === "ai_failed";
+}
 
 export interface AttentionEntry {
   kind: AttentionKind;
@@ -128,12 +133,16 @@ export function attentionLabel(e: AttentionEntry, nowMs: number): string {
       return t.attention.unanswered(since);
     case "stalled":
       return t.attention.stalled(since);
+    case "ai_safety":
+      return t.attention.ai_safety;
+    case "ai_failed":
+      return t.attention.ai_failed;
   }
 }
 
 /** Para onde a linha leva: aviso do treino → treinos do aluno; o resto → conversa. */
 export function attentionHref(e: AttentionEntry): string {
-  return e.kind === "pain" || e.kind === "session_alert" ? `/alunos/${e.student_id}/treinos` : chatHref(e.student_id);
+  return isWarningKind(e.kind) ? `/alunos/${e.student_id}/treinos` : chatHref(e.student_id);
 }
 
 export function chatHref(studentId: string): string {

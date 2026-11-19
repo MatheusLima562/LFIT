@@ -18,6 +18,8 @@ import { CoachSessions } from "@/features/coach/components/CoachSessions";
 import { getCoachSessions, getStudentAnnouncement } from "@/features/coach/queries";
 import { NpsReminderPanel } from "@/features/nps/components/NpsReminderPanel";
 import { getNpsStatus } from "@/features/nps/queries";
+import { AssistantHistory } from "@/features/assistant/components/AssistantHistory";
+import { getAssistantConversations } from "@/features/assistant/queries";
 
 const t = messages.plans.manage;
 const TABS = ["atuais", "futuros", "anteriores", "todos"] as const;
@@ -39,6 +41,8 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
     getCoachSessions(id),
     getNpsStatus(id),
   ]);
+  // Assistente de IA: só quem vê a saúde do aluno recebe linhas (RLS); sem conversa, a seção não aparece.
+  const aiConversations = await getAssistantConversations(id);
 
   // Abas pela URL (?aba=). Agendado cuja data já chegou conta como atual até o job diário rodar.
   const today = todayISO();
@@ -143,6 +147,8 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
           )}
         </div>
       )}
+
+      {aiConversations.length > 0 && <AssistantHistory conversations={aiConversations} />}
     </div>
   );
 }

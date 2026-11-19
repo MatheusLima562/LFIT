@@ -20,6 +20,7 @@ import {
   clockOffset,
   durationLabel,
   fullName,
+  isWarningKind,
   LIVE_POLL_MS,
   parseLiveBoard,
   progress,
@@ -68,6 +69,8 @@ export function LiveBoardCard({ initial, organizationId }: { initial: LiveBoard;
         .channel(`live:${organizationId}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "live_sessions", filter: `organization_id=eq.${organizationId}` }, () => d.trigger())
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `organization_id=eq.${organizationId}` }, () => d.trigger())
+        // Alerta do Assistente de IA (só chega a quem vê a saúde do aluno; os demais veem pela busca periódica).
+        .on("postgres_changes", { event: "*", schema: "public", table: "ai_session_state", filter: `organization_id=eq.${organizationId}` }, () => d.trigger())
         .subscribe(),
     );
     return () => {
@@ -216,7 +219,7 @@ export function LiveBoardCard({ initial, organizationId }: { initial: LiveBoard;
 }
 
 function AttentionRow({ entry, nowMs }: { entry: AttentionEntry; nowMs: number }) {
-  const warn = entry.kind === "pain" || entry.kind === "session_alert";
+  const warn = isWarningKind(entry.kind);
   const Icon = warn ? AlertTriangle : entry.kind === "stalled" ? PauseCircle : MessageCircle;
   return (
     <li>

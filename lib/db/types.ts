@@ -595,6 +595,45 @@ export type Database = {
           },
         ]
       }
+      ai_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          item_id: string | null
+          kind: string
+          organization_id: string
+          reply_to: string | null
+          role: string
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          kind?: string
+          organization_id: string
+          reply_to?: string | null
+          role: string
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          kind?: string
+          organization_id?: string
+          reply_to?: string | null
+          role?: string
+          session_id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       import_batches: {
         Row: {
           archived_count: number | null
@@ -2419,7 +2458,15 @@ export type Database = {
       }
     }
     Functions: {
+      accept_ai_terms: { Args: { p_version: string }; Returns: undefined }
       ack_live_notice: { Args: never; Returns: undefined }
+      admin_purge_ai_data: { Args: never; Returns: number }
+      ai_record_reply: {
+        Args: { p_body: string; p_failed: boolean; p_input_tokens: number; p_message_id: string; p_output_tokens: number }
+        Returns: Json
+      }
+      ai_submit_message: { Args: { p_body: string; p_item_id: string; p_session_id: string }; Returns: Json }
+      get_ai_assistant_state: { Args: { p_session_id: string }; Returns: Json }
       acknowledge_session_alert: {
         Args: { p_session_id: string }
         Returns: undefined

@@ -631,8 +631,9 @@ effective_status =
 - `organizations.live_enabled` (padrão ligado), só o owner muda pelo próprio card; desligar apaga `live_sessions` da org.
 - **Retenção de 30 dias:** `private.purge_live_tracking()` pelo pg_cron `lfit-purge-live-tracking` (03:20 UTC); o
   histórico de treino (`workout_sessions`) não é tocado. Disparo manual: `admin_purge_live_tracking()` (service_role).
-- "Alerta da IA" em "Precisa de atenção": **não implementado** (Pacote 3 sem especificação; ver
-  `docs/decisoes-autonomas.md`).
+- "Alerta da IA" em "Precisa de atenção" (`20261119140000` redefine `get_live_board`): `ai_safety` (relato de sintoma
+  ao assistente — só nível completo; restrito vê o aviso genérico) e `ai_failed` (o assistente não respondeu). Uma
+  linha por (tipo, aluno). Ver "Assistente de IA".
 
 ### Importação genérica de alunos (19/11/2026, migration `20261119130000` — escrita, aguardando push)
 - Rota `/importar` (staff; menu Alunos → "Importar alunos"). Código em `features/import/` (lógica pura em `parse.ts`,
@@ -670,6 +671,32 @@ effective_status =
 - **Limitação conhecida:** o e-mail é único por organização e "1 e-mail = 1 conta" (ver "Decisões pendentes"): um aluno
   que já tem acesso em OUTRA organização entra no cadastro, mas não consegue receber acesso aqui com o mesmo e-mail.
 - Plano da importação de treinos (só proposta): `docs/planos/importacao-treinos.md`.
+
+### Assistente de IA — DESLIGADO por padrão (19/11/2026, migration `20261119140000` — escrita, aguardando push)
+- `organizations.ai_assistant_enabled` padrão **false**; nenhuma organização ligada e **sem tela/RPC para ligar** até a
+  revisão jurídica (`docs/ia-checklist-juridico.md`).
+- **Provedor só no servidor** (rota `app/aluno/assistente/route.ts`): interface em `features/assistant/provider.ts`
+  (provedor **falso** para testes: `AI_PROVIDER=fake`, recusado em produção), real em `anthropic.ts` (Messages API,
+  `claude-opus-5-5`, esforço `low`, fallback de recusa no servidor, `ANTHROPIC_API_KEY` só no servidor; sem chave =
+  indisponível com mensagem amigável). Hoje por HTTP direto: a instalação do `@anthropic-ai/sdk` ficou pendente.
+- Ordem: `ai_submit_message` (sessão DO ALUNO, só o titular) decide acesso → ligado → aceite (versão em
+  `private.ai_settings`, `ai_consents` com data) → pausa → limite diário → **camada de segurança determinística**
+  (`private.ai_safety_hit` = `features/assistant/safety.ts`, teste exige listas iguais): dor/sintoma grava a resposta
+  fixa "Pare o exercício e aguarde seu professor.", pausa a IA na sessão e cria o alerta `ai_safety` no "Precisa de
+  atenção" — **sem chamar o modelo**. Só então o servidor chama o provedor (prazo de 20 s) e grava a resposta ou a
+  contingência ("Não consegui responder agora; avisei seu professor." + alerta `ai_failed`) por `ai_record_reply`
+  (**só service_role**), que também soma uso e custo (`ai_usage_daily`, preço por Mtok em `private.ai_settings`).
+- **Contexto mínimo** montado no banco: exercício atual, prescrição e a dica (`tip`) do professor — nunca nome do aluno,
+  anamnese, condições, `care_note` ou histórico de saúde. Prompt em `features/assistant/prompt.ts`: só execução e
+  ajustes dentro do prescrito, sem diagnóstico/orientação clínica/dose, texto do aluno delimitado e nunca tratado como
+  instrução, sem ferramentas, sempre "Assistente de IA".
+- Professor/owner manda mensagem no chat durante a sessão → a IA pausa naquela sessão (gatilho em `chat_messages`,
+  nunca bloqueia o envio). Resposta que chega depois da pausa é descartada.
+- RLS: `ai_messages`/`ai_session_state` no nível de `can_view_student_health` (staff) ou o próprio aluno; o professor
+  vê o histórico em `/alunos/[id]/treinos`. Retenção **90 dias** (pg_cron `lfit-purge-ai-data`). Conteúdo nunca em log
+  ou auditoria. Limites em `private.ai_settings`: 30 mensagens/dia por aluno, 500 caracteres, 2048 tokens de saída.
+- Painel (`AssistantPanel`) no fluxo da tela de execução, recolhido por padrão, abaixo do exercício: não cobre "Feita"
+  nem "Enviar" a 375 px com teclado aberto (campo de 16 px, nada fixo).
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
@@ -740,11 +767,12 @@ sem efeitos colaterais).
 | **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
 | **NPS — aluno (titular)** | `submit_nps`, `get_my_nps_prompt`, `snooze_nps_prompt` | escopo `students.user_id = auth.uid()` (staff/anônimo: `STUDENT_NOT_FOUND`/sem EXECUTE; `get_my_nps_prompt` devolve nulo). `submit_nps` exige `private.nps_eligibility` (critérios de `private.nps_settings` → senão `NPS_NOT_ELIGIBLE` com o motivo no `detail`); nota 0–10; comentário recusado desde a v2 (`INVALID_INPUT`, `detail = 'comment'`); os 90 dias também pela exclusion constraint. Sem auditoria. `20261029130000` + `20261030120000`; testes em `tests/db/nps.test.ts` |
 | **NPS — equipe** | `get_nps_status`, `send_nps_reminder`, `get_nps_summary`, `request_nps` | `get_nps_status`: `require_staff` + `can_access_student` (owner ou responsável); devolve só o estado (`pending`/`unavailable`/`not_yet`/`no_account`/`inactive`/`none`) — nunca nota, data de resposta ou o "Agora não" (vira `unavailable`, sem data). `send_nps_reminder`: `lock_accessible_student`, **um aluno por chamada**, só em `pending`, um por ciclo (`nps_reminders`, unique); não cria nem antecipa o cartão. `get_nps_summary`: `require_staff`; só agregados por trimestre fechado com ≥ `min_responses` (senão `{enough:false}`); professor = respostas sobre ele; owner = organização + `by_trainer`. `request_nps` (v1): **sem EXECUTE** para `authenticated` desde `20261030120000` (substituída pelo lembrete) |
+| **Assistente de IA — aluno (titular)** | `get_ai_assistant_state`, `accept_ai_terms`, `ai_submit_message` | `private.ai_own_session` (sessão cujo aluno é `students.user_id = auth.uid()`; staff, inclusive no presencial, recebe `SESSION_NOT_FOUND`); `ai_submit_message` exige sessão aberta (`SESSION_CLOSED`), org ligada (`AI_DISABLED`), aceite da versão atual (`AI_CONSENT_REQUIRED`), sem pausa, abaixo do limite diário (trava por aluno) e aplica a camada de segurança antes de qualquer modelo; devolve só contexto mínimo (sem saúde). Sem auditoria de conteúdo. `20261119140000`; testes em `tests/db/ai-assistant.test.ts` |
 | **Importação de alunos** | `start_import_batch`, `import_students`, `undo_import_batch` | `start_import_batch`: `require_staff()`, versão da declaração em `private.import_declarations` (senão `INVALID_INPUT`), auditado. `undo_import_batch`: `require_staff()` + lote da org do autor ou owner (senão `IMPORT_BATCH_NOT_FOUND`), até 7 dias (`IMPORT_UNDO_EXPIRED`), uma vez (`IMPORT_ALREADY_UNDONE`), arquiva só sem atividade. `import_students`: `require_staff()` + `private.lock_open_import_batch` (só o autor, 24 h) + advisory lock por organização; professor importa para si (`trainer_id` = ele; o do arquivo é ignorado), owner sem professor. Cada linha passa por `private.import_one_student` (mesmas regras de `insert_student`: obrigatórios, e-mail único, `assert_trainer_in_org`, vaga só para ativo, matrícula, `student.created` auditado) num bloco próprio; 1–200 linhas por chamada (senão `INVALID_INPUT`); limite por célula. Resposta só com linha + código (`DUPLICATE_EMAIL`, `PLAN_LIMIT_REACHED`, `INVALID_INPUT`, `INVALID_TRAINER`, `IMPORT_ROW_FAILED`); auditoria `students.imported` só com contagens. `20261119130000`; testes em `tests/db/student-import.test.ts` |
 | **Ao vivo — painel (Início)** | `get_live_board`, `set_live_enabled` | `get_live_board`: `require_staff()` + `private.dashboard_students()` (owner = organização; professor = os seus); só nome, rótulo da divisão, horários e contagens; dor só com `can_view_student_health` (`pain`), restrito sem o tipo (`session_alert`, via `is_restricted_health_viewer`), oculto = nada; nunca texto do chat. `set_live_enabled`: `require_owner()`, auditado (`live_settings_update`, só o booleano); desligar apaga `live_sessions` da organização. `20261119120000`; testes em `tests/db/live.test.ts` |
 | **Ao vivo — tela de execução** | `live_heartbeat`, `ack_live_notice` | `live_heartbeat`: chamador duplo por `private.training_mode` da sessão (titular ou staff presencial; senão `SESSION_NOT_FOUND`); grava no máximo 1 batimento a cada 30 s por sessão (`private.live_heartbeats`) e só se a sessão tem registro ao vivo; só para o titular devolve `show_notice` e a última mensagem do staff não lida desde o início da sessão (o banner). `ack_live_notice`: escopo `students.user_id = auth.uid()` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
-| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
 Checklist para toda função `SECURITY DEFINER` nova:
 1. `set search_path = ''` e nomes totalmente qualificados.
