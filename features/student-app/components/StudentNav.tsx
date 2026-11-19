@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, History, MessageCircle, UserRound } from "lucide-react";
+import { Dumbbell, History, MessageCircle, Newspaper, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useChatUnread } from "@/features/chat/hooks";
 import { useAnnouncementNotice, useNewMessageToast } from "@/features/notifications/hooks";
@@ -14,6 +14,7 @@ const t = messages.aluno.nav;
 const ITEMS = [
   { href: "/aluno", label: t.today, icon: Dumbbell, match: (p: string) => p === "/aluno" || p.startsWith("/aluno/treino") },
   { href: "/aluno/historico", label: t.history, icon: History, match: (p: string) => p.startsWith("/aluno/historico") },
+  { href: "/aluno/comunidade", label: t.community, icon: Newspaper, match: (p: string) => p.startsWith("/aluno/comunidade") },
   { href: "/aluno/chat", label: t.chat, icon: MessageCircle, match: (p: string) => p.startsWith("/aluno/chat") },
   { href: "/aluno/perfil", label: t.profile, icon: UserRound, match: (p: string) => p.startsWith("/aluno/perfil") },
 ];
@@ -48,12 +49,20 @@ function useKeyboardOpen() {
   return open;
 }
 
-/** Barra inferior (alcance do polegar), fixa, respeitando a área segura do iPhone. Some com o teclado aberto. */
-export function StudentNav({ studentId, initialUnread }: { studentId: string; initialUnread: number }) {
+/**
+ * Barra inferior (alcance do polegar), fixa, respeitando a área segura do iPhone. Some com o teclado aberto. 5 abas a
+ * 375 px = 75 px cada (toque de 56 px de altura; "Comunidade" em 11 px cabe em uma linha).
+ */
+export function StudentNav({ studentId, initialUnread, initialFeedNew = 0 }: { studentId: string; initialUnread: number; initialFeedNew?: number }) {
   const pathname = usePathname();
   const unread = useChatUnread({ initial: initialUnread, studentId });
   useNewMessageToast(unread, { onChat: pathname.startsWith("/aluno/chat"), href: "/aluno/chat" });
   const announcementDot = useAnnouncementNotice(pathname === "/aluno");
+  // Novidades no feed (sem push): marcador até o aluno abrir a Comunidade nesta visita.
+  const onFeed = pathname.startsWith("/aluno/comunidade");
+  const [feedVisited, setFeedVisited] = useState(false);
+  if (onFeed && !feedVisited) setFeedVisited(true);
+  const feedDot = initialFeedNew > 0 && !feedVisited && !onFeed;
   const keyboardOpen = useKeyboardOpen();
   if (keyboardOpen) return null;
   return (
@@ -61,21 +70,31 @@ export function StudentNav({ studentId, initialUnread }: { studentId: string; in
       aria-label={t.label}
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-backdrop-filter:bg-surface/80"
     >
-      <ul className="mx-auto grid max-w-md grid-cols-4">
+      <ul className="mx-auto grid max-w-md grid-cols-5">
         {ITEMS.map(({ href, label, icon: Icon, match }) => {
           const active = match(pathname);
           // Na própria conversa as mensagens são marcadas como lidas: sem selo ali.
           const badge = href === "/aluno/chat" && !active ? unread : 0;
-          // Recado novo: marcador na aba Hoje até o aluno ver (sem número nem texto).
-          const dot = href === "/aluno" && announcementDot;
+          // Recado novo: marcador na aba Hoje até o aluno ver (sem número nem texto). Post novo: marcador na Comunidade.
+          const todayDot = href === "/aluno" && announcementDot;
+          const communityDot = href === "/aluno/comunidade" && feedDot;
+          const dot = todayDot || communityDot;
           return (
-            <li key={href}>
+            <li key={href} className="min-w-0">
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                aria-label={badge ? `${label}, ${messages.chat.unread(badge)}` : dot ? messages.notifications.todayWithAnnouncement : undefined}
+                aria-label={
+                  badge
+                    ? `${label}, ${messages.chat.unread(badge)}`
+                    : todayDot
+                      ? messages.notifications.todayWithAnnouncement
+                      : communityDot
+                        ? t.communityWithNews
+                        : undefined
+                }
                 className={cn(
-                  "flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium outline-none focus-visible:bg-canvas",
+                  "flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap outline-none focus-visible:bg-canvas",
                   active ? "text-ink" : "text-ink-3",
                 )}
               >

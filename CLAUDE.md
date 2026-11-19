@@ -710,6 +710,28 @@ effective_status =
 - Painel (`AssistantPanel`) no fluxo da tela de execução, recolhido por padrão, abaixo do exercício: não cobre "Feita"
   nem "Enviar" a 375 px com teclado aberto (campo de 16 px, nada fixo).
 
+### Feed (Comunidade) — fase 1 (19/11/2026, migration `20261119160000` — escrita, ainda não aplicada; e2e `e2e/feed-*.e2e.mjs`)
+- **Produto:** o personal (dono da conta) alimenta um feed com dicas, imagens e vídeos por link; os alunos dele leem e
+  curtem. **Aluno não publica nem comenta** nesta fase. Professor da equipe também publica, só para os próprios alunos.
+- Painel: `/feed` (menu "Feed"): criar com prévia, editar, fixar, agendar (`published_at`, campo lido no horário de SP —
+  `spLocalToISO`), apagar (soft delete), contagem de curtidas. Aviso fixo no editor: "Não publique dados de saúde nem
+  fotos de alunos sem autorização deles." Do navegador direto para as RPCs (texto nunca em server action, toast, log).
+- Aluno: aba **Comunidade** (`/aluno/comunidade`; a barra passou a 5 abas, 75 px cada a 375 px), fixados no topo e
+  depois do mais novo; selo "Novo" e marcador na aba (`get_my_feed_new_count`/`mark_feed_seen`, sem push). Curtir mostra
+  só a contagem — **nunca quem curtiu** (nem para o personal).
+- **Público:** todos os alunos do autor, uma modalidade ou uma **turma** (`classes`). Grupos especiais ficam de fora (dado
+  de saúde: mirar neles revelaria a condição). Turma apagada → post invisível (nunca vira "todos").
+- **Tipos:** texto (≤ 2000, texto puro: `sanitizeFeedText` no cliente + CHECK `<[A-Za-z/!?]` no banco; links só http/https
+  via `linkify`, `rel="noopener noreferrer"`), imagem (bucket **privado** `feed-media`, 5 MB, JPEG/WebP, reduzida no
+  navegador para 1600 px — `features/feed/image.ts`, sem EXIF; caminho `<org>/<uuid>.(jpg|webp)`; URL assinada de 1 h
+  com a sessão do usuário, sem cache compartilhado) e **vídeo só por link** (YouTube/Vimeo com embed só no toque —
+  youtube-nocookie/`dnt=1`; Instagram como cartão de link). **Sem upload de vídeo** (custo de armazenamento e banda).
+- Storage: envio por staff na pasta da org; leitura por staff da org ou por aluno que **vê o post agora**
+  (`private.student_can_read_feed_media`); remoção por staff se nenhum post ativo de outra pessoa usa a imagem (owner
+  sempre). O editor apaga a imagem enviada e não usada (troca, falha, cancelar) e a anterior ao trocar.
+- `trainer_announcements` (recado) continua; proposta de unificar e a fase 2 (comentários moderados, denúncia, nome de
+  exibição) em `docs/planos/feed.md` — só plano.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -783,6 +805,8 @@ sem efeitos colaterais).
 | **Importação de alunos** | `start_import_batch`, `import_students`, `undo_import_batch` | `start_import_batch`: `require_staff()`, versão da declaração em `private.import_declarations` (senão `INVALID_INPUT`), auditado. `undo_import_batch`: `require_staff()` + lote da org do autor ou owner (senão `IMPORT_BATCH_NOT_FOUND`), até 7 dias (`IMPORT_UNDO_EXPIRED`), uma vez (`IMPORT_ALREADY_UNDONE`), arquiva só sem atividade. `import_students`: `require_staff()` + `private.lock_open_import_batch` (só o autor, 24 h) + advisory lock por organização; professor importa para si (`trainer_id` = ele; o do arquivo é ignorado), owner sem professor. Cada linha passa por `private.import_one_student` (mesmas regras de `insert_student`: obrigatórios, e-mail único, `assert_trainer_in_org`, vaga só para ativo, matrícula, `student.created` auditado) num bloco próprio; 1–200 linhas por chamada (senão `INVALID_INPUT`); limite por célula. Resposta só com linha + código (`DUPLICATE_EMAIL`, `PLAN_LIMIT_REACHED`, `INVALID_INPUT`, `INVALID_TRAINER`, `IMPORT_ROW_FAILED`); auditoria `students.imported` só com contagens. `20261119130000`; testes em `tests/db/student-import.test.ts` |
 | **Ao vivo — painel (Início)** | `get_live_board`, `set_live_enabled` | `get_live_board`: `require_staff()` + `private.dashboard_students()` (owner = organização; professor = os seus); só nome, rótulo da divisão, horários e contagens; dor só com `can_view_student_health` (`pain`), restrito sem o tipo (`session_alert`, via `is_restricted_health_viewer`), oculto = nada; nunca texto do chat. `set_live_enabled`: `require_owner()`, auditado (`live_settings_update`, só o booleano); desligar apaga `live_sessions` da organização. `20261119120000`; testes em `tests/db/live.test.ts` |
 | **Ao vivo — tela de execução** | `live_heartbeat`, `ack_live_notice` | `live_heartbeat`: chamador duplo por `private.training_mode` da sessão (titular ou staff presencial; senão `SESSION_NOT_FOUND`); grava no máximo 1 batimento a cada 30 s por sessão (`private.live_heartbeats`) e só se a sessão tem registro ao vivo; só para o titular devolve `show_notice` e a última mensagem do staff não lida desde o início da sessão (o banner). `ack_live_notice`: escopo `students.user_id = auth.uid()` |
+| **Feed — personal / equipe** | `save_feed_post`, `delete_feed_post`, `set_feed_post_pinned`, `list_feed_posts` | `private.require_staff()`; editar/apagar/fixar via `private.lock_editable_feed_post` (mesma org, não apagado, **owner ou autor**; senão `FEED_POST_NOT_FOUND`). `save_feed_post` valida tipo, texto sem HTML (≤ 2000), link de vídeo (só https de YouTube/Vimeo/Instagram), imagem na pasta da org **já enviada** ao bucket `feed-media`, turma da org e agendamento (≤ 365 dias; criar no passado = agora). Professor da equipe publica só para os próprios alunos (`scope_trainer_id`). `list_feed_posts` devolve só a contagem de curtidas, nunca quem curtiu. Sem auditoria de conteúdo. `20261119160000`; testes em `tests/db/feed.test.ts` |
+| **Feed — aluno (titular)** | `get_my_feed`, `get_my_feed_new_count`, `mark_feed_seen`, `toggle_feed_like` | `private.feed_me()` (`students.user_id = auth.uid()`, status efetivo `active`, senão `STUDENT_NOT_FOUND`/`ACCESS_SUSPENDED`); visibilidade única em `private.feed_visible_posts` (mesma org, publicado, não apagado, autor = owner ou o professor do aluno, público todos/modalidade/turma). Curtir só post visível (`FEED_POST_NOT_FOUND`); devolve contagem + o próprio estado, nunca quem curtiu |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 

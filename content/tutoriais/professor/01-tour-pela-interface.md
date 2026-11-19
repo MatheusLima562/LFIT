@@ -27,6 +27,7 @@ O menu fica à esquerda. No celular ou em telas menores, ele abre pelo botão de
 - **Início**: o resumo do seu dia.
 - **Alunos**: tem os subitens **Todos os alunos**, **Cadastros públicos** e **Grupos especiais**.
 - **Turmas**: alunos que treinam juntos.
+- **Feed**: dicas, imagens e vídeos para os seus alunos (aba **Comunidade** do app).
 - **Treinos & Exercícios**: tem os subitens **Treinos**, **Exercícios**, **Modelos prontos**, **Condições de saúde** e **Métodos e objetivos**.
 - **Chat**: conversas com os seus alunos. O número ao lado mostra as mensagens não lidas.
 - **Ajuda**: estes tutoriais.
@@ -101,6 +102,30 @@ Em [Turmas](/turmas) você organiza alunos que treinam juntos.
 1. Clique em **Nova turma** e dê um nome. Se você é o personal, escolha também o professor responsável.
 2. Use **Gerenciar alunos** para incluir ou remover alunos.
 3. Em Meus alunos, use o filtro **Turma** para ver só os alunos daquela turma.
+
+## Feed
+
+Em [Feed](/feed) você publica dicas, imagens e vídeos para os seus alunos. Eles veem tudo na aba **Comunidade** do app,
+podem curtir, mas não publicam nem comentam.
+
+1. Clique em **Novo post** e escolha o **Tipo**:
+   - **Texto**: até 2000 caracteres.
+   - **Imagem**: a imagem é reduzida no seu aparelho antes de enviar, com limite de 5 MB.
+   - **Vídeo (link)**: link do YouTube, Vimeo ou Instagram. Não há envio de arquivo de vídeo.
+2. Em **Quem vê**, escolha uma destas opções:
+   - Todos os seus alunos.
+   - Uma modalidade: consultoria, presencial ou híbrido.
+   - Uma turma.
+
+   Professores da equipe publicam só para os próprios alunos.
+3. Para publicar depois, preencha **Agendar publicação** (horário de Brasília). Antes da hora, o aluno não vê o post.
+4. Marque **Fixar no topo** para o post ficar acima dos outros.
+5. Confira a **Prévia** e clique em **Publicar** (ou **Agendar**).
+
+Na lista você pode **Editar**, **Fixar no topo** ou **Desafixar** e **Apagar** cada post, e vê quantas curtidas ele
+recebeu. Ninguém vê quem curtiu, nem você nem os outros alunos.
+
+> Não publique dados de saúde nem fotos de alunos sem autorização deles. O aviso fica fixo no editor.
 
 ## Treinos e exercícios
 

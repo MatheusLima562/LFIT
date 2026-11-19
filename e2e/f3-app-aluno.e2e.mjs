@@ -52,9 +52,9 @@ ok("Hoje: constância sem cobrança (nenhum treino no mês)", await waitText(pag
 ok("Hoje: recado do professor", (await waitText(page, "Recado do seu professor")) && (await waitText(page, "Semana de deload: mantenha as cargas e capriche na execução.")));
 ok("Hoje: card do professor com horário e atalho", (await waitText(page, "Caio Exemplo")) && (await waitText(page, "Atendimento: Seg a sex, 7h às 12h")) && (await page.getByRole("link", { name: "Mandar mensagem" }).getAttribute("href")) === "/aluno/chat");
 
-// Barra de 4 abas, navegável por teclado, com a aba atual marcada.
+// Barra de 5 abas (Comunidade desde o feed), navegável por teclado, com a aba atual marcada.
 const tabs = page.getByRole("navigation", { name: "Navegação do app" }).getByRole("link");
-ok("barra com 4 abas", (await tabs.allInnerTexts()).map((x) => x.trim()).join("|") === "Hoje|Histórico|Chat|Perfil");
+ok("barra com 5 abas", (await tabs.allInnerTexts()).map((x) => x.trim()).join("|") === "Hoje|Histórico|Comunidade|Chat|Perfil");
 ok("aba atual marcada (aria-current)", (await tabs.first().getAttribute("aria-current")) === "page");
 const tabBox = await tabs.nth(3).boundingBox();
 ok("área de toque das abas ≥ 44 px", tabBox && tabBox.height >= 44 && tabBox.width >= 44, JSON.stringify(tabBox));

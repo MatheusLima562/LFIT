@@ -80,11 +80,11 @@ const sidebarChat = (p) => p.locator('nav[aria-label="Menu principal"] a[href="/
 const chatTab = (p) => p.getByRole("navigation", { name: "Navegação do app" }).locator('a[href="/aluno/chat"]');
 
 try {
-  // --- Aluno: barra com 4 abas (3.2), nenhum link morto ---------------------------------------------
+  // --- Aluno: barra com 5 abas (Comunidade desde o feed), nenhum link morto ----------------------------
   const sp = await phone("aluno.seed@example.com");
   const nav = sp.getByRole("navigation", { name: "Navegação do app" });
   const tabs = await nav.getByRole("link").allInnerTexts();
-  ok("barra inferior com 4 abas: Hoje · Histórico · Chat · Perfil", JSON.stringify(tabs.map((x) => x.trim())) === JSON.stringify(["Hoje", "Histórico", "Chat", "Perfil"]), JSON.stringify(tabs));
+  ok("barra inferior com 5 abas: Hoje · Histórico · Comunidade · Chat · Perfil", JSON.stringify(tabs.map((x) => x.trim())) === JSON.stringify(["Hoje", "Histórico", "Comunidade", "Chat", "Perfil"]), JSON.stringify(tabs));
   for (const href of await nav.getByRole("link").evaluateAll((as) => as.map((a) => a.getAttribute("href")))) {
     const res = await sp.request.get(`${BASE}${href}`);
     ok(`aba ${href} abre (sem link morto)`, res.status() === 200, String(res.status()));

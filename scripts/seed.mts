@@ -91,6 +91,10 @@ async function reset() {
     // Fotos no Storage não são apagadas em cascata: remove a pasta da organização.
     await removeOrgPhotos(org.id);
     await removeOrgPhotos(org.id, "exercise-media");
+    // Imagens do feed ficam direto na pasta da organização (`<org>/<uuid>.webp`).
+    const { data: feedFiles } = await admin.storage.from("feed-media").list(org.id, { limit: 1000 });
+    const feedPaths = (feedFiles ?? []).map((f) => `${org.id}/${f.name}`);
+    if (feedPaths.length) await admin.storage.from("feed-media").remove(feedPaths);
     const { error } = await admin.from("organizations").delete().eq("id", org.id);
     if (error) throw new Error(`apagar organização: ${error.message}`);
   }

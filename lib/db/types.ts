@@ -813,6 +813,75 @@ export type Database = {
           },
         ]
       }
+      feed_likes: {
+        Row: { created_at: string; organization_id: string; post_id: string; student_id: string }
+        Insert: { created_at?: string; organization_id: string; post_id: string; student_id: string }
+        Update: { created_at?: string; organization_id?: string; post_id?: string; student_id?: string }
+        Relationships: []
+      }
+      feed_posts: {
+        Row: {
+          audience: string
+          audience_class_id: string | null
+          audience_modality: string | null
+          author_id: string
+          body: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          image_path: string | null
+          kind: string
+          organization_id: string
+          pinned: boolean
+          published_at: string
+          scope_trainer_id: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          audience?: string
+          audience_class_id?: string | null
+          audience_modality?: string | null
+          author_id: string
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          image_path?: string | null
+          kind: string
+          organization_id: string
+          pinned?: boolean
+          published_at?: string
+          scope_trainer_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          audience?: string
+          audience_class_id?: string | null
+          audience_modality?: string | null
+          author_id?: string
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          image_path?: string | null
+          kind?: string
+          organization_id?: string
+          pinned?: boolean
+          published_at?: string
+          scope_trainer_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      feed_reads: {
+        Row: { last_seen_at: string; organization_id: string; student_id: string }
+        Insert: { last_seen_at?: string; organization_id: string; student_id: string }
+        Update: { last_seen_at?: string; organization_id?: string; student_id?: string }
+        Relationships: []
+      }
       health_conditions: {
         Row: {
           archived_at: string | null
@@ -3085,6 +3154,14 @@ export type Database = {
       get_dashboard_engagement_retention: { Args: never; Returns: Json }
       get_dashboard_training_stats: { Args: never; Returns: Json }
       get_live_board: { Args: never; Returns: Json }
+      get_my_feed: { Args: never; Returns: Json }
+      get_my_feed_new_count: { Args: never; Returns: number }
+      list_feed_posts: { Args: never; Returns: Json }
+      mark_feed_seen: { Args: never; Returns: undefined }
+      save_feed_post: { Args: { p_data: Json; p_id?: string }; Returns: Json }
+      delete_feed_post: { Args: { p_id: string }; Returns: undefined }
+      set_feed_post_pinned: { Args: { p_id: string; p_pinned: boolean }; Returns: undefined }
+      toggle_feed_like: { Args: { p_like: boolean; p_post_id: string }; Returns: Json }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_announcement: {
         Args: { p_student_id?: string }

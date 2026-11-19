@@ -81,6 +81,11 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["get_nps_summary", () => ({})],
     ["get_nps_status", () => ({ p_student_id: studentId })],
     ["send_nps_reminder", () => ({ p_student_id: studentId })],
+    // Feed (20261119160000): publicar, editar, fixar, apagar e listar são do staff.
+    ["save_feed_post", () => ({ p_data: { kind: "text", body: "x", audience: "all" } })],
+    ["delete_feed_post", () => ({ p_id: randomUUID() })],
+    ["set_feed_post_pinned", () => ({ p_id: randomUUID(), p_pinned: true })],
+    ["list_feed_posts", () => ({})],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -125,6 +130,8 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "rate_workout_session", "get_dashboard_training_stats", "get_dashboard_engagement_retention",
     "end_trainer_announcement", "set_student_modality",
     "submit_nps", "get_my_nps_prompt", "snooze_nps_prompt", "request_nps", "get_nps_summary", "get_nps_status", "send_nps_reminder",
+    "save_feed_post", "delete_feed_post", "set_feed_post_pinned", "list_feed_posts", "get_my_feed", "get_my_feed_new_count",
+    "mark_feed_seen", "toggle_feed_like",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();
