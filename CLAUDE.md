@@ -694,7 +694,7 @@ effective_status =
   nunca bloqueia o envio). Resposta que chega depois da pausa é descartada.
 - RLS: `ai_messages`/`ai_session_state` no nível de `can_view_student_health` (staff) ou o próprio aluno; o professor
   vê o histórico em `/alunos/[id]/treinos`. Retenção **90 dias** (pg_cron `lfit-purge-ai-data`). Conteúdo nunca em log
-  ou auditoria. Limites em `private.ai_settings`: 30 mensagens/dia por aluno, 500 caracteres, 2048 tokens de saída.
+  ou auditoria. Limites em `private.ai_settings`: 30 mensagens/dia por aluno, 500 caracteres, 512 tokens de saída (decisão do dono, 19/11/2026).
 - Painel (`AssistantPanel`) no fluxo da tela de execução, recolhido por padrão, abaixo do exercício: não cobre "Feita"
   nem "Enviar" a 375 px com teclado aberto (campo de 16 px, nada fixo).
 

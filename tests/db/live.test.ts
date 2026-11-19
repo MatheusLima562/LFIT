@@ -1,12 +1,32 @@
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { anon, dbTestsEnabled, Fixture, rpc, studentData, type TestOrg, type TestUser } from "./helpers";
 
 const CLI_TIMEOUT_MS = 60_000;
-/** SQL no banco linkado (lfit-dev, mesma trava dos testes de banco) pelo Management API, com prazo (regra 7). */
+/** Único projeto onde este teste pode executar SQL direto (lfit-dev). */
+const LFIT_DEV_REF = "fwbpazxawtxuppuczijd";
+
+/** Projeto vinculado ao CLI (`supabase/.temp/project-ref`); vazio se não houver vínculo. */
+function linkedProjectRef(): string {
+  try {
+    return readFileSync(join(process.cwd(), "supabase", ".temp", "project-ref"), "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * SQL no banco linkado pelo Management API, com prazo (regra 7). ANTES de executar qualquer coisa, confere que o
+ * projeto vinculado é o lfit-dev; senão lança erro e o teste falha sem rodar nada.
+ */
 function sqlLinked(sql: string) {
+  const ref = linkedProjectRef();
+  if (ref !== LFIT_DEV_REF) {
+    throw new Error(`Projeto vinculado não é o lfit-dev (${LFIT_DEV_REF}); recebido "${ref || "nenhum"}". Nada foi executado.`);
+  }
   execFileSync(join(process.cwd(), "node_modules", ".bin", "supabase"), ["db", "query", "--linked", sql], {
     encoding: "utf8",
     cwd: process.cwd(),
@@ -140,6 +160,8 @@ describe.runIf(dbTestsEnabled)("ao vivo (get_live_board, live_heartbeat, set_liv
   it("falha no registro ao vivo NÃO impede gravar sessão, item e série", async () => {
     // Constraint temporária, só para a organização deste teste: todo insert/update em live_sessions dela falha. NOT
     // VALID não confere as linhas antigas, mas vale para as novas. Removida no finally (e só afeta a org de teste).
+    // A trava do projeto roda antes do try: projeto errado → falha aqui, sem constraint criada nem removida.
+    expect(linkedProjectRef(), "projeto vinculado precisa ser o lfit-dev").toBe(LFIT_DEV_REF);
     const name = `live_test_fail_${org.id.replace(/-/g, "").slice(0, 12)}`;
     sqlLinked(`alter table public.live_sessions add constraint ${name} check (organization_id <> '${org.id}') not valid;`);
     try {

@@ -15,13 +15,25 @@ describe("camada de segurança determinística", () => {
       "Tô com DOR no joelho", "doeu aqui", "está doendo", "dói muito!", "senti uma pontada", "deu uma fisgada",
       "formigamento na mão", "dormência no braço", "tontura", "fiquei tonta", "falta de ar", "Não consigo respirar",
       "enjoo", "acho que vou desmaiar", "dor no peito", "ouvi um estalo", "minhas costas travaram... travou", "passando mal",
+      "deu um choque na perna", "um choquinho", "queimação nas costas", "tá queimando", "ardendo", "ardência", "uma agulhada",
+      "irradia pra perna", "irradiando", "um incômodo", "tá incomodando", "desconforto no ombro", "latejando", "fraqueza",
+      "perna fraca", "perdi a força", "fiquei sem força", "não sinto o pé", "sem sensibilidade", "incontinência",
+      "perdi o controle", "escapou xixi", "urina", "tenho hérnia", "dor ciática", "nervo ciático",
     ]) {
       expect(safetyHit(s), s).toBe(true);
     }
   });
   it("não dispara em palavras parecidas nem em dúvidas de execução", () => {
-    for (const s of ["como faço o remo dorsal?", "quanto tempo de descanso?", "posso usar a faixa de 10 a 12?", "dormir bem ajuda?", "condor", "adorei o treino"]) {
+    for (const s of [
+      "como faço o remo dorsal?", "quanto tempo de descanso?", "posso usar a faixa de 10 a 12?", "dormir bem ajuda?", "condor",
+      "adorei o treino", "como ativo a lombar no levantamento?", "posição do joelho no agachamento", "quero mais força",
+    ]) {
       expect(safetyHit(s), s).toBe(false);
+    }
+  });
+  it("nenhuma parte do corpo sozinha na lista", () => {
+    for (const part of ["lombar", "joelho", "ombro", "costas", "pescoco", "coluna", "quadril", "perna", "braco"]) {
+      expect(SAFETY_TERMS as readonly string[]).not.toContain(part);
     }
   });
   it("a lista do código é IGUAL à do banco (private.ai_safety_hit)", () => {

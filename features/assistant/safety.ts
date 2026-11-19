@@ -13,7 +13,10 @@ export const SAFETY_TERMS = [
   "desmaiando", "dor no peito", "aperto no peito", "palpitacao", "coracao disparado", "estalo", "estalou",
   "estalando", "travou", "travada", "travado", "torci", "torceu", "machuquei", "machucou", "lesionei",
   "sangrando", "sangue", "inchado", "inchada", "inchou", "caimbra", "caibra", "visao turva", "vista escura",
-  "escureceu", "mal estar", "passando mal",
+  "escureceu", "mal estar", "passando mal", "choque", "choquinho", "queimacao", "queimando", "ardendo",
+  "ardencia", "agulhada", "irradia", "irradiando", "incomodo", "incomodando", "desconforto", "latejando",
+  "fraqueza", "perna fraca", "perdi a forca", "sem forca", "nao sinto", "sem sensibilidade", "incontinencia",
+  "perdi o controle", "xixi", "urina", "hernia", "ciatico", "ciatica",
 ] as const;
 
 /** Mesma normalização do banco: minúsculas, sem acento, só letras/dígitos separados por um espaço. */

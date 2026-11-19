@@ -40,7 +40,7 @@ insert into private.ai_settings (
   model, daily_limit, max_input_chars, max_output_tokens, history_messages, timeout_ms, retention_days,
   consent_version, input_usd_per_mtok, output_usd_per_mtok, safety_reply
 ) values (
-  'claude-opus-5-5', 30, 500, 2048, 6, 20000, 90,
+  'claude-opus-5-5', 30, 500, 512, 6, 20000, 90,
   '2026-11-19.1', 4.0000, 20.0000, 'Pare o exercício e aguarde seu professor.'
 );
 revoke all on private.ai_settings from public, anon, authenticated, service_role;
@@ -155,7 +155,10 @@ as $$
       'desmaiando', 'dor no peito', 'aperto no peito', 'palpitacao', 'coracao disparado', 'estalo', 'estalou',
       'estalando', 'travou', 'travada', 'travado', 'torci', 'torceu', 'machuquei', 'machucou', 'lesionei',
       'sangrando', 'sangue', 'inchado', 'inchada', 'inchou', 'caimbra', 'caibra', 'visao turva', 'vista escura',
-      'escureceu', 'mal estar', 'passando mal'
+      'escureceu', 'mal estar', 'passando mal', 'choque', 'choquinho', 'queimacao', 'queimando', 'ardendo',
+      'ardencia', 'agulhada', 'irradia', 'irradiando', 'incomodo', 'incomodando', 'desconforto', 'latejando',
+      'fraqueza', 'perna fraca', 'perdi a forca', 'sem forca', 'nao sinto', 'sem sensibilidade', 'incontinencia',
+      'perdi o controle', 'xixi', 'urina', 'hernia', 'ciatico', 'ciatica'
       -- SAFETY_TERMS_END
     ]) as term
     where position(
