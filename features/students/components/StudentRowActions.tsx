@@ -11,6 +11,7 @@ import {
   MessageCircle,
   MoreHorizontal,
   Pencil,
+  Send,
   Trash2,
   TimerOff,
 } from "lucide-react";
@@ -147,6 +148,14 @@ export function StudentRowActions({ student }: { student: StudentRow }) {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          {!student.hasAccount && (
+            <DropdownMenuItem asChild>
+              <Link href={`/alunos/convites?aluno=${student.id}`}>
+                <Send aria-hidden />
+                {messages.invites.invite}
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onSelect={copyLink}>
             <Link2 aria-hidden />
             {t.menu.copyLink}

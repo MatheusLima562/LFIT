@@ -3293,6 +3293,12 @@ export type Database = {
       update_my_profile: { Args: { p_avatar_path: string; p_full_name: string }; Returns: Json }
       update_organization_profile: { Args: { p_contact_whatsapp: string; p_logo_path: string; p_name: string }; Returns: Json }
       get_my_branding: { Args: never; Returns: Json }
+      create_student_invites: { Args: { p_student_ids: string[] }; Returns: { expires_at: string; student_id: string; token: string }[] }
+      student_invite_statuses: {
+        Args: { p_student_ids?: string[] }
+        Returns: { expires_at: string; sent_at: string; status: string; student_id: string }[]
+      }
+      get_invite_quota: { Args: never; Returns: Json }
       get_access_link_branding: { Args: { p_token: string }; Returns: Json }
       export_account_data: { Args: { p_include_health: boolean; p_kind: string }; Returns: Json }
       log_account_export: { Args: { p_count: number; p_include_health: boolean; p_kind: string }; Returns: undefined }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Globe, SearchX, UserPlus, Users } from "lucide-react";
+import { Globe, SearchX, Send, UserPlus, Users } from "lucide-react";
+import { getInviteStatuses } from "@/features/students/invite-queries";
 import { requireStaff } from "@/lib/auth/session";
 import { createClient } from "@/lib/db/server";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
@@ -55,7 +56,7 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
   const listHref = studentListHref(params);
   const newHref = `${listHref}${listHref.includes("?") ? "&" : "?"}novo=1`;
 
-  const [{ rows, total }, counts, planCounts, plan, filters, view, pendingSignups] = await Promise.all([
+  const [{ rows: baseRows, total }, counts, planCounts, plan, filters, view, pendingSignups] = await Promise.all([
     listStudents(params),
     getStudentTabCounts(),
     getStudentPlanCounts(),
@@ -64,6 +65,10 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
     getViewPreference(session.userId),
     session.role === "owner" ? countPendingSignups() : Promise.resolve(0),
   ]);
+
+  // Status do convite (1.4) de quem ainda não tem login.
+  const invites = await getInviteStatuses(baseRows.filter((r) => !r.hasAccount).map((r) => r.id));
+  const rows = baseRows.map((r) => ({ ...r, invite: r.hasAccount ? ("accepted" as const) : (invites.get(r.id)?.status ?? "none") }));
 
   const [formOptions, editing] = dialog
     ? await Promise.all([getStudentFormOptions(), dialog.id ? getStudentForEdit(dialog.id) : Promise.resolve(null)])
@@ -94,6 +99,13 @@ export default async function StudentsPage({ searchParams }: PageProps<"/alunos"
               </Link>
             </Button>
           )}
+          <Button asChild variant="outline">
+            <Link href="/alunos/convites">
+              <Send aria-hidden />
+              <span className="hidden sm:inline">{messages.invites.open}</span>
+              <span className="sr-only sm:hidden">{messages.invites.open}</span>
+            </Link>
+          </Button>
           <Button asChild>
             <Link href={newHref} scroll={false}>
               <UserPlus aria-hidden />

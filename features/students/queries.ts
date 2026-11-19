@@ -10,6 +10,8 @@ import { PAGE_SIZE, type StudentListParams } from "./search-params";
 export type EffectiveStatus = Database["public"]["Enums"]["effective_status"];
 
 export interface StudentRow {
+  /** Status do convite (1.4), preenchido pela página a partir de `student_invite_statuses`. */
+  invite?: import("./invites").InviteStatus;
   id: string;
   fullName: string;
   firstName: string;

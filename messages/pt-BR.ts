@@ -1676,6 +1676,33 @@ export const messages = {
     },
     failed: "Não foi possível salvar. Confira a conexão e tente de novo.",
   },
+  /** Convites dos alunos (1.4): link de uso único, 7 dias, por WhatsApp ou copiado. Sem e-mail. */
+  invites: {
+    title: "Convidar alunos",
+    subtitle: "Gere um link individual (uso único, vale 7 dias) e mande pelo WhatsApp. O aluno cria a senha e dá os consentimentos no primeiro acesso.",
+    open: "Convidar alunos",
+    invite: "Convidar",
+    quota: (remaining: number, limit: number) => `Convites restantes hoje: ${remaining} de ${limit}`,
+    limit: (remaining: number) =>
+      remaining === 0 ? "O limite de convites de hoje acabou. Tente de novo amanhã." : `Hoje ainda cabem ${remaining} convites. Escolha menos alunos.`,
+    empty: "Todos os seus alunos já têm acesso ao app.",
+    selectAll: "Selecionar todos",
+    selected: (n: number) => (n === 1 ? "1 aluno selecionado" : `${n} alunos selecionados`),
+    generate: (n: number) => (n === 1 ? "Gerar convite" : `Gerar ${n} convites`),
+    generating: "Gerando…",
+    generated: (n: number) => (n === 1 ? "Convite gerado." : `${n} convites gerados.`),
+    message: "Mensagem do WhatsApp",
+    messageHint: "Edite à vontade. {nome} vira o primeiro nome do aluno e {link}, o link do convite.",
+    copy: "Copiar link",
+    copied: "Link copiado.",
+    copyFailed: "Não foi possível copiar. Selecione o link e copie.",
+    whatsapp: "Abrir no WhatsApp",
+    noPhone: "Sem WhatsApp no cadastro: copie o link.",
+    links: "Links gerados",
+    expires: (date: string) => `Vale até ${date}`,
+    status: { none: "Sem convite", sent: "Convite enviado", accepted: "Aceito", expired: "Convite expirado" } as Record<string, string>,
+    column: "Convite",
+  },
   /** Configurações do personal (1.3). */
   settings: {
     title: "Configurações",

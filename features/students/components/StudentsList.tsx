@@ -30,6 +30,12 @@ const columns: DataTableColumn<StudentRow>[] = [
     hideBelow: "lg",
   },
   { id: "status", header: c.status, cell: (s) => <StudentStatus student={s} /> },
+  {
+    id: "invite",
+    header: messages.invites.column,
+    cell: (s) => <span className="text-[13px] whitespace-nowrap text-ink-2">{s.invite ? messages.invites.status[s.invite] : ""}</span>,
+    hideBelow: "lg",
+  },
   { id: "plan", header: c.plan, cell: (s) => <StudentPlan student={s} />, hideBelow: "md" },
   { id: "groups", header: c.groups, cell: (s) => <StudentGroups student={s} />, hideBelow: "md" },
   {

@@ -102,6 +102,9 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["update_organization_profile", () => ({ p_name: "Hack", p_logo_path: "", p_contact_whatsapp: "" })],
     ["export_account_data", () => ({ p_kind: "students", p_include_health: true })],
     ["log_account_export", () => ({ p_kind: "students", p_count: 1, p_include_health: false })],
+    // Convites (20261120140000): equipe com acesso ao aluno.
+    ["create_student_invites", () => ({ p_student_ids: [otherId] })],
+    ["get_invite_quota", () => ({})],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -126,6 +129,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     expect(await rpc<unknown[]>(student.client, "get_chat_messages", { p_student_id: otherId })).toHaveLength(0);
     expect(await rpc<unknown[]>(student.client, "list_chat_inbox")).toHaveLength(0);
     expect(await rpc(student.client, "staff_total_unread_count")).toBe(0);
+    expect(await rpc<unknown[]>(student.client, "student_invite_statuses", {})).toHaveLength(0);
   });
 
   it("funções do titular (intencionais) só enxergam o próprio cadastro", async () => {
@@ -152,7 +156,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "platform_log_invite", "platform_update_plan", "platform_record_payment", "platform_set_status", "platform_set_note",
     "get_my_subscription", "get_platform_support", "get_my_access_limits",
     "update_my_profile", "update_organization_profile", "get_my_branding", "get_access_link_branding", "export_account_data",
-    "log_account_export",
+    "log_account_export", "create_student_invites", "student_invite_statuses", "get_invite_quota",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();
