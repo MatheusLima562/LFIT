@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/db/server";
+import { conversationOrder } from "./state";
 
 export interface AssistantConversation {
   sessionId: string;
@@ -38,5 +39,6 @@ export async function getAssistantConversations(studentId: string): Promise<Assi
     conv.messages.push({ id: m.id, role: m.role === "assistant" ? "assistant" : "student", kind: m.kind, body: m.body, createdAt: m.created_at });
     bySession.set(m.session_id, conv);
   }
+  for (const c of bySession.values()) c.messages = conversationOrder(c.messages);
   return [...bySession.values()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 }

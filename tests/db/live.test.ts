@@ -121,10 +121,11 @@ describe.runIf(dbTestsEnabled)("ao vivo (get_live_board, live_heartbeat, set_liv
 
   it("sessão parada 20+ min e mensagem sem resposta 5+ min entram em 'Precisa de atenção', sem dado de saúde", async () => {
     await fx.db.from("live_sessions").update({ last_event_at: new Date(Date.now() - 25 * 60_000).toISOString() }).eq("session_id", sessionId);
-    await fx.db.from("chat_messages").insert({
-      organization_id: org.id, student_id: s1, sender_role: "student", body: "canário-ao-vivo",
+    const { error: chatError } = await fx.db.from("chat_messages").insert({
+      organization_id: org.id, student_id: s1, sender_role: "student", body: "canário-ao-vivo", client_msg_id: randomUUID(),
       created_at: new Date(Date.now() - 6 * 60_000).toISOString(),
     });
+    expect(chatError?.message ?? null).toBeNull();
     const b = await board(trainer);
     expect(b.attention.map((a) => a.kind).sort()).toEqual(["stalled", "unanswered"]);
     const raw = JSON.stringify(b);

@@ -26,20 +26,25 @@ const login = async (path, email, viewport = { width: 375, height: 812 }) => {
   return page;
 };
 let sessionId = null;
+let aluna = null;
 try {
-  const aluna = await login("/aluno", "aluno.seed@example.com");
-  await aluna.getByRole("button", { name: "Iniciar treino" }).first().click();
+  aluna = await login("/aluno", "aluno.seed@example.com");
+  // Depois do f3 pode haver um treino aberto ("Retomar treino"): usa ele e não o apaga no fim.
+  const resume = aluna.getByRole("link", { name: "Retomar treino" });
+  const resuming = (await resume.count()) > 0;
+  await (resuming ? resume.first() : aluna.getByRole("button", { name: "Iniciar treino" }).first()).click();
   await aluna.waitForURL(/\/aluno\/treino\/[0-9a-f-]+/, { timeout: 20000 });
-  sessionId = aluna.url().split("/treino/")[1].split("?")[0];
+  if (!resuming) sessionId = aluna.url().split("/treino/")[1].split("?")[0];
   await aluna.getByText("Seu professor acompanha o treino").waitFor({ timeout: 15000 });
   ok("aviso de transparência no primeiro treino", true);
   await aluna.getByRole("button", { name: "Entendi" }).click();
   await aluna.getByRole("button", { name: "Série 1: Feita" }).first().click();
   await aluna.waitForTimeout(3000); // fila + primeiro batimento
 
-  const prof = await login("/", "trainer1.seed@example.com");
-  await prof.getByText("Treinando agora").waitFor({ timeout: 15000 });
+  // Professor responsável da Camila do app (aluno.seed) é o Caio = trainer2.
+  const prof = await login("/", "trainer2.seed@example.com");
   const card = prof.locator("section[aria-labelledby='card-live']");
+  await card.getByRole("heading", { name: /Treinando agora/ }).waitFor({ timeout: 15000 });
   await card.getByText("Camila").first().waitFor({ timeout: 35000 });
   ok("professor vê a aluna treinando com progresso", /\d+\/\d+ exercícios/.test(await card.innerText()));
   ok("card sem dado de saúde", !/dor|RPE|feedback|grupo|condição/i.test(await card.locator("ul").first().innerText()));
@@ -60,6 +65,7 @@ try {
   await aluna.screenshot({ path: `${OUT}/ao-vivo-02-banner.png`, fullPage: true });
   ok("sem erro de página", [...aluna.errors, ...prof.errors].length === 0, [...aluna.errors, ...prof.errors].join(" | "));
 } catch (e) {
+  if (aluna) await aluna.screenshot({ path: `${OUT}/ao-vivo-erro-aluna.png`, fullPage: true }).catch(() => {});
   ok("roteiro terminou", false, e.message);
 } finally {
   if (sessionId) await admin.from("workout_sessions").delete().eq("id", sessionId);

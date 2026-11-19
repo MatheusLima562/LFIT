@@ -62,6 +62,221 @@ export type Database = {
           },
         ]
       }
+      ai_consents: {
+        Row: {
+          accepted_at: string
+          organization_id: string
+          student_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          organization_id: string
+          student_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          organization_id?: string
+          student_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_consents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_consents_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_consents_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          item_id: string | null
+          kind: string
+          organization_id: string
+          reply_to: string | null
+          role: string
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          kind?: string
+          organization_id: string
+          reply_to?: string | null
+          role: string
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          kind?: string
+          organization_id?: string
+          reply_to?: string | null
+          role?: string
+          session_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_session_state: {
+        Row: {
+          alert_at: string | null
+          alert_kind: string | null
+          organization_id: string
+          paused_at: string | null
+          paused_reason: string | null
+          session_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          alert_at?: string | null
+          alert_kind?: string | null
+          organization_id: string
+          paused_at?: string | null
+          paused_reason?: string | null
+          session_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          alert_at?: string | null
+          alert_kind?: string | null
+          organization_id?: string
+          paused_at?: string | null
+          paused_reason?: string | null
+          session_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_session_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_session_state_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_session_state_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_session_state_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage_daily: {
+        Row: {
+          cost_usd_micros: number
+          day: string
+          input_tokens: number
+          messages: number
+          organization_id: string
+          output_tokens: number
+        }
+        Insert: {
+          cost_usd_micros?: number
+          day: string
+          input_tokens?: number
+          messages?: number
+          organization_id: string
+          output_tokens?: number
+        }
+        Update: {
+          cost_usd_micros?: number
+          day?: string
+          input_tokens?: number
+          messages?: number
+          organization_id?: string
+          output_tokens?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_daily_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anamnesis_requests: {
         Row: {
           completed_at: string | null
@@ -595,99 +810,6 @@ export type Database = {
           },
         ]
       }
-      ai_messages: {
-        Row: {
-          body: string
-          created_at: string
-          id: string
-          item_id: string | null
-          kind: string
-          organization_id: string
-          reply_to: string | null
-          role: string
-          session_id: string
-          student_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          item_id?: string | null
-          kind?: string
-          organization_id: string
-          reply_to?: string | null
-          role: string
-          session_id: string
-          student_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          item_id?: string | null
-          kind?: string
-          organization_id?: string
-          reply_to?: string | null
-          role?: string
-          session_id?: string
-          student_id?: string
-        }
-        Relationships: []
-      }
-      import_batches: {
-        Row: {
-          archived_count: number | null
-          created_at: string
-          created_by: string | null
-          created_count: number
-          declaration_version: string
-          declared_at: string
-          id: string
-          kept_count: number | null
-          organization_id: string
-          rejected_count: number
-          rows_expected: number
-          rows_sent: number
-          source_label: string
-          undone_at: string | null
-          undone_by: string | null
-        }
-        Insert: {
-          archived_count?: number | null
-          created_at?: string
-          created_by?: string | null
-          created_count?: number
-          declaration_version: string
-          declared_at: string
-          id?: string
-          kept_count?: number | null
-          organization_id: string
-          rejected_count?: number
-          rows_expected: number
-          rows_sent?: number
-          source_label: string
-          undone_at?: string | null
-          undone_by?: string | null
-        }
-        Update: {
-          archived_count?: number | null
-          created_at?: string
-          created_by?: string | null
-          created_count?: number
-          declaration_version?: string
-          declared_at?: string
-          id?: string
-          kept_count?: number | null
-          organization_id?: string
-          rejected_count?: number
-          rows_expected?: number
-          rows_sent?: number
-          source_label?: string
-          undone_at?: string | null
-          undone_by?: string | null
-        }
-        Relationships: []
-      }
       health_conditions: {
         Row: {
           archived_at: string | null
@@ -741,6 +863,135 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "health_conditions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_batches: {
+        Row: {
+          archived_count: number | null
+          created_at: string
+          created_by: string | null
+          created_count: number
+          declaration_version: string
+          declared_at: string
+          id: string
+          kept_count: number | null
+          organization_id: string
+          rejected_count: number
+          rows_expected: number
+          rows_sent: number
+          source_label: string
+          undone_at: string | null
+          undone_by: string | null
+        }
+        Insert: {
+          archived_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_count?: number
+          declaration_version: string
+          declared_at: string
+          id?: string
+          kept_count?: number | null
+          organization_id: string
+          rejected_count?: number
+          rows_expected: number
+          rows_sent?: number
+          source_label: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Update: {
+          archived_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_count?: number
+          declaration_version?: string
+          declared_at?: string
+          id?: string
+          kept_count?: number | null
+          organization_id?: string
+          rejected_count?: number
+          rows_expected?: number
+          rows_sent?: number
+          source_label?: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_undone_by_fkey"
+            columns: ["undone_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_sessions: {
+        Row: {
+          last_event_at: string
+          organization_id: string
+          session_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_event_at?: string
+          organization_id: string
+          session_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          last_event_at?: string
+          organization_id?: string
+          session_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_sessions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
             referencedColumns: ["id"]
           },
         ]
@@ -923,6 +1174,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          ai_assistant_enabled: boolean
           created_at: string
           id: string
           is_seed: boolean
@@ -936,6 +1188,7 @@ export type Database = {
           video_quota_bytes: number | null
         }
         Insert: {
+          ai_assistant_enabled?: boolean
           created_at?: string
           id?: string
           is_seed?: boolean
@@ -949,6 +1202,7 @@ export type Database = {
           video_quota_bytes?: number | null
         }
         Update: {
+          ai_assistant_enabled?: boolean
           created_at?: string
           id?: string
           is_seed?: boolean
@@ -1806,6 +2060,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -1835,6 +2090,7 @@ export type Database = {
           health_consent_declared_by?: string | null
           health_data_consent_at?: string | null
           id?: string
+          import_batch_id?: string | null
           last_name: string
           modality?: string
           notes?: string | null
@@ -1864,6 +2120,7 @@ export type Database = {
           health_consent_declared_by?: string | null
           health_data_consent_at?: string | null
           id?: string
+          import_batch_id?: string | null
           last_name?: string
           modality?: string
           notes?: string | null
@@ -1880,6 +2137,13 @@ export type Database = {
           workout_plan_ends_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "students_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "students_organization_id_fkey"
             columns: ["organization_id"]
@@ -2460,13 +2724,6 @@ export type Database = {
     Functions: {
       accept_ai_terms: { Args: { p_version: string }; Returns: undefined }
       ack_live_notice: { Args: never; Returns: undefined }
-      admin_purge_ai_data: { Args: never; Returns: number }
-      ai_record_reply: {
-        Args: { p_body: string; p_failed: boolean; p_input_tokens: number; p_message_id: string; p_output_tokens: number }
-        Returns: Json
-      }
-      ai_submit_message: { Args: { p_body: string; p_item_id: string; p_session_id: string }; Returns: Json }
-      get_ai_assistant_state: { Args: { p_session_id: string }; Returns: Json }
       acknowledge_session_alert: {
         Args: { p_session_id: string }
         Returns: undefined
@@ -2476,7 +2733,22 @@ export type Database = {
         Returns: Database["public"]["Enums"]["plan_status"]
       }
       admin_activate_due_plans: { Args: never; Returns: number }
+      admin_purge_ai_data: { Args: never; Returns: number }
       admin_purge_live_tracking: { Args: never; Returns: number }
+      ai_record_reply: {
+        Args: {
+          p_body: string
+          p_failed: boolean
+          p_input_tokens: number
+          p_message_id: string
+          p_output_tokens: number
+        }
+        Returns: Json
+      }
+      ai_submit_message: {
+        Args: { p_body: string; p_item_id: string; p_session_id: string }
+        Returns: Json
+      }
       apply_plan_to_students: {
         Args: {
           p_activate: boolean
@@ -2518,6 +2790,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -2556,6 +2829,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -2600,6 +2874,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -2658,6 +2933,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -2697,6 +2973,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -2758,6 +3035,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -2784,6 +3062,7 @@ export type Database = {
         Args: { p_feedback?: string; p_rpe?: number; p_session_id: string }
         Returns: undefined
       }
+      get_ai_assistant_state: { Args: { p_session_id: string }; Returns: Json }
       get_chat_messages: {
         Args: { p_before?: string; p_student_id: string }
         Returns: {
@@ -2802,6 +3081,7 @@ export type Database = {
       }
       get_dashboard_engagement_retention: { Args: never; Returns: Json }
       get_dashboard_training_stats: { Args: never; Returns: Json }
+      get_live_board: { Args: never; Returns: Json }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_announcement: {
         Args: { p_student_id?: string }
@@ -2832,7 +3112,6 @@ export type Database = {
           trainer_name: string
         }[]
       }
-      get_live_board: { Args: never; Returns: Json }
       get_my_nps_prompt: { Args: never; Returns: Json }
       get_my_student_profile: {
         Args: never
@@ -2898,6 +3177,10 @@ export type Database = {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
       }
+      import_students: {
+        Args: { p_batch_id: string; p_rows: Json }
+        Returns: Json
+      }
       list_chat_inbox: {
         Args: never
         Returns: {
@@ -2909,10 +3192,6 @@ export type Database = {
           student_name: string
           unread_count: number
         }[]
-      }
-      import_students: {
-        Args: { p_batch_id: string; p_rows: Json }
-        Returns: Json
       }
       live_heartbeat: { Args: { p_session_id: string }; Returns: Json }
       log_set: {
@@ -2998,6 +3277,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null
@@ -3141,7 +3421,11 @@ export type Database = {
       }
       staff_total_unread_count: { Args: never; Returns: number }
       start_import_batch: {
-        Args: { p_declaration_version: string; p_rows_expected: number; p_source_label: string }
+        Args: {
+          p_declaration_version: string
+          p_rows_expected: number
+          p_source_label: string
+        }
         Returns: string
       }
       start_workout_session: {
@@ -3228,6 +3512,7 @@ export type Database = {
           health_consent_declared_by: string | null
           health_data_consent_at: string | null
           id: string
+          import_batch_id: string | null
           last_name: string
           modality: string
           notes: string | null

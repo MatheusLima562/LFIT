@@ -161,7 +161,10 @@ describe.runIf(dbTestsEnabled)("importação de alunos (start_import_batch, impo
     const [a, b, c] = res.results.map((r) => r.student_id!);
     // b teve atividade (cadastro editado depois: o gatilho grava updated_at); c recebeu mensagem no chat.
     await fx.db.from("students").update({ notes: "editado" }).eq("id", b);
-    await fx.db.from("chat_messages").insert({ organization_id: org.id, student_id: c, sender_role: "student", body: "oi" });
+    const { error: chatError } = await fx.db
+      .from("chat_messages")
+      .insert({ organization_id: org.id, student_id: c, sender_role: "student", body: "oi", client_msg_id: randomUUID() });
+    expect(chatError?.message ?? null).toBeNull();
 
     await expect(rpc(ownerB.client, "undo_import_batch", { p_batch_id: batch })).rejects.toThrow("IMPORT_BATCH_NOT_FOUND");
     await expect(rpc(studentUser.client, "undo_import_batch", { p_batch_id: batch })).rejects.toThrow("FORBIDDEN");

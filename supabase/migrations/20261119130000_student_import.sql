@@ -235,6 +235,7 @@ declare
   v_code text;
   v_constraint text;
   v_value text;
+  v_max integer;
 begin
   if p_batch_id is null or p_rows is null or jsonb_typeof(p_rows) <> 'array' then
     raise exception 'INVALID_INPUT' using errcode = 'P0001', detail = 'rows';
@@ -261,8 +262,10 @@ begin
         raise exception 'INVALID_INPUT' using errcode = 'P0001';
       end if;
       -- Limite por célula (o cliente já confere; aqui é a garantia): texto ≤ 2000, e-mail ≤ 254, demais ≤ 120.
+      -- (O limite vai numa variável: num IF do PL/pgSQL a condição acaba no primeiro THEN, inclusive o de um CASE.)
       foreach v_value in array array['first_name', 'last_name', 'email', 'whatsapp_e164', 'birth_date', 'modality', 'status'] loop
-        if char_length(coalesce(v_item ->> v_value, '')) > case v_value when 'email' then 254 else 120 end then
+        v_max := case v_value when 'email' then 254 else 120 end;
+        if char_length(coalesce(v_item ->> v_value, '')) > v_max then
           raise exception 'INVALID_INPUT' using errcode = 'P0001', detail = 'cell_too_long';
         end if;
       end loop;

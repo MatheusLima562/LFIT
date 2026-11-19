@@ -1,3 +1,59 @@
+# Relatório — sprint "Ao vivo + Importação + Assistente de IA" (19/11/2026)
+
+Pedido: `.claude/prompt-sprint-ao-vivo.md` (fora do git). Decisões: `docs/decisoes-autonomas.md` (entradas de 19/11/2026).
+Branch `feat/ao-vivo-importacao`, commits locais (sem push). Migrations aplicadas no **lfit-dev**:
+`20261119120000_live_tracking`, `20261119130000_student_import`, `20261119140000_ai_assistant` (dry-run listou só elas).
+
+## Resultado dos testes (todos no lfit-dev, build de produção, `next start -p 3100`)
+| Teste | Resultado |
+|---|---|
+| `tests/db/live.test.ts` (inclui: falha no ao vivo não impede gravar o treino; isolamento entre organizações) | 10/10 |
+| `tests/db/student-import.test.ts` (concorrência do limite do plano, lote, desfazer, isolamento) | 12/12 |
+| `tests/db/ai-assistant.test.ts` (desligado por padrão, segurança determinística, pausa, limite, RLS, isolamento) | 10/10 |
+| `tests/db/nps.test.ts` | 11/11 |
+| `tests/db/security-definer-coverage.test.ts` | 1/1 |
+| Regressão extra: `chat-humanized` 16/16, `security-definer` 92/92, `fase3-sessions` 17/17 | ok |
+| Unitários (`tests/unit`) | 339/339 |
+| e2e 375 px: `ao-vivo`, `assistente-ia` (provedor falso), `f3-app-aluno`, `k212-chat`, `k212-chat-layout`, `k212-professor`, `importar-layout` | todos ok |
+| e2e desktop: `importar-fluxo` (declaração, importação real, CSV de recusadas neutralizado, desfazer) | ok |
+| Type check, lint, build | ok |
+| Vídeo `01-visao-geral` regravado | 2:21, 21 passos |
+
+Nada foi marcado como passou sem ter rodado. Falhas encontradas no caminho e corrigidas (causa, não asserção): migration
+com `IF ... CASE ... THEN` (o primeiro push parou; a migration que falhou foi desfeita inteira e reaplicada corrigida);
+dois testes de banco inserindo no chat sem `client_msg_id`; roteiros e2e com professor errado e "Retomar treino";
+dois defeitos reais de tela no assistente ("Enviar" que não disparava com teclado aberto; resposta de segurança antes da
+pergunta).
+
+## Custo estimado do Assistente de IA por mensagem (modelo atual: `claude-opus-5-5`, US$ 4 / US$ 20 por milhão de tokens)
+Estimativa (o provedor real não foi chamado: os testes usam o falso). Entrada ≈ 1.000 tokens (instruções ≈ 500, contexto
+do exercício ≈ 80, até 6 mensagens anteriores ≈ 300, pergunta ≈ 50) = **US$ 0,004**. Saída: teto de 512 tokens, que
+inclui o raciocínio (no Opus 5.5 ele não desliga; esforço `low`) — típico 150–300 tokens = US$ 0,003–0,006; no teto,
+US$ 0,010. **Por mensagem: ~US$ 0,007–0,010 típico; até ~US$ 0,016 no pior caso** (entrada maior + teto de saída). Com o
+limite de 30 mensagens/dia por aluno, o máximo por aluno é ~US$ 0,48/dia. O custo real fica em `ai_usage_daily` por
+organização e dia quando o recurso for ligado.
+
+## O que divergiu do pedido
+- SDK oficial da Anthropic não instalado (permissão negada): provedor real por HTTP direto, isolado em
+  `features/assistant/anthropic.ts`; comando pendente: `npm install @anthropic-ai/sdk`.
+- Convites com limite diário (B2) não implementados (o pedido os trata como etapa separada).
+- Ordem pergunta/resposta corrigida na leitura (sem 4ª migration, porque o pedido mandava aplicar só três).
+- Todos os e2e rodaram de novo no build final. Dependência de ordem: o `ao-vivo` abre a conversa da Camila como o Caio
+  (marca as não lidas do seed como lidas); rodado logo antes do `k212-chat` sem refazer o seed, o k212 falha nas
+  contagens. Com o seed refeito (o executor normal refaz antes de cada roteiro), passa — conferido.
+
+## O que conferir no iPhone
+1. Execução do treino: aviso "Seu professor acompanha o treino" no primeiro treino, "Entendi" some e não volta.
+2. Professor manda mensagem: banner "Mensagem de Caio" no topo da execução, sem cobrir "Feita"; "Responder no chat".
+3. Cronômetro de descanso + toast "Nova mensagem no chat" perto da barra de abas: aparecem um sobre o outro (anterior
+   a este sprint) — ver se incomoda.
+4. Início do professor no celular: card "Treinando agora" com nome, progresso e tempo; "Precisa de atenção".
+5. Assistente (só com a flag ligada numa org de teste): teclado aberto, "Enviar" visível e funcionando no primeiro
+   toque; teclado não fecha ao enviar; painel não cobre "Feita".
+6. Importação pelo celular (375 px): escolher arquivo do iCloud/Arquivos, colunas, declaração, resultado.
+
+---
+
 # Relatório da sprint autônoma (28/10/2026)
 
 Plano: `docs/plano-sprint-autonoma.md`. Decisões tomadas sozinho: `docs/decisoes-autonomas.md` (entradas de 28/10/2026).

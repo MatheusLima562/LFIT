@@ -101,6 +101,19 @@ describe("provedor falso e prazo", () => {
 });
 
 describe("estado do painel", () => {
+  it("no mesmo instante, a pergunta vem antes da resposta (resposta de segurança na mesma transação)", () => {
+    const t = "2026-11-19T15:00:00.000Z";
+    const s = parseAssistantState({
+      enabled: true, consent_required: false, remaining_today: 1,
+      messages: [
+        { id: "a", role: "student", kind: "normal", body: "oi", created_at: "2026-11-19T14:59:00.000Z" },
+        { id: "z-reply", role: "assistant", kind: "safety", body: "Pare", created_at: t },
+        { id: "b-question", role: "student", kind: "normal", body: "pontada", created_at: t },
+      ],
+    });
+    expect(s?.messages.map((m) => m.id)).toEqual(["a", "b-question", "z-reply"]);
+  });
+
   it("desligado ou lixo → painel escondido", () => {
     expect(parseAssistantState({ enabled: false })?.enabled).toBe(false);
     expect(parseAssistantState(null)).toBeNull();

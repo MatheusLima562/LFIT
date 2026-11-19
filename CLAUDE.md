@@ -609,7 +609,7 @@ effective_status =
   respostas sobre ele; owner = organização + por professor. Nunca aluno, nome, nota individual ou data.
   Lógica de exibição em `features/nps/nps.ts`.
 
-### Ao vivo no Início (19/11/2026, migration `20261119120000` — escrita, aguardando push)
+### Ao vivo no Início (19/11/2026, migration `20261119120000` — aplicada no lfit-dev; e2e `e2e/ao-vivo.e2e.mjs`)
 - **"Treinando agora" vem de eventos reais do treino**, não de presença: gatilhos em `workout_sessions` (iniciou/mudou
   status), `session_item_logs` (concluiu exercício) e `session_set_logs` (série) carimbam `live_sessions.last_event_at`
   (`private.live_touch`). Nenhuma RPC de treino mudou. **`live_touch` nunca aborta a gravação do treino**: o corpo roda
@@ -635,7 +635,7 @@ effective_status =
   ao assistente — só nível completo; restrito vê o aviso genérico) e `ai_failed` (o assistente não respondeu). Uma
   linha por (tipo, aluno). Ver "Assistente de IA".
 
-### Importação genérica de alunos (19/11/2026, migration `20261119130000` — escrita, aguardando push)
+### Importação genérica de alunos (19/11/2026, migration `20261119130000` — aplicada no lfit-dev; e2e `e2e/importar-*.e2e.mjs`)
 - Rota `/importar` (staff; menu Alunos → "Importar alunos"). Código em `features/import/` (lógica pura em `parse.ts`,
   `fields.ts`, `validate.ts`, testada em `tests/unit/import.test.ts`; XLSX pelo ExcelJS carregado só quando preciso).
 - **O arquivo nunca sai do navegador nem é guardado**: CSV/XLSX até 5 MB e 2000 linhas; CSV em UTF-8 (com/sem BOM) ou
@@ -672,7 +672,13 @@ effective_status =
   que já tem acesso em OUTRA organização entra no cadastro, mas não consegue receber acesso aqui com o mesmo e-mail.
 - Plano da importação de treinos (só proposta): `docs/planos/importacao-treinos.md`.
 
-### Assistente de IA — DESLIGADO por padrão (19/11/2026, migration `20261119140000` — escrita, aguardando push)
+### Assistente de IA — DESLIGADO por padrão (19/11/2026, migration `20261119140000` — aplicada no lfit-dev; e2e `e2e/assistente-ia.e2e.mjs` com `AI_PROVIDER=fake npx next start -p 3100`)
+- **PL/pgSQL:** num `IF`, a condição acaba no primeiro `THEN` — inclusive o de um `CASE` dentro dela (quebrou o
+  primeiro push da importação). Calcule o `CASE` numa variável antes do `IF`.
+- Mensagem do aluno e resposta de segurança são gravadas na mesma transação (mesmo `created_at`): a ordem da conversa
+  na tela é horário + pergunta antes da resposta (`conversationOrder` em `features/assistant/state.ts`).
+- Botão "Enviar" do painel com `onPointerDown/onMouseDown` + `preventDefault`: mantém o foco no campo durante o toque
+  (sem isso, a barra de abas — que some com o teclado — voltava por cima do botão e o toque caía nela).
 - `organizations.ai_assistant_enabled` padrão **false**; nenhuma organização ligada e **sem tela/RPC para ligar** até a
   revisão jurídica (`docs/ia-checklist-juridico.md`).
 - **Provedor só no servidor** (rota `app/aluno/assistente/route.ts`): interface em `features/assistant/provider.ts`

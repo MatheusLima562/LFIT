@@ -25,6 +25,7 @@ export function AssistantPanel({ sessionId, itemId }: { sessionId: string; itemI
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const listRef = useRef<HTMLOListElement>(null);
+  const sendRowRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -163,11 +164,20 @@ export function AssistantPanel({ sessionId, itemId }: { sessionId: string; itemI
                 value={text}
                 placeholder={t.placeholder}
                 onChange={(e) => setText(e.target.value)}
+                // Teclado abrindo encolhe a área visível: depois da animação, traz a linha do "Enviar" para a vista.
+                onFocus={() => window.setTimeout(() => sendRowRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }), 300)}
                 className="w-full resize-none rounded-lg border border-line bg-surface px-3 py-2 text-[16px] text-ink outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
-              <div className="flex items-center justify-between gap-2">
+              <div ref={sendRowRef} className="flex scroll-mb-4 items-center justify-between gap-2">
                 <span className="text-xs text-ink-3">{t.remaining(state.remainingToday)}</span>
-                <Button type="submit" disabled={sending || !text.trim() || state.remainingToday <= 0}>
+                <Button
+                  type="submit"
+                  disabled={sending || !text.trim() || state.remainingToday <= 0}
+                  // Mantém o foco no campo durante o toque: sem isso o campo perdia o foco no "apertar", a barra de abas
+                  // (que some com o teclado) voltava por cima do botão e o "soltar" caía nela — a mensagem não saía.
+                  onPointerDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
                   {sending && <Loader2 aria-hidden className="animate-spin" />}
                   {sending ? t.sending : t.send}
                 </Button>
