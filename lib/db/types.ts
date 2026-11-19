@@ -1354,15 +1354,19 @@ export type Database = {
       organizations: {
         Row: {
           ai_assistant_enabled: boolean
+          contact_whatsapp: string | null
           created_at: string
           id: string
           is_seed: boolean
           live_enabled: boolean
+          logo_path: string | null
           name: string
           overdue_grace_days: number
           plan: Database["public"]["Enums"]["plan_tier"]
           slug: string
+          status_changed_at: string
           student_limit: number
+          subscription_status: string
           updated_at: string
           video_quota_bytes: number | null
         }
@@ -1382,12 +1386,16 @@ export type Database = {
         }
         Update: {
           ai_assistant_enabled?: boolean
+          contact_whatsapp?: string | null
           created_at?: string
           id?: string
           is_seed?: boolean
           live_enabled?: boolean
+          logo_path?: string | null
           name?: string
           overdue_grace_days?: number
+          status_changed_at?: string
+          subscription_status?: string
           plan?: Database["public"]["Enums"]["plan_tier"]
           slug?: string
           student_limit?: number
@@ -1813,6 +1821,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
           avatar_url: string | null
           created_at: string
           full_name: string
@@ -3281,6 +3290,12 @@ export type Database = {
       get_my_subscription: { Args: never; Returns: Json }
       get_platform_support: { Args: never; Returns: Json }
       get_my_access_limits: { Args: never; Returns: Json }
+      update_my_profile: { Args: { p_avatar_path: string; p_full_name: string }; Returns: Json }
+      update_organization_profile: { Args: { p_contact_whatsapp: string; p_logo_path: string; p_name: string }; Returns: Json }
+      get_my_branding: { Args: never; Returns: Json }
+      get_access_link_branding: { Args: { p_token: string }; Returns: Json }
+      export_account_data: { Args: { p_include_health: boolean; p_kind: string }; Returns: Json }
+      log_account_export: { Args: { p_count: number; p_include_health: boolean; p_kind: string }; Returns: undefined }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_announcement: {
         Args: { p_student_id?: string }

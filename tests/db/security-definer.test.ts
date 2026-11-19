@@ -97,6 +97,11 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["platform_record_payment", () => ({ p_org: randomUUID(), p_paid_on: "2026-11-01", p_amount_cents: 1, p_period_start: "2026-11-01", p_period_end: "2026-11-02", p_note: "" })],
     ["platform_create_account", () => ({ p_user_id: randomUUID(), p_org_name: "X Y", p_owner_name: "X Y", p_plan: "pro", p_student_limit: 1 })],
     ["get_my_subscription", () => ({})],
+    // Configurações (20261120130000): equipe/owner.
+    ["update_my_profile", () => ({ p_full_name: "Hack Hack", p_avatar_path: "" })],
+    ["update_organization_profile", () => ({ p_name: "Hack", p_logo_path: "", p_contact_whatsapp: "" })],
+    ["export_account_data", () => ({ p_kind: "students", p_include_health: true })],
+    ["log_account_export", () => ({ p_kind: "students", p_count: 1, p_include_health: false })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -146,6 +151,8 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "is_platform_admin", "platform_list_accounts", "platform_account_detail", "platform_create_account", "platform_account_owner",
     "platform_log_invite", "platform_update_plan", "platform_record_payment", "platform_set_status", "platform_set_note",
     "get_my_subscription", "get_platform_support", "get_my_access_limits",
+    "update_my_profile", "update_organization_profile", "get_my_branding", "get_access_link_branding", "export_account_data",
+    "log_account_export",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

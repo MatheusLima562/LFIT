@@ -771,6 +771,19 @@ effective_status =
   "Seu acesso está temporariamente limitado. Fale com {nome}." no topo, último treino só leitura (sem iniciar), chat sem
   caixa de envio; conta encerrada: tela de acesso indisponível. e2e `e2e/plataforma-inadimplencia.e2e.mjs`.
 
+### Configurações do personal (1.3, migration `20261120130000` — escrita, ainda não aplicada; e2e `e2e/configuracoes.e2e.mjs`)
+- `/configuracoes` (menu e menu da conta): **perfil** (nome, foto — qualquer membro da equipe), **negócio** (nome, logo,
+  WhatsApp de contato — só o owner), **senha** (`supabase.auth.updateUser`), **plano e assinatura** (só leitura) e
+  **exportar** (só o owner): `/configuracoes/exportar?tipo=students|sessions[&saude=1]`, CSV de `lib/spreadsheet.ts`.
+  Sem `saude=1` nem o cabeçalho de saúde aparece; marcar "Incluir ficha de saúde" mostra o aviso e pede confirmação.
+- Bucket **privado** `org-branding` (2 MB, JPEG/WebP; `lib/image-resize.ts` reduz para 512 px no navegador e tira EXIF):
+  `<org>/logo-<uuid>` (owner) e `<org>/avatar-<uid>-<uuid>` (cada um a própria). Leitura: equipe e alunos da org (URL
+  assinada de 1 h com a sessão). A imagem substituída é apagada pelo cliente depois de salvar.
+- **App do aluno:** logo e nome do negócio no topo (`StudentBrand`); tela do link de acesso/convite mostra "Convite de
+  {negócio}" e o logo (`get_access_link_branding`, só servidor, sem consumir o token).
+- Conta em somente leitura recusa as configurações (`ACCOUNT_READ_ONLY`); exportar continua (inclusive encerrada).
+- `/suporte`: WhatsApp/e-mail da plataforma (`get_platform_support`, de `private.account_rules`).
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -848,8 +861,9 @@ sem efeitos colaterais).
 | **Feed — aluno (titular)** | `get_my_feed`, `get_my_feed_new_count`, `mark_feed_seen`, `toggle_feed_like` | `private.feed_me()` (`students.user_id = auth.uid()`, status efetivo `active`, senão `STUDENT_NOT_FOUND`/`ACCESS_SUSPENDED`); visibilidade única em `private.feed_visible_posts` (mesma org, publicado, não apagado, autor = owner ou o professor do aluno, público todos/modalidade/turma). Curtir só post visível (`FEED_POST_NOT_FOUND`); devolve contagem + o próprio estado, nunca quem curtiu |
 | **Plataforma (quem vende o app)** | `is_platform_admin`, `platform_list_accounts`, `platform_account_detail`, `platform_create_account`, `platform_account_owner`, `platform_log_invite`, `platform_update_plan`, `platform_record_payment`, `platform_set_status`, `platform_set_note` | `private.require_platform_admin()` = usuário em `private.platform_admins` (lista só por SQL; nunca papel da organização) → senão `FORBIDDEN` (`is_platform_admin` devolve só o booleano). Só dados de conta (nome do negócio, dono, plano, contagem de vagas, datas, situação, pagamentos manuais, observação interna) — **nunca** nome/contato/dado de aluno; o admin sem perfil não lê tabela nenhuma de aluno (RLS por `current_org_id`). Toda ação em `private.platform_audit` (observação sem o texto). Criar conta: o servidor autoriza (`is_platform_admin`), cria o usuário do Auth por convite com a secret key e só então `platform_create_account` (sessão do admin) cria organização + owner. `20261120120000`; testes em `tests/db/platform-billing.test.ts` |
 | **Assinatura — personal / aluno** | `get_my_subscription`, `get_platform_support`, `get_my_access_limits` | `get_my_subscription`: `require_staff()`; situação, estado (`private.org_access_state`), datas de tolerância/fim e contato da plataforma — sem pagamentos nem observação. `get_platform_support`: qualquer logado (só o contato). `get_my_access_limits`: escopo `students.user_id = auth.uid()`; devolve `ok`/`limited`/`closed` e o primeiro nome de quem acompanha — nunca valores ou cobrança |
+| **Configurações (1.3)** | `update_my_profile`, `update_organization_profile`, `get_my_branding`, `export_account_data`, `log_account_export` | `update_my_profile`: `require_staff()` + conta gravável (`private.assert_org_writable`); foto só da própria pasta (`<org>/avatar-<uid>-…`) e já enviada. `update_organization_profile`: `require_owner()` + gravável; logo da pasta da org, WhatsApp E.164; auditado sem os valores. `get_my_branding`: equipe ou aluno da org (nome, logo, WhatsApp de contato do negócio). `export_account_data`: `require_owner()`; saúde (grupos, observações do cadastro; dor e comentário do treino) só com `p_include_health` **e** `can_view_student_health`; funciona com a conta encerrada. `log_account_export`: só tipo, contagem e opt-in. `20261120130000`; testes em `tests/db/account-settings.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
-| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+| **Só servidor** (`service_role`) | `get_access_link_branding` (nome/logo do negócio na tela do link, só com token válido, sem consumir), `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
 Checklist para toda função `SECURITY DEFINER` nova:
 1. `set search_path = ''` e nomes totalmente qualificados.

@@ -7,6 +7,7 @@ import { StudentNav } from "@/features/student-app/components/StudentNav";
 import { getMyAccessLimits, getMyConsentRequest, getMyProfile } from "@/features/student-app/queries";
 import { getStudentUnread } from "@/features/chat/queries";
 import { getMyFeedNewCount } from "@/features/feed/queries";
+import { getMyBranding } from "@/features/settings/queries";
 import { HealthConsentForm } from "@/features/students/components/HealthConsentForm";
 import { RouteError } from "@/components/layout/RouteError";
 import { messages } from "@/messages/pt-BR";
@@ -14,11 +15,13 @@ import { messages } from "@/messages/pt-BR";
 const t = messages.aluno;
 
 /** Cabeçalho. "Sair" só nas telas de portão (sem a barra de abas); dentro do app ele fica no Perfil. */
-function Header({ name, signOut = false }: { name?: string; signOut?: boolean }) {
+async function Header({ name, signOut = false }: { name?: string; signOut?: boolean }) {
+  // Logo e nome do negócio do personal (Configurações); falha → marca do app.
+  const business = await getMyBranding().catch(() => null);
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-surface/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-backdrop-filter:bg-surface/80">
       <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
-        <StudentBrand />
+        <StudentBrand business={business} />
         {signOut && (
           <form action={signOutStudent}>
             <Button type="submit" variant="ghost" size="sm" className="text-ink-2" aria-label={name ? `${t.nav.signOut} (${name})` : t.nav.signOut}>

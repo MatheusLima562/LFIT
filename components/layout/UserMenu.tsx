@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
 import { useTransition } from "react";
 import { signOut } from "@/features/auth/actions";
@@ -50,10 +51,11 @@ export function UserMenu({ user, compact }: { user: ShellUser; compact?: boolean
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
-          <Settings aria-hidden />
-          {t.settings}
-          <span className="ml-auto text-[10px] font-semibold tracking-wide text-ink-3 uppercase">{messages.app.soon}</span>
+        <DropdownMenuItem asChild>
+          <Link href="/configuracoes">
+            <Settings aria-hidden />
+            {t.settings}
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={pending} onSelect={() => startTransition(() => signOut())}>
