@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/db/server";
 import { clientIp, withinRateLimit } from "@/lib/security/rate-limit";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
-import { signInSchema, type ActionResult } from "@/features/auth/schemas";
+import { signInErrorMessage, signInSchema, type ActionResult } from "@/features/auth/schemas";
 
 const t = messages.auth;
 
@@ -23,7 +23,7 @@ export async function signInStudent(input: unknown): Promise<ActionResult> {
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.user) return { ok: false, error: t.errors.invalidCredentials };
+  if (error || !data.user) return { ok: false, error: signInErrorMessage(error) };
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
   if (!profile || profile.role !== "student") {

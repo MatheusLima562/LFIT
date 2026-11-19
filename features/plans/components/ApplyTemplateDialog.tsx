@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DateField } from "@/features/students/components/form/DateField";
 import { applyTemplate } from "../actions";
+import { callAction } from "@/lib/action";
 
 const t = messages.plans.manage;
 
@@ -39,12 +40,15 @@ export function ApplyTemplateDialog({ fixed, options, onClose }: Props) {
     if ((startsOn.trim() && !s) || (endsOn.trim() && !e)) return setError(messages.plans.validation.date);
     if (!choice) return;
     startTransition(async () => {
-      const r = await applyTemplate({
-        templateId: pickingStudent ? fixed.id : choice,
-        studentId: pickingStudent ? choice : fixed.id,
-        startsOn: s,
-        endsOn: e,
-      });
+      const r = await callAction(() =>
+        applyTemplate({
+          templateId: pickingStudent ? fixed.id : choice,
+          studentId: pickingStudent ? choice : fixed.id,
+          startsOn: s,
+          endsOn: e,
+        }),
+      );
+      if (!r) return;
       if (!r.ok) return setError(r.error);
       toast.success(r.message);
       router.push(`/treinos/${r.id}/editar`);

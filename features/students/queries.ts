@@ -4,6 +4,7 @@ import type { Database } from "@/lib/db/types";
 import { getLatestRedFlagCheck } from "@/features/knowledge/queries";
 import type { RedFlagCheck } from "@/features/knowledge/red-flags";
 import { searchKey } from "@/lib/text";
+import type { Modality } from "./modality";
 import { PAGE_SIZE, type StudentListParams } from "./search-params";
 
 export type EffectiveStatus = Database["public"]["Enums"]["effective_status"];
@@ -25,6 +26,7 @@ export interface StudentRow {
   photoUrl: string | null;
   /** Fim do plano de treino ativo (23:59:59 SP) ou null sem plano ativo. */
   workoutPlanEndsAt: string | null;
+  modality: Modality;
 }
 
 const STATUS_FILTER: Record<StudentListParams["status"], EffectiveStatus[]> = {
@@ -34,7 +36,7 @@ const STATUS_FILTER: Record<StudentListParams["status"], EffectiveStatus[]> = {
 };
 
 const BASE_COLUMNS =
-  "id, full_name, first_name, email, whatsapp_e164, birth_date, sex, enrollment_number, effective_status, access_expires_at, user_id, photo_path, workout_plan_ends_at, " +
+  "id, full_name, first_name, email, whatsapp_e164, birth_date, sex, enrollment_number, effective_status, access_expires_at, user_id, photo_path, workout_plan_ends_at, modality, " +
   "trainer:profiles!students_trainer_id_organization_id_fkey(full_name), student_groups(special_groups(name, color))";
 
 /** Remove caracteres com significado na sintaxe de filtros do PostgREST. */
@@ -56,6 +58,7 @@ type Row = {
   user_id: string | null;
   photo_path: string | null;
   workout_plan_ends_at: string | null;
+  modality: Modality;
   trainer: { full_name: string } | null;
   student_groups: { special_groups: { name: string; color: string } | null }[];
 };
@@ -77,6 +80,7 @@ function toStudentRow(r: Row, photoUrls: Map<string, string>): StudentRow {
     groups: r.student_groups.flatMap((g) => (g.special_groups ? [g.special_groups] : [])),
     photoUrl: r.photo_path ? (photoUrls.get(r.photo_path) ?? null) : null,
     workoutPlanEndsAt: r.workout_plan_ends_at,
+    modality: r.modality,
   };
 }
 
@@ -110,6 +114,7 @@ export async function listStudents(params: StudentListParams, options: { limit?:
 
   if (params.turma) query = query.eq("turma.class_id", params.turma);
   if (params.grupo) query = query.eq("grupo.group_id", params.grupo);
+  if (params.modalidade) query = query.eq("modality", params.modalidade);
   if (params.treino) {
     const now = new Date();
     const in7 = new Date(now.getTime() + 7 * 86_400_000);
@@ -198,6 +203,7 @@ export interface StudentForEdit {
   trainingLocation: string | null;
   notes: string | null;
   blockIfOverdue: boolean;
+  modality: Modality;
   photoPath: string | null;
   photoUrl: string | null;
   hasAccount: boolean;
@@ -209,7 +215,7 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
   const { data } = await supabase
     .from("students")
     .select(
-      "id, first_name, last_name, email, birth_date, sex, whatsapp_e164, trainer_id, health_data_consent_at, health_consent_declared_at, access_expires_at, training_location, notes, block_if_overdue, photo_path, user_id, student_groups(group_id)",
+      "id, first_name, last_name, email, birth_date, sex, whatsapp_e164, trainer_id, health_data_consent_at, health_consent_declared_at, access_expires_at, training_location, notes, block_if_overdue, photo_path, user_id, modality, student_groups(group_id)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -238,6 +244,7 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
     trainingLocation: data.training_location,
     notes: data.notes,
     blockIfOverdue: data.block_if_overdue,
+    modality: data.modality as Modality,
     photoPath: data.photo_path,
     photoUrl: data.photo_path ? (photoUrls.get(data.photo_path) ?? null) : null,
     hasAccount: data.user_id !== null,

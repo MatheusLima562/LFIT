@@ -14,6 +14,7 @@ import type { ExerciseDetail } from "../queries";
 import { LevelBadge } from "./LevelBadge";
 import { VideoEmbed } from "./VideoEmbed";
 import { VideoPlayer } from "./VideoPlayer";
+import { callAction } from "@/lib/action";
 
 const t = messages.exercises;
 
@@ -33,7 +34,8 @@ export function ExerciseDetailDialog({ exercise, closeHref, isOwner }: Props) {
 
   const run = (fn: () => Promise<{ ok: true; id: string; message: string } | { ok: false; error: string }>, then?: (id: string) => void) =>
     startTransition(async () => {
-      const r = await fn();
+      const r = await callAction(fn);
+      if (!r) return;
       if (!r.ok) return void toast.error(r.error);
       toast.success(r.message);
       if (then) then(r.id);

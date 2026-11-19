@@ -61,6 +61,7 @@ import type { StudentHealthGuides } from "@/features/knowledge/queries";
 import { ExercisePicker } from "./ExercisePicker";
 import { ImportItemsDialog } from "./ImportItemsDialog";
 import { DragHandle, ItemCard } from "./ItemCard";
+import { callAction } from "@/lib/action";
 
 const t = messages.plans;
 const NO_LEVEL = "none";
@@ -248,7 +249,8 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
       return null;
     }
     setErrors({});
-    const r = await savePlan(v.payload);
+    const r = await callAction(() => savePlan(v.payload));
+    if (!r) return null;
     if (!r.ok) {
       toast.error(r.error);
       return null;
@@ -273,8 +275,9 @@ export function PlanBuilder({ initial, status, student, trainers = [], lists = N
       if (!student) return;
       const id = dirty || !draft.id ? await persist() : draft.id;
       if (!id) return setConfirm(null);
-      const r = await activatePlan(id, student.id);
+      const r = await callAction(() => activatePlan(id, student.id));
       setConfirm(null);
+      if (!r) return;
       if (!r.ok) return void toast.error(r.error);
       toast.success(r.message);
       router.push(backHref);

@@ -30,9 +30,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          // Tokens do projeto (Tailwind v4 expõe --color-*; --popover/--border não existem e deixavam o aviso sem fundo).
+          "--normal-bg": "var(--color-popover)",
+          "--normal-text": "var(--color-popover-foreground)",
+          "--normal-border": "var(--color-border)",
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }

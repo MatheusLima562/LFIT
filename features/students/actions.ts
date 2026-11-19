@@ -11,6 +11,7 @@ import type { Json } from "@/lib/db/types";
 import { AccountConflictError, linkStudentAccount, type StudentAccountTarget } from "./account";
 import { studentFormSchema, toStudentPayload } from "./schemas";
 import { GROUP_COLORS } from "@/features/groups/colors";
+import { DEFAULT_MODALITY } from "./modality";
 
 const t = messages.students;
 const f = messages.studentForm;
@@ -147,6 +148,12 @@ export async function saveStudent(input: unknown, studentId?: string): Promise<S
 
   const id = (data as { id: string }).id;
   const warnings: string[] = [];
+
+  // Modalidade: RPC própria (owner ou professor responsável). Cadastro novo só chama se não for o padrão.
+  if (studentId || values.modality !== DEFAULT_MODALITY) {
+    const { error: modalityError } = await supabase.rpc("set_student_modality", { p_student_id: id, p_modality: values.modality });
+    if (modalityError) warnings.push(f.warnings.modality);
+  }
 
   if (values.sendInvite) {
     const invite = await sendAccessEmail(id);

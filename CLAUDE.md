@@ -26,6 +26,18 @@ A/B/C para ele escolher.
    notificação; nunca editar migration já aplicada; nunca push.
 6. Relatório final curto: (a) o que foi feito, (b) decisões
    tomadas sozinho (link para o log), (c) Pendências para você.
+7. Nunca esperar indefinidamente: todo comando longo roda com
+   timeout (máx. 20 min; o macOS não tem `timeout`: use
+   `caffeinate -i node scripts/with-timeout.mjs 1200 <comando>`).
+   Estourou: mate o processo e rode fracionado (testes de banco
+   arquivo por arquivo, 5 min cada:
+   `node scripts/with-timeout.mjs 300 npx vitest run tests/db/<arquivo>`). Arquivo que
+   trava = causa raiz (chamada de rede/subprocesso síncrono sem
+   prazo), nunca asserção afrouxada.
+8. Se uma regra de permissão exige aprovação, é PROIBIDO fazer a
+   mesma ação por outro caminho (outro binário, script, wrapper,
+   python, node). Isso é violação grave: pare, não execute e liste
+   em Pendências.
 
 Painel web (desktop-first) para o treinador e, no futuro, app PWA (mobile-first) para o aluno.
 Uso inicial interno (substituir o MFIT Personal); objetivo futuro é vender para outros personais,
@@ -103,6 +115,10 @@ BASE=http://localhost:3100 npm run test:e2e             # todos, em série
 BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com os filtros
 ```
 
+- **Mac na bateria dorme no meio de execuções longas** (rede suspensa → login que não termina, `fetch failed`, `Hook timed
+  out`): rode roteiros e `npm run test:db` com `caffeinate -i <comando>`. Com a **tampa fechada na bateria**
+  ("Clamshell Sleep" no `pmset -g log`) o `caffeinate` não segura: os prazos da regra 7 limitam a espera; rode de novo o
+  arquivo afetado.
 - Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
 - `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
   `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
@@ -114,7 +130,7 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
   1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
 - `inicio-professor-cards`: confere os cards do Início (logado como o professor do seed) contra as RPCs e salva o print em
   `tutoriais-video/inicio-professor.png`; rode depois do f3 ou do `db:seed:demo`, com `--no-reseed`.
-- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`), idempotentes (limpam o que
+- Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`, `nps-`), idempotentes (limpam o que
   criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
 Vídeos de tutorial **[existe]** (`e2e/tutoriais/NN-nome.roteiro.mjs`; mesma trava do lfit-dev e usuários fictícios do seed):
@@ -199,6 +215,13 @@ tests/unit/                # testes de lógica pura (sem banco)
   `private`, dê `grant execute` ao papel que escreve (ex.: `valid_signup_form_config`).
 - Exportações: grupos especiais (dado de saúde) só com opt-in explícito (`saude=1` + confirmação na UI).
   Filtrar por grupo especial também revela saúde e exige o mesmo opt-in — regra aplicada no servidor.
+- **Server action chamada pelo cliente** (dentro de `startTransition`): sempre por `callAction` (`lib/action.ts`). Se a
+  chamada falhar antes de responder (rede, servidor reiniciado, versão nova), a exceção derrubava a tela inteira em "This
+  page couldn't load"; `callAction` vira aviso e a tela continua. Os segmentos `(app)` e `aluno/(logado)` têm `error.tsx`
+  (`RouteError`) para o resto.
+- **Realtime:** entrar no canal sempre por `joinWithAuth` (`features/chat/realtime.ts`). Logo após carregar a página o
+  cliente ainda não leu a sessão e o canal entrava como `anon` — o Realtime recusava a assinatura filtrada ("invalid
+  column for filter") sem erro visível. O k212 falha se alguma assinatura for recusada.
 - Links de uso único enviados por WhatsApp/e-mail: nunca consumir no GET (pré-visualizações fazem GET).
   Mostre um botão e consuma no POST (ver `/acesso/[token]`).
 - Ações sensíveis com a secret key (Auth admin): primeiro uma RPC com a sessão do usuário autoriza e
@@ -286,7 +309,10 @@ effective_status =
   filtro `?treino=a_vencer|vencido|sem_treino` (a vencer = próximos 7 dias); contagens via
   `student_plan_counts()` (SECURITY INVOKER, só alunos da aba Ativos).
 - A view `students_with_status` usa `s.*`, que o Postgres congela na criação: coluna nova em `students`
-  exige recriar a view (drop + create + grant), como em `20261001120000_student_plan_filters.sql`.
+  exige recriar a view (drop + create + grant), como em `20261001120000_student_plan_filters.sql`. **A view é só
+  leitura, só para logados** (`20261029120000`): `revoke all` de public/anon/authenticated/service_role, `grant select` a
+  `authenticated` e `service_role`, e gatilho `instead of` que recusa escrita (`READ_ONLY_VIEW`). O `drop view` apaga
+  gatilho e grants: ao recriar, repita os dois (testado em `tests/db/write-protection.test.ts`).
 
 ### Vídeo próprio de exercício (bucket `exercise-media`)
 - **Limites: MP4/WebM, até 15 MB e até 30 s por vídeo; poster JPEG até 1 MB.** Motivo: custo de storage e
@@ -448,7 +474,7 @@ effective_status =
 - Avisos de dor (`student_session_alerts`): dor > 5 num exercício ou "ainda incomoda" — escada completo/restrito/oculto;
   "visto" só com o nível completo. Testes: `tests/db/fase3-sessions.test.ts`.
 
-### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat e 3.2 aluno prontas — 3.2 aguarda o push da nota de satisfação)
+### App humanizado — etapa 2.12 (banco aplicado; 3.1 chat, 3.2 aluno e 3.3 enxuta prontas)
 - Plano: `docs/planos/etapa-2.12.md` ("Revisão 2", aprovado). Migration
   `20261013120000_humanized_app_chat.sql`: chat aluno ↔ professor responsável/owner (com caixa de conversas do
   professor), recado do professor, resumo humanizado do fim do treino (constância + recorde pessoal) e resposta do
@@ -490,6 +516,9 @@ effective_status =
     mesmo texto/anexo reusa o id, texto ou anexo editado gera outro. A mensagem local é deduplicada com o retorno do RPC
     e com o evento do Realtime pela chave remetente + `client_msg_id`. Sem rede → "Não enviada · Tentar de novo /
     Editar"; recusa do banco (`RATE_LIMITED`) → texto volta ao campo com aviso amigável.
+  - Selos de não lidas: estado compartilhado por conversa (`useChatUnread`, um canal e uma busca para todos os selos),
+    agendador `features/chat/unread.ts` (junta pedidos, no máximo 1 busca a cada 2 s, nada com a aba oculta);
+    `markRead` não repete o mesmo ponto.
   - Realtime: só INSERT (DELETE/UPDATE ignorados); quem garante o isolamento é o RLS, não o filtro do canal (teste com 6
     clientes em `tests/db/chat-realtime.test.ts`). Fora do ar → "Reconectando…" + busca a cada 20 s com a aba visível;
     ao reconectar, ao voltar a internet e ao voltar à aba, busca a página mais recente — e de novo 3 s depois
@@ -505,7 +534,7 @@ effective_status =
   - Roteiro `e2e/k212-chat.e2e.mjs` (375 px): imprime uma **frase-canário** única por execução para buscar nos logs do
     Supabase; derruba o WebSocket do Realtime por um proxy do Playwright (`routeWebSocket`); limpa as mensagens pelo
     marcador da execução, não por horário (o relógio local não bate com o do banco).
-- **3.2 aluno (pronta; a nota depende da migration `20261017120000`, ainda não aplicada):**
+- **3.2 aluno (pronta; migration da nota `20261017120000` aplicada):**
   - **Hoje:** saudação pela hora de SP ("Bom dia/Boa tarde/Boa noite"), constância em destaque sem cobrança
     (`sessions_this_month`/`week_streak`), recado (`get_my_announcement`), aviso "Seu professor respondeu sobre o treino
     de terça" (resposta dos últimos 14 dias; o texto fica no Histórico) e card do professor (iniciais — a foto chega na
@@ -519,11 +548,27 @@ effective_status =
     professor, horário, acesso e "Sair da conta". "Sair" saiu do cabeçalho (fica só nas telas de portão, sem abas).
   - **`StudentNav`:** 4 abas (Hoje · Histórico · Chat · Perfil), `aria-current`, toque de 56 px; **some com o teclado**
     (campo de texto focado em aparelho de toque, ou `visualViewport` bem menor que a janela).
-  - **Chat do aluno:** cabeçalho com o nome do professor (ou "Equipe do estúdio") e horário; aviso de emergência
-    recolhível — recolhido, a linha "Não é canal de emergência: ligue 192." continua visível (preferência por aparelho).
+  - **Chat do aluno:** cabeçalho compacto em uma linha (≤ 56 px: avatar, nome do professor ou "Equipe do estúdio",
+    horário em texto menor); aviso de emergência **aberto no primeiro acesso do aparelho e recolhido depois** (uma
+    linha "Não é canal de emergência · ligue 192"; a nota de quem vê a conversa fica no conteúdo expandido). Preferência
+    por aparelho em `localStorage` (só "1"/"0"; storage falhando = aberto). Cabeçalho e aviso no fluxo, nunca sobre a
+    lista; altura pela `StudentChatFrame` (CSS com áreas seguras; com teclado, pelo `visualViewport`). Roteiro
+    `e2e/k212-chat-layout.e2e.mjs` (375×667 e 390×844: sem sobreposição, lista ≥ 55% com o aviso recolhido).
   - **Login:** links cruzados "Sou aluno? Entrar no app do aluno" (`/entrar`) e "Sou professor? Entrar no painel do
     treinador" (`/aluno/entrar`).
   - Seed: horário do Caio (`preferences.office_hours`) e um recado dele para a Camila. e2e: `e2e/f3-app-aluno.e2e.mjs`.
+- **3.3 enxuta (pronta, `20261028120000`):** `features/coach/`. Em `/alunos/[id]/treinos`, "Recado para este aluno"
+  (publicar até 300, visível 7 dias, "Encerrar recado" só para o autor — `end_trainer_announcement`) e "Sessões recentes"
+  (últimas 10 concluídas; comentário e resposta **só para quem vê a saúde**: `reply_to_session` exige
+  `can_view_student_health` no servidor). No `/chat`, "Recado para todos" (`BroadcastButton`). Textos do navegador direto
+  para as RPCs. e2e `e2e/k212-professor.e2e.mjs`. **Adiados:** foto do professor (bucket próprio), horário de atendimento
+  editável.
+- **Notificações N1 (dentro do app, sem push):** `features/notifications/` (regras puras em `n1.ts`). Toast "Nova
+  mensagem no chat" quando a contagem de não lidas sobe fora da conversa (aluno e painel, com "Abrir"); recado novo →
+  marcador na aba Hoje até o aluno ver + toast "Novo recado do seu professor" uma vez por recado. **Nunca o conteúdo,
+  o nome ou dado de saúde.** No aparelho só ids de recado (`lfit:aluno:recado-visto`/`-avisado`). Recado é buscado ao
+  abrir e ao voltar à aba (sem Realtime de recado). No celular os toasts ficam acima da barra de abas (`mobileOffset`).
+  e2e `e2e/n1-notificacoes.e2e.mjs`.
 - **Fora do escopo da 3.1/3.2:** notificação push de mensagem nova (depende da etapa de notificações; sem ela, cada lado
   só vê mensagem nova ao abrir o app/painel); criar/encerrar recado, resposta ao feedback e **tela para o professor editar o próprio horário de atendimento
   (`profiles.preferences.office_hours`) e foto (`trainer_avatar_url`)** (3.3) — sem ela, a Hoje humanizada mostra
@@ -531,6 +576,133 @@ effective_status =
 - Testes: `tests/db/chat-humanized.test.ts` (isolamento entre organizações, cursores independentes, rate limit,
   anexo restrito ao plano ativo, recado não vaza, `is_pr` exige histórico, conteúdo nunca em `audit_logs`, envio
   idempotente), `tests/db/chat-realtime.test.ts`, `tests/unit/chat-thread.test.ts`.
+
+### Modalidade do aluno — base do presencial (28/10/2026)
+- `students.modality` = `consultoria` (padrão) | `presencial` | `hibrido`; escrita só por `set_student_modality`
+  (owner ou professor responsável), chamada pelo `saveStudent` depois de create/update (campo "Modalidade" no formulário).
+  Etiqueta na lista só para presencial/híbrido (o padrão não repete em toda linha) e filtro `?modalidade=` (links, como o
+  de treino). `students_with_status` recriada (o `s.*` congela). **Nada de agenda, presença ou cobrança** — proposta e
+  riscos em `docs/planos/modulo-presencial.md`, aguardando aprovação. e2e `e2e/fase1-modalidade.e2e.mjs`.
+
+### NPS do aluno — v2 (29/10/2026, migrations `20261029130000` + `20261030120000`)
+- `nps_responses` (org, aluno, `trainer_id` = professor responsável **no momento** da resposta, nota 0–10,
+  `submitted_at`, `submitted_on` = dia civil de SP pelo gatilho; `comment` existe mas **não é mais coletado** —
+  `submit_nps` recusa texto). **Sem UPDATE/DELETE** (sem grant nem política; gatilho recusa update, exceto o `set null`
+  do banco quando o usuário do professor é apagado); a exclusão do aluno apaga em cascata. **Uma resposta a cada 90 dias
+  garantida no banco** (exclusion constraint `daterange(submitted_on, +90)`, `btree_gist`). RLS: o aluno lê as próprias;
+  a equipe **não** lê a tabela.
+- **Regras num só lugar:** `private.nps_settings` (linha única; muda só por migration): `min_sessions` 8,
+  `min_days_of_use` 30 (desde o primeiro treino concluído), `interval_days` 90 (piso 90 por causa da constraint),
+  `snooze_days` 14, `min_responses` 10. Lidas por `private.nps_config()`; a tela recebe os números do banco.
+- **Cartão automático** na Hoje (`NpsPromptCard`): aparece sozinho quando o aluno está apto; só a nota 0–10; aviso "No
+  app, seu professor vê apenas o resultado agrupado das avaliações, nunca a nota de cada aluno."; confirmação "Enviar
+  nota X?" (não pode ser editada); "Agora não" vale **sem exceção**.
+- **Lembrete** (`/alunos/[id]/treinos`, `NpsReminderPanel`; substitui o "Pedir avaliação"): o professor vê o estado do
+  aluno (`get_nps_status`: `pending` "pode avaliar e ainda não respondeu" · `unavailable` "indisponível no momento" = o
+  "Agora não", **sem data e sem revelar a recusa** · `not_yet` com o motivo · `none` "nenhuma avaliação pendente", que
+  cobre quem respondeu, sem data). `send_nps_reminder` só em `pending`, **um por aluno por ciclo**
+  (`nps_reminders`, `unique (student_id, cycle_key)`); não cria nem antecipa o cartão — só acrescenta "Sua opinião ajuda
+  a melhorar o atendimento." Nada vai por notificação externa. `request_nps` ficou sem EXECUTE.
+- **Card "NPS dos alunos" no Início (`NpsCard`): só agregados por trimestre FECHADO** (o trimestre em aberto não entra,
+  para a média não mudar a cada resposta e não permitir deduzir a nota de quem acabou de responder): NPS, média e
+  quantidade, só com ≥ `min_responses`; abaixo disso, "Poucas respostas para exibir." (nem a contagem). Professor = as
+  respostas sobre ele; owner = organização + por professor. Nunca aluno, nome, nota individual ou data.
+  Lógica de exibição em `features/nps/nps.ts`.
+
+### Ao vivo no Início (19/11/2026, migration `20261119120000` — aplicada no lfit-dev; e2e `e2e/ao-vivo.e2e.mjs`)
+- **"Treinando agora" vem de eventos reais do treino**, não de presença: gatilhos em `workout_sessions` (iniciou/mudou
+  status), `session_item_logs` (concluiu exercício) e `session_set_logs` (série) carimbam `live_sessions.last_event_at`
+  (`private.live_touch`). Nenhuma RPC de treino mudou. **`live_touch` nunca aborta a gravação do treino**: o corpo roda
+  num bloco `exception when others` (sem logar nada); teste em `tests/db/live.test.ts` força a falha com uma constraint
+  temporária só da org de teste.
+- **Sessão ao vivo** = `in_progress` (gravado e efetivo) + último evento < 90 min + batimento < 10 min. Batimento
+  (`live_heartbeat`) só com a tela de execução aberta e visível, a cada 60 s; o banco grava no máximo 1 a cada 30 s. Sem
+  batimento, a sessão sai do card sozinha — **calculado; nada é gravado na sessão** (o "abandonada" de 6 h segue igual).
+- **Card AO VIVO** no topo do Início (`features/live/`, fora do "Personalizar"): nome, divisão, progresso (exercícios
+  concluídos / itens da cópia da divisão) e há quanto tempo treina; "Enviar mensagem" abre `/chat?aluno=`. **Precisa de
+  atenção** (janela de 24 h): dor (dor > 5 ou "ainda incomoda", sessão não revisada — só nível completo; restrito vê
+  "aviso no treino"), última mensagem do aluno sem resposta há 5+ min, sessão ao vivo parada há 20+ min. Limites só na
+  RPC `get_live_board` (a tela recebe os números). O card mostra estado, nunca promete resposta.
+- Atualização: Realtime em `live_sessions` e `chat_messages` filtrado por `organization_id` (o RLS decide; o evento só
+  dispara a busca, com debounce de 5 s: `features/live/debounce.ts`, testado) + busca a cada 30 s com a aba visível.
+- **Aluno:** na tela de execução (`LiveCompanion`, no fluxo, acima do exercício — não cobre "Feita" nem "Finalizar"),
+  aviso de transparência até "Entendi" (`private.live_notice_acks`, vale em qualquer aparelho) e banner com a última
+  mensagem do professor desde o início da sessão ainda não lida (sem push).
+- `organizations.live_enabled` (padrão ligado), só o owner muda pelo próprio card; desligar apaga `live_sessions` da org.
+- **Retenção de 30 dias:** `private.purge_live_tracking()` pelo pg_cron `lfit-purge-live-tracking` (03:20 UTC); o
+  histórico de treino (`workout_sessions`) não é tocado. Disparo manual: `admin_purge_live_tracking()` (service_role).
+- "Alerta da IA" em "Precisa de atenção" (`20261119140000` redefine `get_live_board`): `ai_safety` (relato de sintoma
+  ao assistente — só nível completo; restrito vê o aviso genérico) e `ai_failed` (o assistente não respondeu). Uma
+  linha por (tipo, aluno). Ver "Assistente de IA".
+
+### Importação genérica de alunos (19/11/2026, migration `20261119130000` — aplicada no lfit-dev; e2e `e2e/importar-*.e2e.mjs`)
+- Rota `/importar` (staff; menu Alunos → "Importar alunos"). Código em `features/import/` (lógica pura em `parse.ts`,
+  `fields.ts`, `validate.ts`, testada em `tests/unit/import.test.ts`; XLSX pelo ExcelJS carregado só quando preciso).
+- **O arquivo nunca sai do navegador nem é guardado**: CSV/XLSX até 5 MB e 2000 linhas; CSV em UTF-8 (com/sem BOM) ou
+  Windows-1252, separador `;`/`,`/tab detectado. Só linhas válidas vão para `import_students`, em lotes de 200.
+- **Colunas:** sugestão por sinônimos pt-BR/en (nome, sobrenome, e-mail, telefone/celular, nascimento, objetivo,
+  observações, data de início, modalidade, status); obrigatórios nome e e-mail (o cadastro exige nome, sobrenome e
+  e-mail — sem coluna de sobrenome, a primeira palavra é o nome). **Objetivo e data de início não têm coluna no
+  cadastro: entram nas observações** ("Objetivo: …", "Início (importado): dd/mm/aaaa"). Modalidade/status por sinônimos
+  (padrão consultoria/ativo; inativo não ocupa vaga). Planilha-modelo CSV (`;` + BOM) gerada no navegador.
+- Erro bloqueia a linha (sem sobrenome, e-mail inválido/repetido, observações > 2000); aviso não bloqueia (telefone ou
+  data inválidos ficam em branco). Relatório por número de linha do arquivo + "Baixar linhas recusadas" (CSV gerado no
+  navegador). Conexão caindo no meio: "Tentar de novo" continua do lote pendente (e-mail único impede duplicar).
+- **Modelos por plataforma** (`PLATFORM_PRESETS` em `fields.ts`): hoje só o genérico; o do MFIT entra com um arquivo
+  real exportado (cabeçalhos exatos). Treinos do MFIT ficam para depois. Sem grupos especiais/dado de saúde na importação:
+  colunas com cara de saúde (`looksLikeHealth`: lesão, restrição, patologia, anamnese, dor, doença, medicamento, cirurgia,
+  observações médicas, histórico clínico…) **nunca são sugeridas** e aparecem marcadas; aviso fixo "Não importe dados de
+  saúde nas observações; cadastre-os depois na ficha do aluno."
+- **Uma importação por vez por organização** (`pg_advisory_xact_lock` dentro de `import_students`), para dois lotes
+  simultâneos não passarem do limite do plano. `DUPLICATE_EMAIL` só quando a violação é do índice
+  `students_org_email_unique`; outra unicidade vira `INVALID_INPUT`.
+- **Lote e declaração** (`import_batches`: quem, quando, rótulo da origem, versão da declaração, contagens — nunca os
+  dados; `students.import_batch_id`): antes de gravar, caixa obrigatória "tenho base legal… e vou informá-los" (texto em
+  `messages/pt-BR.ts` → `importer.declaration`; versão em `features/import/declaration.ts`, aceita só se estiver em
+  `private.import_declarations`). `start_import_batch` abre o lote; só o autor envia linhas, por 24 h, até 2000 no total.
+- **Pré-cadastro:** importado nasce sem login (`user_id` nulo) e **nada é enviado** (o banco não manda e-mail; convites
+  saem depois, aluno por aluno, pelo fluxo de acesso que já existe).
+- **Desfazer em 7 dias** (`undo_import_batch`, autor ou owner, histórico na própria `/importar`): arquiva (soft delete,
+  auditado `student.deleted` com o motivo) só quem **não teve atividade** (`private.student_has_activity`: login, cadastro
+  editado, plano, treino, chat, recado, pagamento, turma, grupo, triagem, anamnese, link, NPS); o resto fica.
+- **Limite por célula** (cliente e banco): e-mail 254, objetivo/observações 2000, o resto 120.
+- **Injeção de fórmula** (`=`, `+`, `-`, `@`, tab, CR no início): `lib/spreadsheet.ts` em **toda** planilha gerada
+  (exportação de alunos CSV/XLSX, linhas recusadas, planilha-modelo); exceção só o E.164 estrito.
+- **Limitação conhecida:** o e-mail é único por organização e "1 e-mail = 1 conta" (ver "Decisões pendentes"): um aluno
+  que já tem acesso em OUTRA organização entra no cadastro, mas não consegue receber acesso aqui com o mesmo e-mail.
+- Plano da importação de treinos (só proposta): `docs/planos/importacao-treinos.md`.
+
+### Assistente de IA — DESLIGADO por padrão (19/11/2026, migration `20261119140000` — aplicada no lfit-dev; e2e `e2e/assistente-ia.e2e.mjs` com `AI_PROVIDER=fake npx next start -p 3100`)
+- **PL/pgSQL:** num `IF`, a condição acaba no primeiro `THEN` — inclusive o de um `CASE` dentro dela (quebrou o
+  primeiro push da importação). Calcule o `CASE` numa variável antes do `IF`.
+- Mensagem do aluno e resposta de segurança são gravadas na mesma transação (mesmo `created_at`): a ordem da conversa
+  na tela é horário + pergunta antes da resposta (`conversationOrder` em `features/assistant/state.ts`).
+- Botão "Enviar" do painel com `onPointerDown/onMouseDown` + `preventDefault`: mantém o foco no campo durante o toque
+  (sem isso, a barra de abas — que some com o teclado — voltava por cima do botão e o toque caía nela).
+- `organizations.ai_assistant_enabled` padrão **false**; nenhuma organização ligada e **sem tela/RPC para ligar** até a
+  revisão jurídica (`docs/ia-checklist-juridico.md`).
+- **Provedor só no servidor** (rota `app/aluno/assistente/route.ts`): interface em `features/assistant/provider.ts`
+  (provedor **falso** para testes: `AI_PROVIDER=fake`, recusado em produção), real em `anthropic.ts` (Messages API,
+  `claude-opus-5-5`, esforço `low`, fallback de recusa no servidor, `ANTHROPIC_API_KEY` só no servidor; sem chave =
+  indisponível com mensagem amigável). Hoje por HTTP direto: a instalação do `@anthropic-ai/sdk` ficou pendente.
+- Ordem: `ai_submit_message` (sessão DO ALUNO, só o titular) decide acesso → ligado → aceite (versão em
+  `private.ai_settings`, `ai_consents` com data) → pausa → limite diário → **camada de segurança determinística**
+  (`private.ai_safety_hit` = `features/assistant/safety.ts`, teste exige listas iguais): dor/sintoma grava a resposta
+  fixa "Pare o exercício e aguarde seu professor.", pausa a IA na sessão e cria o alerta `ai_safety` no "Precisa de
+  atenção" — **sem chamar o modelo**. Só então o servidor chama o provedor (prazo de 20 s) e grava a resposta ou a
+  contingência ("Não consegui responder agora; avisei seu professor." + alerta `ai_failed`) por `ai_record_reply`
+  (**só service_role**), que também soma uso e custo (`ai_usage_daily`, preço por Mtok em `private.ai_settings`).
+- **Contexto mínimo** montado no banco: exercício atual, prescrição e a dica (`tip`) do professor — nunca nome do aluno,
+  anamnese, condições, `care_note` ou histórico de saúde. Prompt em `features/assistant/prompt.ts`: só execução e
+  ajustes dentro do prescrito, sem diagnóstico/orientação clínica/dose, texto do aluno delimitado e nunca tratado como
+  instrução, sem ferramentas, sempre "Assistente de IA".
+- Professor/owner manda mensagem no chat durante a sessão → a IA pausa naquela sessão (gatilho em `chat_messages`,
+  nunca bloqueia o envio). Resposta que chega depois da pausa é descartada.
+- RLS: `ai_messages`/`ai_session_state` no nível de `can_view_student_health` (staff) ou o próprio aluno; o professor
+  vê o histórico em `/alunos/[id]/treinos`. Retenção **90 dias** (pg_cron `lfit-purge-ai-data`). Conteúdo nunca em log
+  ou auditoria. Limites em `private.ai_settings`: 30 mensagens/dia por aluno, 500 caracteres, 512 tokens de saída (decisão do dono, 19/11/2026).
+- Painel (`AssistantPanel`) no fluxo da tela de execução, recolhido por padrão, abaixo do exercício: não cobre "Feita"
+  nem "Enviar" a 375 px com teclado aberto (campo de 16 px, nada fixo).
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
@@ -544,6 +716,9 @@ effective_status =
   (`trainer_announcements.body`) e a **resposta ao feedback** (`workout_sessions.coach_reply`): nunca em
   `audit_logs`, log, e-mail, URL ou (quando existir) conteúdo de notificação push — nenhuma RPC do chat/recado/
   resposta chama `private.audit()` com o texto; se precisar auditar o envio em si, só id/contagem, nunca o corpo.
+- **NPS:** a resposta fica registrada em nome do aluno (para garantir uma a cada 90 dias), mas **nunca é exibida à
+  equipe** — só agregados com mínimo de respostas. O comentário deixou de ser coletado (v2); os antigos não saem por
+  nenhuma RPC da equipe. A página de privacidade precisa dizer isso (pendente, `docs/decisoes-autonomas.md`).
 - **Nota de satisfação do aluno** (`workout_sessions.student_rating`, 1–5, 3.2): não é dado de saúde, mas também nunca vai
   para log, URL ou notificação (a RPC `rate_workout_session` não audita; erros só com códigos fixos).
 - **Exceção (a validar com advogado):** a triagem de sinais de alerta + encaminhamento + liberação usa a base legal do
@@ -580,6 +755,7 @@ sem efeitos colaterais).
 | **Aluno (titular), de propósito** | `get_my_health_consent_request`, `respond_my_health_consent` | escopo `students.user_id = auth.uid()`; só o próprio cadastro |
 | Staff (owner/trainer) | `create_student`, `log_students_export` | `private.require_staff()` |
 | Staff com acesso ao aluno | `update_student`, `deactivate_student`, `reactivate_student`, `expire_student`, `clear_student_expiration`, `soft_delete_student`, `create_access_link`, `record_student_access_email`, `request_anamnesis` | `private.lock_accessible_student()`: staff + mesma org + (owner ou professor responsável) |
+| Modalidade do aluno (base do presencial) | `set_student_modality` | `private.lock_accessible_student()` (owner ou professor responsável), valor só em `consultoria`/`presencial`/`hibrido` (senão `INVALID_INPUT`; o CHECK da coluna repete a lista); sem auditoria (não é ação sensível). `20261028120100` (+ gatilho `private.student_modality_default` em `…120200`: o `create_student` insere a linha inteira e o DEFAULT não se aplicava). Testes em `tests/db/student-modality.test.ts` |
 | Somente owner | `hard_delete_student`, `ensure_signup_link`, `regenerate_signup_token`, `approve_signup`, `approve_signups`, `reject_signups` | `private.require_owner()` |
 | Staff + acesso ao plano (Fase 2) | `save_training_plan`, `activate_plan`, `archive_plan`, `apply_template_to_student`, `save_plan_as_template`, `duplicate_plan` | `require_staff()` + `private.lock_editable_plan()` (modelo: owner ou autor; plano de aluno: `can_access_student`) / `get_readable_plan()` + `lock_accessible_student()` |
 | Alertas de contraindicação (Fase 2/2.8) | `student_contraindication_rules`, `plan_contraindication_alerts` | `can_access_student`/`get_readable_plan`; sem `can_view_student_health` devolvem `restricted = true` (só nível, via `is_restricted_plan_viewer`/`is_restricted_health_viewer`) ou `hidden = true` (nada) — nunca condição/grupo/nota fora do nível completo |
@@ -591,12 +767,18 @@ sem efeitos colaterais).
 | Avisos de dor da Fase 3 | `student_session_alerts` (escada completo / restrito / oculto, como os alertas de contraindicação), `acknowledge_session_alert` | `require_staff`; completo só com `can_view_student_health`; restrito via `is_restricted_plan_viewer`/`is_restricted_health_viewer` sem tipo, dor nem comentário; "visto" exige `lock_accessible_student` + `can_view_student_health` |
 | **Chat aluno ↔ professor/owner (2.12)** | `send_chat_message`, `mark_chat_read`, `chat_unread_count` | `private.chat_reader` (helper em `private`, fora da API, plpgsql): resolve o chamador como `student` (`is_own_student`) ou `staff` (`can_access_student`) — tudo-ou-nada, **independente do consentimento de saúde** (mesma base legal da triagem, art. 11 II "e"/"d"); sem acesso de nenhum lado, `STUDENT_NOT_FOUND`. `send_chat_message` só aceita anexo do item do **plano ativo** do aluno e limita a 30 mensagens/minuto (aluno contado por `student_id`; staff por `sender_id`, somando todas as conversas). Idempotente (`20261014120000`): exige o UUID do cliente (único por remetente — aluno por `student_id`, staff por `sender_id`); reenvio com o mesmo id devolve a linha já gravada sem contar de novo no limite; mesmo id com outro texto/conversa → `INVALID_INPUT`. `mark_chat_read(p_student_id, p_until_message_id)` (`20261016120000`): marca só até a mensagem informada, que precisa ser da conversa (senão `INVALID_INPUT`); cursor nunca retrocede (par `created_at, id`) |
 | Leitura do chat, sem efeito (2.12) | `get_chat_messages` (aluno ou staff), `list_chat_inbox`, `staff_total_unread_count` (caixa de conversas do professor) | funções `sql` — mesmo padrão "leitura sem efeito": `is_own_student`/`private.can_access_student()`; quem não acessa recebe lista/contagem vazia, nunca erro. `get_chat_messages` devolve `sender_first_name` (só o primeiro nome do staff, nulo nas do aluno; nunca sobrenome/e-mail) |
-| Recado do professor (2.12) | `get_my_announcement`, `set_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor |
-| Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()`; `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
+| Recado do professor (2.12/3.3) | `get_my_announcement`, `set_trainer_announcement`, `end_trainer_announcement` | `get_my_announcement`: chamador duplo — aluno (parâmetro nulo = self) ou staff via `can_access_student`. `set_trainer_announcement`: `require_staff()` + `lock_accessible_student()` quando o aluno é informado (nulo = recado para todos os alunos do próprio chamador); só o recado **ativo e não expirado** (padrão 7 dias) aparece; nunca vaza para aluno de outro professor. `end_trainer_announcement` (3.3, `20261028120000`): `require_staff()` + só o **autor** e da própria org (`active = false`); qualquer outro caso → `ANNOUNCEMENT_NOT_FOUND` |
+| Resumo do treino e resposta ao feedback (2.12) | `get_session_summary`, `reply_to_session` | `is_own_student`/`can_access_student` (carga e RPE não são dado de saúde); `reply_to_session` exige também `require_staff()` e, desde a 3.3 (`20261028120000`), **`can_view_student_health`** (quem não lê o comentário não responde; recusa = `SESSION_NOT_FOUND`); `is_pr` só quando há carga anterior registrada (primeira vez nunca é recorde) |
 | **Início com dados reais** | `get_dashboard_training_stats`, `get_dashboard_engagement_retention` | `require_staff()` + `private.dashboard_students()` (alunos não excluídos da org com `can_access_student`: owner = organização, professor = os seus) — conta pelo **acesso ao aluno**, não pelo RLS de `workout_sessions` (que exige `can_view_student_health` e faria o owner contar a menos). Saída só com contagens, datas, nome do aluno e rótulo/nome da divisão; satisfação só agregada (média, quantidade, distribuição). "Hoje"/"semana" em São Paulo (`private.sp_day`, `private.sp_day_start`), semana começando na segunda. Testes em `tests/db/dashboard.test.ts` (fuso, outro tenant, professor só os seus, aluno e anônimo recusados, nenhum dado de saúde) |
 | **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
+| **NPS — aluno (titular)** | `submit_nps`, `get_my_nps_prompt`, `snooze_nps_prompt` | escopo `students.user_id = auth.uid()` (staff/anônimo: `STUDENT_NOT_FOUND`/sem EXECUTE; `get_my_nps_prompt` devolve nulo). `submit_nps` exige `private.nps_eligibility` (critérios de `private.nps_settings` → senão `NPS_NOT_ELIGIBLE` com o motivo no `detail`); nota 0–10; comentário recusado desde a v2 (`INVALID_INPUT`, `detail = 'comment'`); os 90 dias também pela exclusion constraint. Sem auditoria. `20261029130000` + `20261030120000`; testes em `tests/db/nps.test.ts` |
+| **NPS — equipe** | `get_nps_status`, `send_nps_reminder`, `get_nps_summary`, `request_nps` | `get_nps_status`: `require_staff` + `can_access_student` (owner ou responsável); devolve só o estado (`pending`/`unavailable`/`not_yet`/`no_account`/`inactive`/`none`) — nunca nota, data de resposta ou o "Agora não" (vira `unavailable`, sem data). `send_nps_reminder`: `lock_accessible_student`, **um aluno por chamada**, só em `pending`, um por ciclo (`nps_reminders`, unique); não cria nem antecipa o cartão. `get_nps_summary`: `require_staff`; só agregados por trimestre fechado com ≥ `min_responses` (senão `{enough:false}`); professor = respostas sobre ele; owner = organização + `by_trainer`. `request_nps` (v1): **sem EXECUTE** para `authenticated` desde `20261030120000` (substituída pelo lembrete) |
+| **Assistente de IA — aluno (titular)** | `get_ai_assistant_state`, `accept_ai_terms`, `ai_submit_message` | `private.ai_own_session` (sessão cujo aluno é `students.user_id = auth.uid()`; staff, inclusive no presencial, recebe `SESSION_NOT_FOUND`); `ai_submit_message` exige sessão aberta (`SESSION_CLOSED`), org ligada (`AI_DISABLED`), aceite da versão atual (`AI_CONSENT_REQUIRED`), sem pausa, abaixo do limite diário (trava por aluno) e aplica a camada de segurança antes de qualquer modelo; devolve só contexto mínimo (sem saúde). Sem auditoria de conteúdo. `20261119140000`; testes em `tests/db/ai-assistant.test.ts` |
+| **Importação de alunos** | `start_import_batch`, `import_students`, `undo_import_batch` | `start_import_batch`: `require_staff()`, versão da declaração em `private.import_declarations` (senão `INVALID_INPUT`), auditado. `undo_import_batch`: `require_staff()` + lote da org do autor ou owner (senão `IMPORT_BATCH_NOT_FOUND`), até 7 dias (`IMPORT_UNDO_EXPIRED`), uma vez (`IMPORT_ALREADY_UNDONE`), arquiva só sem atividade. `import_students`: `require_staff()` + `private.lock_open_import_batch` (só o autor, 24 h) + advisory lock por organização; professor importa para si (`trainer_id` = ele; o do arquivo é ignorado), owner sem professor. Cada linha passa por `private.import_one_student` (mesmas regras de `insert_student`: obrigatórios, e-mail único, `assert_trainer_in_org`, vaga só para ativo, matrícula, `student.created` auditado) num bloco próprio; 1–200 linhas por chamada (senão `INVALID_INPUT`); limite por célula. Resposta só com linha + código (`DUPLICATE_EMAIL`, `PLAN_LIMIT_REACHED`, `INVALID_INPUT`, `INVALID_TRAINER`, `IMPORT_ROW_FAILED`); auditoria `students.imported` só com contagens. `20261119130000`; testes em `tests/db/student-import.test.ts` |
+| **Ao vivo — painel (Início)** | `get_live_board`, `set_live_enabled` | `get_live_board`: `require_staff()` + `private.dashboard_students()` (owner = organização; professor = os seus); só nome, rótulo da divisão, horários e contagens; dor só com `can_view_student_health` (`pain`), restrito sem o tipo (`session_alert`, via `is_restricted_health_viewer`), oculto = nada; nunca texto do chat. `set_live_enabled`: `require_owner()`, auditado (`live_settings_update`, só o booleano); desligar apaga `live_sessions` da organização. `20261119120000`; testes em `tests/db/live.test.ts` |
+| **Ao vivo — tela de execução** | `live_heartbeat`, `ack_live_notice` | `live_heartbeat`: chamador duplo por `private.training_mode` da sessão (titular ou staff presencial; senão `SESSION_NOT_FOUND`); grava no máximo 1 batimento a cada 30 s por sessão (`private.live_heartbeats`) e só se a sessão tem registro ao vivo; só para o titular devolve `show_notice` e a última mensagem do staff não lida desde o início da sessão (o banner). `ack_live_notice`: escopo `students.user_id = auth.uid()` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
-| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
 Checklist para toda função `SECURITY DEFINER` nova:
 1. `set search_path = ''` e nomes totalmente qualificados.
@@ -618,7 +800,8 @@ Checklist para toda função `SECURITY DEFINER` nova:
 ## Backlog e decisões adiadas
 - **Importação do MFIT** (alunos e treinos via CSV/planilha) — etapa obrigatória **antes do uso com
   alunos reais**, depois da Fase 3 mínima. Deve respeitar limite do plano, matrícula, consentimento de saúde (importar grupos só
-  como "declarado") e auditoria; relatório de linhas rejeitadas.
+  como "declarado") e auditoria; relatório de linhas rejeitadas. **Alunos: importação genérica pronta** (ver
+  "Importação genérica de alunos"); faltam o modelo do MFIT (com um arquivo real), os grupos especiais e os treinos.
 - **Exercício personalizado × regra global:** a cópia congela as regras globais. Mostrar o aviso "regra global
   atualizada — revise sua cópia" quando uma regra global do exercício de origem mudar depois da personalização.
 - **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
@@ -702,7 +885,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
 - **2.12 App humanizado:** banco aplicado em lfit-dev (chat aluno ↔ professor/owner com caixa de conversas do
   professor, recado do professor, resumo humanizado do fim do treino com recorde pessoal, resposta do professor ao
   feedback) — ver "App humanizado — etapa 2.12". **3.1 (chat) pronta**, aguardando teste do dono no celular; **3.2
-  (aluno) pronta** — a nota de satisfação espera o push de `20261017120000`; 3.3 (professor) pendente.
+  (aluno) pronta**; **3.3 enxuta pronta** (recado com "Encerrar" e resposta ao feedback — ver abaixo).
 - Roadmap (ordem aprovada; **revista em 30/09/2026**): Fase 1 alunos ✔ → **Fase 2** (2.1–2.7 ✔; **2.8** ajustes do montador ✔
   (aguardando teste); **2.10** base de conhecimento (Fase A ✔; Fase B ✔ **aprovada** 30/09/2026)) → **Fase 3 mínima** (app do
   aluno — **banco e páginas do aluno prontos, aguardando teste no celular**; C1 dispensada por ora, ver "App do aluno — Fase 3") → **2.12**

@@ -3,7 +3,7 @@ title: Tour pela interface do professor
 summary: Conheça o painel do {{marca}} — o menu, as telas principais e o caminho para as tarefas do dia a dia.
 audience: professor
 order: 1
-updated: 2026-10-20
+updated: 2026-11-19
 ---
 
 ## Como entrar
@@ -41,6 +41,14 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
 
 É a primeira tela depois de entrar.
 
+- **Treinando agora (AO VIVO)**: no topo, os alunos com o treino aberto neste momento — o nome, a divisão, quantos
+  exercícios já foram feitos e há quanto tempo começou. Aparece quem registrou algo no treino nos últimos 90 minutos
+  com a tela do treino aberta. **Enviar mensagem** abre a conversa com o aluno; ele vê a mensagem na própria tela do
+  treino. Responder é sempre opcional: o card mostra o que está acontecendo, não cobra resposta.
+- **Precisa de atenção**: ao lado, o que pode pedir um olhar seu — mensagem do aluno sem resposta há alguns minutos,
+  treino parado há mais de 20 minutos e, se você pode ver a saúde do aluno, dor relatada no treino.
+- O aluno é avisado no primeiro treino de que você vê quando ele está treinando. O administrador pode desligar o ao
+  vivo no próprio card (**Desligar ao vivo**).
 - **Buscar aluno**: digite um nome e tecle Enter para abrir a lista de alunos já filtrada.
 - **Novo**: atalho para cadastrar um aluno.
 - **Alunos ativos**: quantos alunos ocupam vaga no seu plano.
@@ -55,6 +63,7 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
 - **Treinos da semana**: treinos concluídos por dia, de segunda a domingo, nesta semana e nas duas anteriores.
 - **Top 5 alunos**: quem mais concluiu treinos nos últimos 30 dias.
 - **Satisfação dos alunos**: a média das notas de 1 a 5 que os alunos dão ao terminar o treino, com a quantidade de notas. O card só aparece quando há alguma nota nos últimos 30 dias; com menos de 60 dias desde o primeiro treino concluído, mostra **Dados insuficientes** no lugar da média.
+- **NPS dos alunos**: o resultado agrupado das notas de 0 a 10 que os alunos dão ao acompanhamento, no último trimestre fechado. O NPS é a % de promotores (9–10) menos a % de detratores (0–6); o card também mostra a média e a quantidade de respostas. Com menos de 10 respostas no trimestre, mostra **Poucas respostas para exibir**. Traz a tendência dos últimos 4 trimestres e nunca mostra a nota de um aluno. O professor vê as avaliações sobre ele; o administrador vê a equipe toda e o resultado de cada professor.
 
 > O administrador vê os números de todos os alunos da conta; o professor, só dos alunos pelos quais é responsável. Os dias seguem o horário de Brasília.
 - **Personalizar**: escolha quais cards aparecem.
@@ -67,7 +76,9 @@ Em [Meus alunos](/alunos) fica a lista de todos os seus alunos.
 
 - Abas **Ativos**, **Inativos** e **Expirados**.
 - Busca por nome, e-mail ou matrícula.
-- Filtros por **Turma**, **Grupo especial** e **Treino** (**A vencer (7 dias)**, **Vencidos**, **Sem treino**).
+- Filtros por **Turma**, **Grupo especial**, **Treino** (**A vencer (7 dias)**, **Vencidos**, **Sem treino**) e
+  **Modalidade** (**Consultoria**, **Presencial**, **Híbrido**). Alunos presenciais e híbridos têm uma etiqueta ao lado do
+  status.
 - **Ordenar** e **Visualização** (lista ou cards).
 - **Exportar** gera uma planilha CSV ou Excel com a lista filtrada.
 
@@ -102,6 +113,9 @@ Em [Turmas](/turmas) você organiza alunos que treinam juntos.
 ## Chat
 
 Em [Chat](/chat) ficam as conversas com os seus alunos. As conversas com mensagens não lidas aparecem primeiro.
+Quando chega mensagem de aluno e você está em outra tela, aparece o aviso **Nova mensagem no chat** (só o aviso, sem o
+texto da mensagem) com o atalho **Abrir**.
+O botão **Recado para todos** publica um recado que aparece na tela Hoje de todos os seus alunos por 7 dias.
 
 ## Tarefas comuns
 
@@ -110,12 +124,32 @@ Em [Chat](/chat) ficam as conversas com os seus alunos. As conversas com mensage
 1. Abra [Meus alunos](/alunos) e clique em **Adicionar aluno**.
 2. Preencha **Nome**, **Sobrenome** e **E-mail** (obrigatórios). Os outros campos são opcionais.
 3. Se você é o administrador, escolha o **Professor responsável**. Se você é professor, você será o responsável.
+   Em **Modalidade**, indique se o aluno é de **Consultoria** (padrão), **Presencial** ou **Híbrido**.
 4. Para o aluno usar o app, deixe ligado **Enviar convite de acesso** (já vem ligado).
 5. Clique em **Cadastrar aluno**.
 
 > Exemplo fictício: Marina Teixeira, marina.teixeira@example.com.
 
 O convite não chegou? No menu **⋯** do aluno, use **Copiar link de acesso** e envie o link pelo WhatsApp. O link vale por 30 minutos e só pode ser usado uma vez.
+
+### Importar alunos de outra plataforma
+
+1. No menu, abra **Alunos → Importar alunos**.
+2. Escolha o arquivo exportado da outra plataforma (CSV ou XLSX, até 5 MB e 2000 alunos). Se a plataforma não exporta,
+   use **Baixar planilha-modelo**, preencha e envie. O arquivo é lido no seu navegador e não fica guardado.
+3. Confira as colunas sugeridas (nome e e-mail são obrigatórios) e toque em **Continuar**.
+4. Na revisão, veja as linhas com problema e os avisos (ex.: telefone inválido entra em branco), diga de onde vêm os
+   alunos (ex.: MFIT), marque a declaração de que você tem base legal para cadastrá-los e vai informá-los, e toque em
+   **Importar**.
+5. No resultado, use **Baixar linhas recusadas** para corrigir e importar de novo só essas linhas.
+
+Não importe dados de saúde (lesões, restrições, medicamentos…) nas observações: cadastre-os depois na ficha do aluno.
+Colunas com cara de dado de saúde não são sugeridas. Objetivo e data de início entram nas observações do aluno. Alunos
+importados por um professor ficam com ele; pelo administrador, ficam sem professor designado.
+
+Os alunos entram em **pré-cadastro**, sem acesso ao app: nenhum e-mail ou convite é enviado na importação. Mande o
+acesso depois, aluno por aluno. Errou a importação? Em **Importações recentes**, **Desfazer** (até 7 dias) arquiva os
+alunos daquele arquivo que ainda não tiveram nenhuma atividade.
 
 ### Montar e ativar um treino
 
@@ -137,6 +171,47 @@ Ao ativar, o aluno passa a ver o treino no app. O treino ativo anterior vai para
 3. O modelo vira um rascunho do aluno. Revise e clique em **Ativar treino**.
 
 Para levar o mesmo treino a vários alunos de uma vez, use **Copiar para alunos** no menu **⋯** do treino.
+
+### Deixar um recado para o aluno
+
+1. Em [Meus alunos](/alunos), abra o menu **⋯** do aluno e clique em **Treinos**.
+2. Em **Recado para este aluno**, escreva o recado (até 300 caracteres) e clique em **Publicar recado**.
+3. O recado aparece na tela Hoje do aluno por 7 dias. Para tirar antes, clique em **Encerrar recado**.
+
+Um recado novo substitui o anterior na tela do aluno. Só quem publicou pode encerrar.
+
+### Responder ao comentário do treino
+
+1. Na tela de treinos do aluno, veja **Sessões recentes**: data, divisão, esforço e o comentário do aluno.
+2. Clique em **Responder**, escreva e clique em **Enviar resposta**. O contador abaixo do campo mostra quantos dos 300
+   caracteres você já usou.
+3. O aluno vê a resposta no Histórico do app.
+
+O comentário e o campo de resposta aparecem só para quem acompanha a saúde do aluno (o professor responsável, ou
+qualquer pessoa da equipe depois que o aluno confirma o consentimento). Para os outros, a seção mostra o aviso **Você
+não pode ver nem responder ao feedback deste aluno**: nesse caso, fale com o professor responsável.
+
+### Avaliação do acompanhamento (NPS)
+
+O aluno avalia o acompanhamento no app: "Como está sendo treinar com você?", com uma nota de 0 a 10. O cartão
+aparece **sozinho** quando ele já pode responder: 30 dias depois do primeiro treino concluído, com pelo menos 8 treinos
+concluídos e no máximo uma vez a cada 90 dias. Se ele tocar em **Agora não**, o cartão some por 14 dias. Antes de
+enviar, ele confirma a nota ("Enviar nota 8?"), porque depois ela não pode ser alterada.
+
+**Você nunca vê a nota de um aluno.** No Início, o card **NPS dos alunos** mostra só o resultado agrupado do último
+trimestre fechado (NPS, média e quantidade de respostas), e só a partir de 10 respostas. Abaixo disso, aparece **Poucas
+respostas para exibir**.
+
+Na tela de treinos do aluno, em **Avaliação do acompanhamento (NPS)**, você vê a situação dele:
+
+- **O aluno pode avaliar e ainda não respondeu.** Aqui você pode clicar em **Enviar lembrete**. O lembrete não cria
+  nem antecipa a avaliação: só acrescenta ao cartão que o aluno já vê a frase "Sua opinião ajuda a melhorar o
+  atendimento.". É um lembrete por aluno a cada ciclo, e nada é enviado por WhatsApp, e-mail ou notificação.
+- **Avaliação indisponível no momento.** O aluno não está vendo o cartão agora.
+- **Ainda não disponível**, com o motivo: quantos treinos faltam ou a partir de quando ele pode avaliar.
+- **Nenhuma avaliação pendente para este aluno agora.**
+
+O professor responsável e o administrador veem essa situação. O lembrete é enviado para um aluno por vez.
 
 ### Responder o chat
 

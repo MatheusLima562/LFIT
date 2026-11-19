@@ -67,11 +67,20 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["get_session_summary", () => ({ p_session_id: randomUUID() })],
     ["set_trainer_announcement", () => ({ p_body: "x", p_student_id: studentId })],
     ["reply_to_session", () => ({ p_session_id: randomUUID(), p_reply: "x" })],
+    // 3.3: encerrar recado é do staff (autor).
+    ["end_trainer_announcement", () => ({ p_announcement_id: randomUUID() })],
+    // Base do presencial: modalidade é escrita do staff com acesso ao aluno.
+    ["set_student_modality", () => ({ p_student_id: studentId, p_modality: "presencial" })],
     // 3.2: nota de satisfação — só o aluno dono da sessão (o "student" deste teste não tem sessão).
     ["rate_workout_session", () => ({ p_session_id: randomUUID(), p_rating: 5 })],
     // Início com dados reais: só staff (contagens da organização/dos seus alunos).
     ["get_dashboard_training_stats", () => ({})],
     ["get_dashboard_engagement_retention", () => ({})],
+    // NPS: resumo, estado e lembrete são do staff (submit/snooze são do próprio aluno; request_nps sem EXECUTE desde a
+    // v2 — tests/db/nps.test.ts).
+    ["get_nps_summary", () => ({})],
+    ["get_nps_status", () => ({ p_student_id: studentId })],
+    ["send_nps_reminder", () => ({ p_student_id: studentId })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -114,6 +123,8 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "send_chat_message", "get_chat_messages", "mark_chat_read", "chat_unread_count", "list_chat_inbox",
     "staff_total_unread_count", "get_my_announcement", "set_trainer_announcement", "get_session_summary", "reply_to_session",
     "rate_workout_session", "get_dashboard_training_stats", "get_dashboard_engagement_retention",
+    "end_trainer_announcement", "set_student_modality",
+    "submit_nps", "get_my_nps_prompt", "snooze_nps_prompt", "request_nps", "get_nps_summary", "get_nps_status", "send_nps_reminder",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

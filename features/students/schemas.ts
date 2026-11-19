@@ -2,6 +2,7 @@ import { z } from "zod";
 import { endOfDayBR, parseBRDate, todayISO } from "@/lib/dates";
 import { isValidPhone, toE164 } from "@/lib/phone";
 import { messages } from "@/messages/pt-BR";
+import { DEFAULT_MODALITY, MODALITIES } from "./modality";
 
 const v = messages.validation;
 const f = messages.studentForm.errors;
@@ -31,6 +32,8 @@ export const studentFormSchema = z
     sendAnamnesis: z.boolean(),
     anamnesisTemplateId: z.string(),
     blockIfOverdue: z.boolean(),
+    /** Gravada à parte (`set_student_modality`), não entra no payload de create/update_student. */
+    modality: z.enum(MODALITIES),
   })
   .superRefine((d, ctx) => {
     if (d.birthDate) {
@@ -74,6 +77,7 @@ export const emptyStudentForm: StudentFormInput = {
   sendAnamnesis: false,
   anamnesisTemplateId: "",
   blockIfOverdue: false,
+  modality: DEFAULT_MODALITY,
 };
 
 /** Converte o formulário validado no payload das RPCs create_student / update_student. */

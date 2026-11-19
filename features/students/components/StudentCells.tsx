@@ -37,7 +37,15 @@ export function StudentStatus({ student }: { student: StudentRow }) {
   const expires = student.accessExpiresAt;
   return (
     <div className="flex flex-col items-start gap-0.5">
-      <StatusBadge status={student.status} />
+      <span className="flex flex-wrap items-center gap-1">
+        <StatusBadge status={student.status} />
+        {/* Modalidade: etiqueta só quando não é o padrão (consultoria), para não repetir em toda linha. */}
+        {student.modality !== "consultoria" && (
+          <span className="rounded-md bg-canvas px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-ink-2 ring-1 ring-line">
+            {t.modality[student.modality]}
+          </span>
+        )}
+      </span>
       {expires && (
         <span className="text-[11px] whitespace-nowrap text-ink-3">
           {student.status === "expired" ? t.expiredOn(formatDate(expires)) : t.expiresOn(formatDate(expires))}

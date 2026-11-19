@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { BRAND } from "@/features/brand/config";
+import { toCsv as toSafeCsv, xlsxCell } from "@/lib/spreadsheet";
 import { getSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/db/server";
 import { ageFrom, formatDate, formatEnrollment } from "@/lib/format";
@@ -45,26 +46,16 @@ const headersFor = (includeHealth: boolean) => (includeHealth ? [...baseHeaders,
 
 /** CSV com ";" e BOM UTF-8 — abre corretamente no Excel em pt-BR. */
 function toCsv(rows: StudentRow[], includeHealth: boolean) {
-  const escape = (v: string | number) => {
-    const s = String(v);
-    // Prefixo contra injeção de fórmula em planilhas (=, +, -, @). Telefones E.164
-    // (validados pelo banco: só "+" e dígitos) ficam como estão.
-    const isE164 = /^\+[1-9]\d{7,14}$/.test(s);
-    const safe = !isE164 && /^[=+\-@]/.test(s) ? `'${s}` : s;
-    return /[";\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-  };
-  const lines = [headersFor(includeHealth), ...rows.map((r) => toCells(r, includeHealth))].map((cells) =>
-    cells.map(escape).join(";"),
-  );
-  return `\uFEFF${lines.join("\r\n")}`;
+  // Injeção de fórmula (=, +, -, @, tab, CR no início) e aspas: `lib/spreadsheet.ts` (o mesmo do XLSX abaixo).
+  return toSafeCsv([headersFor(includeHealth), ...rows.map((r) => toCells(r, includeHealth))]);
 }
 
 async function toXlsx(rows: StudentRow[], includeHealth: boolean) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = BRAND.name;
   const sheet = workbook.addWorksheet(t.title);
-  sheet.addRow(headersFor(includeHealth)).font = { bold: true };
-  rows.forEach((s) => sheet.addRow(toCells(s, includeHealth)));
+  sheet.addRow(headersFor(includeHealth).map(xlsxCell)).font = { bold: true };
+  rows.forEach((s) => sheet.addRow(toCells(s, includeHealth).map(xlsxCell)));
   sheet.columns.forEach((col) => (col.width = 22));
   sheet.views = [{ state: "frozen", ySplit: 1 }];
   return workbook.xlsx.writeBuffer();

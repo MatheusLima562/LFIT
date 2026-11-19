@@ -16,6 +16,7 @@ import { archivePlan, duplicatePlan, savePlanAsTemplate, type PlanActionResult }
 import type { PlanStatus } from "../queries";
 import { ApplyTemplateDialog, type Option } from "./ApplyTemplateDialog";
 import { BulkApplyDialog } from "./BulkApplyDialog";
+import { callAction } from "@/lib/action";
 
 const t = messages.plans.manage;
 
@@ -36,7 +37,8 @@ export function PlanActions({ plan, isTemplate, students }: Props) {
 
   const run = (fn: () => Promise<PlanActionResult>, then?: (id: string) => void) =>
     startTransition(async () => {
-      const r = await fn();
+      const r = await callAction(fn);
+      if (!r) return;
       if (!r.ok) {
         setError(r.error);
         return void toast.error(r.error);

@@ -87,7 +87,7 @@ const roteiro = {
     },
     {
       legenda: "O botão Novo é um atalho para cadastrar um aluno.",
-      acao: (v) => v.apontar(v.page.getByRole("button", { name: "Novo" })),
+      acao: (v) => v.apontar(v.page.getByRole("button", { name: "Novo", exact: true })),
     },
     {
       legenda: "Alunos ativos: quantos alunos ocupam vaga no seu plano.",

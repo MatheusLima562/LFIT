@@ -158,6 +158,7 @@ export type DashboardCardId =
   | "overview"
   | "tracking"
   | "satisfaction"
+  | "nps"
   | "completed"
   | "plan"
   | "subscribers"

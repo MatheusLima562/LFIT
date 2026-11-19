@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { providerAvailable } from "@/features/assistant/anthropic";
 import { SessionRunnerClient } from "@/features/student-app/components/SessionRunnerClient";
 import { getTrainingSession } from "@/features/student-app/queries";
 import { messages } from "@/messages/pt-BR";
@@ -35,6 +36,7 @@ export default async function StudentSessionPage({ params, searchParams }: PageP
       data={data}
       askCheckin={sp.checkin === "1" && data.session.pain_checkin === null}
       doneHref={`/aluno/treino/${sessionId}/concluido`}
+      assistant={providerAvailable()}
     />
   );
 }

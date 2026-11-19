@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Dumbbell, History, MessageCircle, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useChatUnread } from "@/features/chat/hooks";
+import { useAnnouncementNotice, useNewMessageToast } from "@/features/notifications/hooks";
 import { cn } from "@/lib/utils";
 import { keyboardLikelyOpen } from "../humanize";
 import { messages } from "@/messages/pt-BR";
@@ -51,6 +52,8 @@ function useKeyboardOpen() {
 export function StudentNav({ studentId, initialUnread }: { studentId: string; initialUnread: number }) {
   const pathname = usePathname();
   const unread = useChatUnread({ initial: initialUnread, studentId });
+  useNewMessageToast(unread, { onChat: pathname.startsWith("/aluno/chat"), href: "/aluno/chat" });
+  const announcementDot = useAnnouncementNotice(pathname === "/aluno");
   const keyboardOpen = useKeyboardOpen();
   if (keyboardOpen) return null;
   return (
@@ -63,12 +66,14 @@ export function StudentNav({ studentId, initialUnread }: { studentId: string; in
           const active = match(pathname);
           // Na própria conversa as mensagens são marcadas como lidas: sem selo ali.
           const badge = href === "/aluno/chat" && !active ? unread : 0;
+          // Recado novo: marcador na aba Hoje até o aluno ver (sem número nem texto).
+          const dot = href === "/aluno" && announcementDot;
           return (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                aria-label={badge ? `${label}, ${messages.chat.unread(badge)}` : undefined}
+                aria-label={badge ? `${label}, ${messages.chat.unread(badge)}` : dot ? messages.notifications.todayWithAnnouncement : undefined}
                 className={cn(
                   "flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium outline-none focus-visible:bg-canvas",
                   active ? "text-ink" : "text-ink-3",
@@ -76,6 +81,7 @@ export function StudentNav({ studentId, initialUnread }: { studentId: string; in
               >
                 <span className="relative">
                   <Icon aria-hidden className={cn("size-5", active && "text-primary")} />
+                  {dot && <span aria-hidden className="absolute -top-0.5 -right-1 size-2.5 rounded-full bg-ink ring-2 ring-surface" />}
                   {badge > 0 && (
                     <span aria-hidden className="absolute -top-1.5 -right-2.5 grid h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-[10px] font-semibold text-surface">
                       {badge > 99 ? "99+" : badge}

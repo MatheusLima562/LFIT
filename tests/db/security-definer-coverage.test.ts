@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { dbTestsEnabled } from "./helpers";
 
+const CLI_TIMEOUT_MS = 60_000;
+
 /**
  * Cobertura da tabela "Funções SECURITY DEFINER" do CLAUDE.md: toda função SECURITY DEFINER do schema
  * `public` (a que o Security Advisor avisa "authenticated can execute") precisa estar documentada lá —
@@ -37,9 +39,14 @@ function livePublicSecurityDefinerFunctions(): string[] {
   const sql =
     "select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace " +
     "where n.nspname = 'public' and p.prokind = 'f' and p.prosecdef = true order by p.proname;";
-  const out = execFileSync("npx", ["supabase", "db", "query", "--linked", sql], {
+  // Prazo explícito: a chamada é síncrona (bloqueia o processo), então o testTimeout do Vitest não a interrompe. Sem
+  // ele, uma conexão parada (Mac suspenso, rede caída) prendeu a suíte por 8 h; estourou → erro "ETIMEDOUT" e falha.
+  // Binário local, não `npx`: o npx consulta o registro antes de rodar (30–40 s medidos, contra 4 s direto).
+  const out = execFileSync(join(process.cwd(), "node_modules", ".bin", "supabase"), ["db", "query", "--linked", sql], {
     encoding: "utf8",
     cwd: process.cwd(),
+    timeout: CLI_TIMEOUT_MS,
+    killSignal: "SIGKILL",
   });
   const parsed = JSON.parse(out) as { rows: { proname: string }[] };
   return parsed.rows.map((r) => r.proname);
@@ -55,5 +62,5 @@ describe.runIf(dbTestsEnabled)("Cobertura do CLAUDE.md: funções SECURITY DEFIN
 
     expect(undocumented, `Funções SECURITY DEFINER sem documentação no CLAUDE.md: ${undocumented.join(", ") || "—"}`).toEqual([]);
     expect(stale, `CLAUDE.md cita função(ões) que não existe(m) mais (ou não é mais SECURITY DEFINER): ${stale.join(", ") || "—"}`).toEqual([]);
-  });
+  }, CLI_TIMEOUT_MS + 15_000);
 });

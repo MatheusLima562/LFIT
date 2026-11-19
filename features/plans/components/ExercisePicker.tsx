@@ -12,6 +12,7 @@ import { LevelBadge } from "@/features/exercises/components/LevelBadge";
 import { MUSCLE_GROUPS } from "@/features/exercises/constants";
 import { searchExercises, type PickerExercise } from "../actions";
 import type { StudentRule } from "../queries";
+import { callAction } from "@/lib/action";
 
 const t = messages.plans.picker;
 const ALL = "all";
@@ -38,7 +39,11 @@ export function ExercisePicker({ open, mode, workoutLabel, rules, onOpenChange, 
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(
-      () => startTransition(async () => setRows(await searchExercises(q, grupo === ALL ? null : grupo))),
+      () =>
+        startTransition(async () => {
+          const found = await callAction(() => searchExercises(q, grupo === ALL ? null : grupo));
+          if (found) setRows(found);
+        }),
       q ? 250 : 0,
     );
     return () => clearTimeout(timer);

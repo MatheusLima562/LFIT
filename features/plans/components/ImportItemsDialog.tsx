@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listImportSources, loadImportSource, type ImportSource } from "../actions";
 import { fromSaved, groupLabel, toBlocks, type ItemDraft, type WorkoutDraft } from "../builder";
+import { callAction } from "@/lib/action";
 
 const t = messages.plans.importItems;
 
@@ -30,7 +31,10 @@ export function ImportItemsDialog({ planId, studentId, workouts, targetKey, onCl
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    startTransition(async () => setSources(await listImportSources(studentId, planId)));
+    startTransition(async () => {
+      const found = await callAction(() => listImportSources(studentId, planId));
+      if (found) setSources(found);
+    });
   }, [studentId, planId]);
 
   const localOptions = workouts.filter((w) => w.key !== targetKey && w.items.length > 0);
@@ -43,7 +47,8 @@ export function ImportItemsDialog({ planId, studentId, workouts, targetKey, onCl
     }
     setLoaded(null);
     startTransition(async () => {
-      const plan = await loadImportSource(value.slice(5));
+      const plan = await callAction(() => loadImportSource(value.slice(5)));
+      if (plan === undefined) return setSource("");
       setLoaded(plan ? fromSaved(plan).workouts.filter((w) => w.items.length > 0) : []);
     });
   };

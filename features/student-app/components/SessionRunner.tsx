@@ -15,6 +15,8 @@ import { parseDecimal, setTargets } from "../format";
 import { enqueue, flush, isNetworkError, loadQueue, saveQueue, type QueueOp, type RunResult } from "../queue";
 import { applyOp, firstOpenItem, initialRunState, nextOpenItem, type RunState, type SetEntry } from "../session-state";
 import type { AppTrainingSession } from "../types";
+import { LiveCompanion } from "@/features/live/components/LiveCompanion";
+import { AssistantPanel } from "@/features/assistant/components/AssistantPanel";
 import { FocusExercise } from "./FocusExercise";
 import { ProgressStrip } from "./ProgressStrip";
 import { RestTimer } from "./RestTimer";
@@ -31,11 +33,14 @@ export function SessionRunner({
   askCheckin,
   backHref = "/aluno",
   doneHref,
+  assistant = false,
 }: {
   data: AppTrainingSession;
   askCheckin: boolean;
   backHref?: string;
   doneHref?: string;
+  /** O servidor tem provedor de IA configurado (a organização ainda decide se está ligado). */
+  assistant?: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -224,6 +229,9 @@ export function SessionRunner({
         </p>
       </div>
 
+      {/* Ao vivo: batimento + aviso de transparência + mensagem do professor, no fluxo (não cobre "Feita"). */}
+      <LiveCompanion sessionId={sessionId} self={data.mode === "self"} active={!finishing} />
+
       <header>
         <h1 className="text-xl font-semibold tracking-tight text-ink">
           {data.workout.label} · {data.workout.name || `Treino ${data.workout.label}`}
@@ -259,6 +267,9 @@ export function SessionRunner({
           <p className="text-[15px] font-medium text-ink">{doneCount === items.length ? t.run.allDone : t.run.finishTitle}</p>
         </section>
       )}
+
+      {/* Assistente de IA: no fluxo, abaixo do exercício (não cobre "Feita"); some se a organização não ligou. */}
+      {assistant && !restricted && data.mode === "self" && <AssistantPanel sessionId={sessionId} itemId={focusItem?.id ?? null} />}
 
       {finishing && pending > 0 ? (
         <p role="status" className="rounded-xl border border-warning-line bg-warning-soft px-3 py-2.5 text-[13px] text-warning-ink">

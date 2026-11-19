@@ -23,23 +23,28 @@ const files = readdirSync("e2e")
   .filter((f) => !filters.length || filters.some((x) => f.includes(x)))
   .sort();
 
+// Prazos (spawnSync bloqueia; sem eles, um roteiro ou seed parado prende o executor indefinidamente).
+const SEED_TIMEOUT_MS = 5 * 60_000, SCRIPT_TIMEOUT_MS = 10 * 60_000;
 const results = [];
 for (const file of files) {
   if (reseed) {
-    const seed = spawnSync("npm", ["run", "db:seed", "--", "--reset"], { env: process.env, encoding: "utf8" });
+    const seed = spawnSync("npm", ["run", "db:seed", "--", "--reset"], { env: process.env, encoding: "utf8", timeout: SEED_TIMEOUT_MS, killSignal: "SIGKILL" });
     if (seed.status !== 0) {
-      console.error(`Seed falhou antes de ${file}:\n${seed.stdout}${seed.stderr}`);
+      console.error(`Seed falhou antes de ${file}${seed.error ? ` (${seed.error.code ?? seed.error.message})` : ""}:\n${seed.stdout}${seed.stderr}`);
       process.exit(1);
     }
   }
   await admin.from("rate_limits").delete().neq("key", "");
   const started = Date.now();
-  const r = spawnSync(process.execPath, [`e2e/${file}`], { env: process.env, encoding: "utf8" });
-  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  const r = spawnSync(process.execPath, [`e2e/${file}`], { env: process.env, encoding: "utf8", timeout: SCRIPT_TIMEOUT_MS, killSignal: "SIGKILL" });
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}${r.error?.code === "ETIMEDOUT" ? `\n✗ roteiro passou de ${SCRIPT_TIMEOUT_MS / 60_000} min e foi encerrado` : ""}`;
   const failed = out.split("\n").filter((l) => l.startsWith("✗"));
   const ok = r.status === 0 && failed.length === 0;
   results.push({ file, ok, secs: Math.round((Date.now() - started) / 1000) });
   console.log(`${ok ? "✓" : "✗"} ${file} (${results.at(-1).secs}s)`);
+  // Limite do Supabase Auth hospedado: 30 logins a cada 5 min por IP (o seed faz 4 por execução). O app mostra
+  // "Muitas tentativas"; rodar tudo em série pode estourar. Esperar 5 min e rodar só os que falharam.
+  if (!ok && out.includes("Muitas tentativas")) console.log("    ⚠ limite de login do Supabase Auth (30 a cada 5 min por IP): espere 5 min e rode de novo só este roteiro");
   if (!ok) console.log(failed.length ? failed.map((l) => `    ${l}`).join("\n") : out.split("\n").slice(-12).map((l) => `    ${l}`).join("\n"));
 }
 const bad = results.filter((r) => !r.ok);

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MODALITIES } from "./modality";
 
 /** Estado da tela "Meus alunos", persistido na URL (?status=inactive&sort=expires:desc...). */
 export const STUDENT_TABS = ["active", "inactive", "expired"] as const;
@@ -26,6 +27,7 @@ export const studentListParamsSchema = z.object({
   turma: uuid,
   grupo: uuid,
   treino: z.enum(PLAN_FILTERS).optional().catch(undefined),
+  modalidade: z.enum(MODALITIES).optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
 });
 
@@ -41,6 +43,7 @@ export function parseStudentListParams(raw: Record<string, string | string[] | u
     turma: first(raw.turma),
     grupo: first(raw.grupo),
     treino: first(raw.treino),
+    modalidade: first(raw.modalidade),
     page: first(raw.page),
   });
 }
@@ -54,6 +57,7 @@ export function studentListHref(params: Partial<StudentListParams>, base = "/alu
   if (params.turma) qs.set("turma", params.turma);
   if (params.grupo) qs.set("grupo", params.grupo);
   if (params.treino) qs.set("treino", params.treino);
+  if (params.modalidade) qs.set("modalidade", params.modalidade);
   if (params.page && params.page > 1) qs.set("page", String(params.page));
   const s = qs.toString();
   return s ? `${base}?${s}` : base;

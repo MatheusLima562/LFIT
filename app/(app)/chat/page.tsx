@@ -5,6 +5,8 @@ import { StudentAvatar } from "@/components/students/StudentAvatar";
 import { ChatInbox } from "@/features/chat/components/ChatInbox";
 import { ChatThread } from "@/features/chat/components/ChatThread";
 import { getChatMessages, getInbox, getStaffNames } from "@/features/chat/queries";
+import { BroadcastButton } from "@/features/coach/components/BroadcastButton";
+import { getMyBroadcast } from "@/features/coach/queries";
 import { requireStaff } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
@@ -21,7 +23,7 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
   const { aluno } = await searchParams;
   const requested = typeof aluno === "string" && UUID.test(aluno) ? aluno : null;
 
-  const inbox = await getInbox();
+  const [inbox, broadcast] = await Promise.all([getInbox(), getMyBroadcast(session.userId)]);
   // Só abre conversa de aluno que o chamador acessa (a caixa já vem filtrada por can_access_student).
   const selected = requested ? (inbox.find((e) => e.studentId === requested) ?? null) : null;
   const [initial, staffNames] = selected
@@ -34,11 +36,14 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
         aria-labelledby="inbox-title"
         className={cn("flex min-h-0 w-full flex-col border-line bg-surface lg:w-80 lg:shrink-0 lg:border-r", requested && "hidden lg:flex")}
       >
-        <header className="border-b border-line px-4 py-4">
-          <h1 id="inbox-title" className="text-lg font-semibold tracking-tight text-ink">
-            {t.inbox.title}
-          </h1>
-          <p className="text-xs text-ink-3">{t.inbox.subtitle}</p>
+        <header className="flex items-start justify-between gap-3 border-b border-line px-4 py-4">
+          <div>
+            <h1 id="inbox-title" className="text-lg font-semibold tracking-tight text-ink">
+              {t.inbox.title}
+            </h1>
+            <p className="text-xs text-ink-3">{t.inbox.subtitle}</p>
+          </div>
+          <BroadcastButton current={broadcast} />
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <ChatInbox initial={inbox} selectedId={selected?.studentId ?? null} />
