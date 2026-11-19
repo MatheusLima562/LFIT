@@ -1,3 +1,54 @@
+# Relatório — sprint "Feed + correções" (19/11/2026)
+
+Pedido: `.claude/prompt-sprint-feed-ia.md` (fora do git). Branch `feat/feed` (a partir de `feat/ao-vivo-importacao`, já
+na `main`), commits locais, sem push. Migrations aplicadas no **lfit-dev** (o dry-run listou só elas):
+`20261119150000_live_unanswered_ai_order` e `20261119160000_feed`. Decisões: `docs/decisoes-autonomas.md`.
+
+## Testes (lfit-dev, build de produção, `next start -p 3100`)
+| Teste | Resultado |
+|---|---|
+| `tests/db/live-ai-fixes.test.ts` (novo: mensagem sem resposta até responder/14 dias; ordem `seq` 8×; nome do personal) | 13/13 |
+| `tests/db/feed.test.ts` (novo: público, agendado, apagado, curtidas só contagem, isolamento, validação, Storage, acesso ativo, limpeza) | 18/18 |
+| `live` 10/10 · `ai-assistant` 10/10 · `nps` 11/11 · `chat-humanized` 16/16 · `security-definer` 104/104 · cobertura 1/1 | ok |
+| Unitários | 364/364 |
+| e2e 375 px, em sequência **sem reseed**: `ao-vivo` → `f3-app-aluno` → `feed-aluno` → `k212-chat` | 4/4 |
+| e2e `ao-vivo` → `k212-chat` (prova da A4) | 2/2 |
+| e2e desktop: `feed-personal`, `importar-fluxo`, `importar-layout`; regressão `k212-chat-layout`, `n1-notificacoes` | 5/5 |
+| Type check, lint, build | ok |
+| Vídeo `01-visao-geral` regravado (menu com "Feed", papel "Personal") | 2:23, 21 passos |
+
+Falhas no caminho, corrigidas na causa (nenhuma asserção afrouxada):
+- **Testes de banco:** três estavam errados.
+  - Datas fora de ordem no teste de "sem resposta".
+  - O nome vazio é impossível por um CHECK do banco: passou a ser testado no caso real, uma conta sem perfil de dono.
+  - Uma regex pegava o `author_first_name`, o primeiro nome de quem publica, que é intencional.
+- **Roteiros e2e:**
+  - O f3 usava a posição das abas, que mudou com a 5ª aba; e ainda conferia os textos antigos de "quem vê a conversa".
+  - O f3 e o AO VIVO dependiam do treino deixado por outro roteiro. Agora preparam os próprios dados em `e2e/_fixtures.mjs`.
+  - O `feed-aluno` inseria em lote com chaves diferentes por linha.
+  - O `feed-personal` conferia logo após um toast antigo; agora espera o editor fechar e a lista atualizar.
+- **Não reproduzida:** numa das rodadas o `feed-aluno` falhou sem o detalhe ficar no log (a saída foi cortada). Ele
+  passou nas 3 rodadas seguintes, sozinho e em sequência.
+
+## Textos alterados
+- **Painel (A3):** "Administrador/administrador" → "Personal/personal" em todos os pontos:
+  - papel do usuário e login do painel;
+  - cadastros públicos, grupos, turmas, exercícios, métodos e objetivos, condições e triagem;
+  - "nesta organização" → "na sua conta" (AO VIVO);
+  - tutorial do professor e README dos tutoriais.
+- **App do aluno (ajuste 3):** o nome usado é o primeiro nome do professor designado, senão o do personal; vazio vira
+  "seu personal".
+  - "Seu estúdio" → "Seu personal" (card da Hoje).
+  - "A coordenação do estúdio acompanha você." → "{nome} acompanha você." / "Seu personal acompanha você." (Perfil).
+  - "Sua conversa é vista pelo seu professor e pela coordenação do estúdio" → "Sua conversa é vista por {professor} e por
+    {personal}" / "… por {personal}" / "… pelo seu personal" (chat).
+  - "Equipe do estúdio" → nome do personal ou "Seu personal" (cabeçalho do chat).
+  - "Como está sendo treinar com a equipe do estúdio?" → "… com {nome}?" / "… com seu personal?" (NPS).
+- **Mantidos:** "Crie a conta do seu estúdio ou consultoria." (é o cadastro do próprio personal) e o rótulo "Estúdio" no
+  Perfil (é o nome do negócio).
+
+---
+
 # Relatório — sprint "Ao vivo + Importação + Assistente de IA" (19/11/2026)
 
 Pedido: `.claude/prompt-sprint-ao-vivo.md` (fora do git). Decisões: `docs/decisoes-autonomas.md` (entradas de 19/11/2026).

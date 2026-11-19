@@ -119,7 +119,8 @@ describe.runIf(dbTestsEnabled)("feed (save_feed_post, get_my_feed, toggle_feed_l
     const raw = JSON.stringify(await feed(alunoT2));
     expect(raw).not.toContain(s1);
     expect(raw).not.toContain(alunoT1.id);
-    expect(raw).not.toMatch(/student_id|first_name|last_name|likers/);
+    // Nenhuma identidade de aluno (o `author_first_name` é o primeiro nome de quem PUBLICOU, de propósito).
+    expect(raw).not.toMatch(/"student_id"|"first_name"|"last_name"|likers/);
     expect((await staffList(owner)).find((x) => x.id === p.id)?.like_count).toBe(1);
     expect(JSON.stringify(await staffList(owner))).not.toContain(s1);
     // Tabela de curtidas fora do alcance direto (aluno e staff).

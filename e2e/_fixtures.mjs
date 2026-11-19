@@ -48,6 +48,22 @@ export async function resetCamilaChat(admin) {
   );
 }
 
+/**
+ * Camila sem nenhum treino (estado do seed padrão): o f3 conta "nenhum treino no mês", 2 concluídos + 1 em andamento no
+ * histórico e 1 "ainda incomoda". Apaga as sessões dela (registros, ao vivo e conversa com a IA vão em cascata).
+ */
+export async function resetCamilaSessions(admin) {
+  const { camila } = await seedIds(admin);
+  must(await admin.from("workout_sessions").delete().eq("student_id", camila), "apagar treinos da Camila");
+}
+
+/** Diego (aluno.consentimento.seed) com o consentimento de saúde só DECLARADO, ainda não confirmado (estado do seed). */
+export async function resetDiegoConsent(admin) {
+  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const id = users.users.find((x) => x.email === "aluno.consentimento.seed@example.com")?.id;
+  must(await admin.from("students").update({ health_data_consent_at: null }).eq("user_id", id), "consentimento pendente do Diego");
+}
+
 /** Projeto vinculado ao CLI; o SQL direto só roda se for o lfit-dev (mesma trava de tests/db/live.test.ts). */
 function sqlLinkedDev(sql) {
   let ref = "";

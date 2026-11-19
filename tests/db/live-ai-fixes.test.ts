@@ -64,13 +64,13 @@ describe.runIf(dbTestsEnabled)("correções: mensagem sem resposta (A1) e ordem 
     });
 
     it("some quando o professor responde", async () => {
-      await chat("staff", ago(60_000), trainer.id);
+      await chat("staff", ago(2 * 3_600_000), trainer.id); // resposta 2 h atrás, depois da mensagem de 3 dias
       expect(await unanswered()).toHaveLength(0);
     });
 
     it("volta com nova mensagem do aluno (5+ min) e não depende de 24 h", async () => {
-      await chat("student", ago(30 * 60 * 60_000)); // 30 h
-      expect(await unanswered()).toHaveLength(0); // a resposta do professor (1 min atrás) é a mais recente
+      await chat("student", ago(30 * 60 * 60_000)); // 30 h: mais antiga que a resposta
+      expect(await unanswered()).toHaveLength(0); // a resposta do professor (2 h atrás) é a mais recente
       await chat("student", ago(10 * 60_000));
       expect(await unanswered()).toHaveLength(1);
     });
@@ -103,14 +103,26 @@ describe.runIf(dbTestsEnabled)("correções: mensagem sem resposta (A1) e ordem 
       expect(await profile()).toMatchObject({ trainer_name: null, personal_name: "Rafaela", owner_first_name: "Rafaela" });
     });
 
-    it("nome vazio → nulo (a tela usa 'seu personal'); nunca sobrenome", async () => {
-      await fx.db.from("profiles").update({ full_name: "   " }).eq("id", owner.id);
-      const p = await profile();
-      expect(p.personal_name).toBeNull();
-      expect(p.owner_first_name).toBeNull();
-      expect(JSON.stringify(p)).not.toMatch(/Dona Exemplo/);
-      await fx.db.from("profiles").update({ full_name: "Rafaela Dona Exemplo" }).eq("id", owner.id);
-      await fx.db.from("students").update({ trainer_id: trainer.id }).eq("id", s1);
+    it("nunca o sobrenome", async () => {
+      try {
+        expect(JSON.stringify(await profile())).not.toMatch(/Dona Exemplo/);
+      } finally {
+        await fx.db.from("students").update({ trainer_id: trainer.id }).eq("id", s1);
+      }
+    });
+
+    it("sem nome nenhum (conta sem perfil de personal e aluno sem professor) → nulo; a tela usa 'seu personal'", async () => {
+      // O banco não aceita nome em branco (CHECK de 2 a 120 caracteres): o único caso sem nome é não haver owner.
+      expect((await fx.db.from("profiles").update({ full_name: "   " }).eq("id", owner.id)).error).not.toBeNull();
+      const lone = await fx.org("fix-a-sem-dono");
+      const loneUser = await fx.user(lone, "student", "sozinho");
+      const { error } = await fx.db.from("students").insert({
+        organization_id: lone.id, first_name: "Só", last_name: "Aluno", email: `so-${randomUUID().slice(0, 6)}@example.com`,
+        enrollment_number: 1, user_id: loneUser.id,
+      });
+      expect(error?.message ?? null).toBeNull();
+      const [p] = await rpc<Profile[]>(loneUser.client, "get_my_student_profile");
+      expect(p).toMatchObject({ trainer_name: null, personal_name: null, owner_first_name: null });
     });
   });
 

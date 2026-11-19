@@ -131,8 +131,10 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
 - `inicio-professor-cards`: confere os cards do Início (logado como o professor do seed) contra as RPCs e salva o print em
   `tutoriais-video/inicio-professor.png`; rode depois do f3 ou do `db:seed:demo`, com `--no-reseed`.
 - **Dados próprios por roteiro** (`e2e/_fixtures.mjs`): no começo, cada roteiro devolve ao estado do seed só o que usa
-  (`resetCamilaChat`: conversa + cursores de leitura da Camila; `resetLiveNotice`: aviso do AO VIVO, por SQL direto com
-  a trava do lfit-dev). Assim passam sozinhos e em qualquer ordem com `--no-reseed` (ex.: `ao-vivo` e depois `k212`).
+  (`resetCamilaChat`: conversa + cursores de leitura da Camila; `resetCamilaSessions`: Camila sem treinos;
+  `resetDiegoConsent`: consentimento pendente; `resetLiveNotice`: aviso do AO VIVO, por SQL direto com a trava do
+  lfit-dev). Assim passam sozinhos e em qualquer ordem com `--no-reseed` (conferido: `ao-vivo` → `f3` → `feed-aluno` →
+  `k212`). Roteiro novo: nunca dependa do que outro deixou; nada de índice fixo de aba (use o `href`).
 - Roteiros novos: um arquivo por área (`fase1-`, `fase2-`, `m28-`, `k210-`, `inicio-`, `f3-`, `k212-`, `nps-`), idempotentes (limpam o que
   criam, como `m28-produtividade`). Viram suíte formal (`@playwright/test` com fixtures) na 1.7.
 
@@ -713,7 +715,7 @@ effective_status =
 - Painel (`AssistantPanel`) no fluxo da tela de execução, recolhido por padrão, abaixo do exercício: não cobre "Feita"
   nem "Enviar" a 375 px com teclado aberto (campo de 16 px, nada fixo).
 
-### Feed (Comunidade) — fase 1 (19/11/2026, migration `20261119160000` — escrita, ainda não aplicada; e2e `e2e/feed-*.e2e.mjs`)
+### Feed (Comunidade) — fase 1 (19/11/2026, migration `20261119160000` — aplicada no lfit-dev; e2e `e2e/feed-*.e2e.mjs`)
 - **Produto:** o personal (dono da conta) alimenta um feed com dicas, imagens e vídeos por link; os alunos dele leem e
   curtem. **Aluno não publica nem comenta** nesta fase. Professor da equipe também publica, só para os próprios alunos.
 - Painel: `/feed` (menu "Feed"): criar com prévia, editar, fixar, agendar (`published_at`, campo lido no horário de SP —

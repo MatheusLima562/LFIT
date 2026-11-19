@@ -12,6 +12,10 @@ const browser = await chromium.launch({ channel: "chrome" });
 let fails = 0;
 const ok = (n, c, e = "") => { console.log(`${c ? "✓" : "✗"} ${n}${e ? " — " + e : ""}`); if (!c) fails++; };
 const toast = (p, text) => p.locator("[data-sonner-toast]", { hasText: text }).first().waitFor({ timeout: 15000 }).then(() => true, () => false);
+// O toast do post anterior ainda pode estar na tela: "salvou" = o diálogo do editor fechou (só fecha com sucesso).
+const saved = async (p, text) => (await p.getByRole("dialog").waitFor({ state: "detached", timeout: 20000 }).then(() => true, () => false)) && (await toast(p, text));
+const until = async (fn, timeout = 15000) => { const end = Date.now() + timeout; while (Date.now() < end) { if (await fn()) return true; await new Promise((r) => setTimeout(r, 300)); } return fn(); };
+const visible = (loc, timeout = 15000) => loc.first().waitFor({ timeout }).then(() => true, () => false);
 
 // Feed do personal no desktop (precisa da migration 20261119160000): criar texto (HTML retirado, prévia, aviso fixo),
 // agendar, vídeo por link, imagem (reduzida no navegador e enviada ao bucket privado), fixar, editar, apagar e ver a
@@ -60,7 +64,7 @@ try {
   ok("prévia mostra o texto sem HTML", (await preview.innerText()).includes(`Dica da semana: hidrate-se.`) && !(await preview.innerText()).includes("<b>"));
   ok("link da prévia abre fora sem repassar a origem", (await preview.getByRole("link", { name: "https://exemplo.com/agua" }).getAttribute("rel")) === "noopener noreferrer");
   await dialog.getByRole("button", { name: "Publicar" }).click();
-  ok("publicado", await toast(page, "Post publicado."));
+  ok("publicado", await saved(page, "Post publicado."));
   const { data: textRow } = await admin.from("feed_posts").select("id, body").eq("organization_id", org).like("body", `%${MARK}%`).eq("kind", "text").single();
   ok("banco: texto puro", textRow?.body.startsWith("Dica da semana") && !textRow.body.includes("<"));
 
@@ -69,9 +73,9 @@ try {
   await dialog.getByLabel("Texto", { exact: true }).fill(`Aviso agendado ${MARK}`);
   await dialog.getByLabel("Agendar publicação").fill(spLocal(2 * 86_400_000));
   await dialog.getByRole("button", { name: "Agendar" }).click();
-  ok("agendado", await toast(page, "Post agendado."));
+  ok("agendado", await saved(page, "Post agendado."));
   const scheduledItem = page.getByRole("listitem").filter({ hasText: `Aviso agendado ${MARK}` });
-  ok("lista mostra 'Agendado para…'", (await scheduledItem.getByText(/Agendado para \d{2}\/\d{2}\/\d{4}/).count()) === 1);
+  ok("lista mostra 'Agendado para…'", await visible(scheduledItem.getByText(/Agendado para \d{2}\/\d{2}\/\d{4}/)));
 
   // --- Vídeo por link: recusa link inválido -------------------------------------------------------------------------
   await page.getByRole("button", { name: "Novo post" }).click();
@@ -82,7 +86,7 @@ try {
   await dialog.getByLabel("Texto (opcional)").fill(`Vídeo da técnica ${MARK}`);
   ok("prévia do vídeo sem carregar o player", (await dialog.locator("iframe").count()) === 0 && (await dialog.getByRole("button", { name: /Assistir ao vídeo/ }).count()) === 1);
   await dialog.getByRole("button", { name: "Publicar" }).click();
-  ok("vídeo publicado", await toast(page, "Post publicado."));
+  ok("vídeo publicado", await saved(page, "Post publicado."));
 
   // --- Imagem: reduzida no navegador e enviada ao bucket privado ----------------------------------------------------
   await page.getByRole("button", { name: "Novo post" }).click();
@@ -92,10 +96,11 @@ try {
   ok("prévia da imagem", (await dialog.getByRole("img", { name: "Imagem do post" }).count()) === 1);
   await dialog.getByLabel("Texto (opcional)").fill(`Foto do espaço ${MARK}`);
   await dialog.getByRole("button", { name: "Publicar" }).click();
-  ok("imagem publicada", await toast(page, "Post publicado."));
-  const { data: imageRow } = await admin.from("feed_posts").select("id, image_path").eq("organization_id", org).like("body", `%${MARK}%`).eq("kind", "image").single();
+  ok("imagem publicada", await saved(page, "Post publicado."));
+  const { data: imageRow } = await admin.from("feed_posts").select("id, image_path").eq("organization_id", org).like("body", `%${MARK}%`).eq("kind", "image").maybeSingle();
   ok("imagem na pasta da organização, em WebP/JPEG", new RegExp(`^${org}/[0-9a-f-]{36}\\.(webp|jpg)$`).test(imageRow?.image_path ?? ""), imageRow?.image_path);
   const imageItem = page.getByRole("listitem").filter({ hasText: `Foto do espaço ${MARK}` });
+  await visible(imageItem.getByRole("img", { name: "Imagem do post" }));
   const src = await imageItem.getByRole("img", { name: "Imagem do post" }).getAttribute("src");
   ok("imagem servida por URL assinada (bucket privado)", /\/storage\/v1\/object\/sign\/feed-media\//.test(src ?? ""), src);
 
@@ -103,14 +108,14 @@ try {
   const textItem = page.getByRole("listitem").filter({ hasText: `hidrate-se` }).filter({ hasText: MARK });
   await textItem.getByRole("button", { name: "Fixar no topo" }).click();
   ok("fixado", await toast(page, "Post fixado no topo."));
-  ok("fixado vai para o topo", (await page.getByRole("list", { name: "Feed" }).getByRole("listitem").first().innerText()).includes("hidrate-se"));
+  ok("fixado vai para o topo", await until(async () => (await page.getByRole("list", { name: "Feed" }).getByRole("listitem").first().innerText()).includes("hidrate-se")));
   await admin.from("feed_likes").insert({ post_id: textRow.id, student_id: camila, organization_id: org });
   await textItem.getByRole("button", { name: "Editar" }).click();
   await dialog.getByLabel("Texto", { exact: true }).fill(`Dica editada ${MARK}`);
   await dialog.getByRole("button", { name: "Salvar alterações" }).click();
-  ok("editado", await toast(page, "Post atualizado."));
+  ok("editado", await saved(page, "Post atualizado."));
   const edited = page.getByRole("listitem").filter({ hasText: `Dica editada ${MARK}` });
-  ok("contagem de curtidas (sem nomes)", (await edited.getByText("1 curtida").count()) === 1 && !(await edited.innerText()).includes("Camila"));
+  ok("contagem de curtidas (sem nomes)", (await visible(edited.getByText("1 curtida"))) && !(await edited.innerText()).includes("Camila"));
   await page.screenshot({ path: `${OUT}/feed-personal-01-lista.png`, fullPage: true });
 
   await scheduledItem.getByRole("button", { name: "Apagar" }).click();
@@ -121,9 +126,11 @@ try {
   await imageItem.getByRole("button", { name: "Apagar" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Apagar" }).click();
   ok("post com imagem apagado", await imageItem.waitFor({ state: "detached", timeout: 10000 }).then(() => true, () => false));
+  const { data: deletedRow } = await admin.from("feed_posts").select("deleted_at").eq("id", imageRow.id).single();
+  ok("banco: post com imagem apagado (soft delete)", Boolean(deletedRow?.deleted_at));
   const fileName = imageRow.image_path.split("/")[1];
-  const { data: left } = await admin.storage.from("feed-media").list(org, { search: fileName });
-  ok("arquivo da imagem removido do Storage", !(left ?? []).some((f) => f.name === fileName));
+  const fileLeft = async () => ((await admin.storage.from("feed-media").list(org, { search: fileName })).data ?? []).some((f) => f.name === fileName);
+  ok("arquivo da imagem removido do Storage", await until(async () => !(await fileLeft()), 10000));
   ok("sem rolagem horizontal", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   ok("sem erro de página", page.errors.length === 0, page.errors.join(" | "));
 } catch (e) {

@@ -18,7 +18,11 @@ const MARK = `feed-e2e-${Date.now().toString(36)}`;
 const { camila, org, owner } = await seedIds(admin);
 const now = Date.now();
 const iso = (ms) => new Date(now + ms).toISOString();
-const post = (body, extra = {}) => ({ organization_id: org, author_id: owner, kind: "text", body: `${body} ${MARK}`, audience: "all", ...extra });
+// Todas as linhas com as MESMAS chaves: num insert em lote o PostgREST manda null onde a chave falta (sem o default).
+const post = (body, extra = {}) => ({
+  organization_id: org, author_id: owner, kind: "text", body: `${body} ${MARK}`, audience: "all", audience_modality: null,
+  video_url: null, pinned: false, published_at: iso(0), deleted_at: null, ...extra,
+});
 
 let page = null;
 try {
@@ -89,7 +93,7 @@ try {
   await page.screenshot({ path: `${OUT}/feed-aluno-02-comunidade.png`, fullPage: true });
 
   // Volta depois de um post novo: "Novo" só no que chegou depois da visita.
-  await admin.from("feed_posts").insert(post("Chegou agora"));
+  await admin.from("feed_posts").insert(post("Chegou agora", { published_at: new Date().toISOString() }));
   await page.reload();
   await list.waitFor();
   const fresh = list.getByRole("listitem").filter({ hasText: `Chegou agora ${MARK}` });
