@@ -8,7 +8,7 @@ updated: 2026-11-19
 
 ## Como entrar
 
-O painel é para o professor e para o administrador da conta. Professores entram por convite do administrador.
+O painel é para você, personal, dono da conta, e para os professores da sua equipe, se houver. Professores entram por convite do personal.
 
 1. Abra o endereço do {{marca}} no navegador do computador.
 2. Na tela **Entrar**, digite seu **E-mail** e sua **Senha**.
@@ -27,6 +27,7 @@ O menu fica à esquerda. No celular ou em telas menores, ele abre pelo botão de
 - **Início**: o resumo do seu dia.
 - **Alunos**: tem os subitens **Todos os alunos**, **Cadastros públicos** e **Grupos especiais**.
 - **Turmas**: alunos que treinam juntos.
+- **Feed**: dicas, imagens e vídeos para os seus alunos (aba **Comunidade** do app).
 - **Treinos & Exercícios**: tem os subitens **Treinos**, **Exercícios**, **Modelos prontos**, **Condições de saúde** e **Métodos e objetivos**.
 - **Chat**: conversas com os seus alunos. O número ao lado mostra as mensagens não lidas.
 - **Ajuda**: estes tutoriais.
@@ -35,7 +36,7 @@ Itens com a etiqueta **Em breve** ainda não estão disponíveis.
 
 No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso), o seu nome e o botão de tema claro/escuro. Clique no seu nome para **Sair**. No computador, o botão no topo do menu recolhe o menu para mostrar só os ícones.
 
-> O que você vê depende do seu papel. O **Administrador** vê todos os alunos da conta. O **Professor** vê os alunos pelos quais é responsável.
+> O que você vê depende do seu papel. O **Personal** vê todos os alunos da conta. O **Professor** da equipe vê os alunos pelos quais é responsável.
 
 ## Início
 
@@ -45,9 +46,9 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
   exercícios já foram feitos e há quanto tempo começou. Aparece quem registrou algo no treino nos últimos 90 minutos
   com a tela do treino aberta. **Enviar mensagem** abre a conversa com o aluno; ele vê a mensagem na própria tela do
   treino. Responder é sempre opcional: o card mostra o que está acontecendo, não cobra resposta.
-- **Precisa de atenção**: ao lado, o que pode pedir um olhar seu — mensagem do aluno sem resposta há alguns minutos,
-  treino parado há mais de 20 minutos e, se você pode ver a saúde do aluno, dor relatada no treino.
-- O aluno é avisado no primeiro treino de que você vê quando ele está treinando. O administrador pode desligar o ao
+- **Precisa de atenção**: ao lado, o que pode pedir um olhar seu — mensagem do aluno sem resposta há alguns minutos
+  (fica na lista até você responder, por até 14 dias), treino parado há mais de 20 minutos e, se você pode ver a saúde do aluno, dor relatada no treino.
+- O aluno é avisado no primeiro treino de que você vê quando ele está treinando. O personal pode desligar o ao
   vivo no próprio card (**Desligar ao vivo**).
 - **Buscar aluno**: digite um nome e tecle Enter para abrir a lista de alunos já filtrada.
 - **Novo**: atalho para cadastrar um aluno.
@@ -63,9 +64,9 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
 - **Treinos da semana**: treinos concluídos por dia, de segunda a domingo, nesta semana e nas duas anteriores.
 - **Top 5 alunos**: quem mais concluiu treinos nos últimos 30 dias.
 - **Satisfação dos alunos**: a média das notas de 1 a 5 que os alunos dão ao terminar o treino, com a quantidade de notas. O card só aparece quando há alguma nota nos últimos 30 dias; com menos de 60 dias desde o primeiro treino concluído, mostra **Dados insuficientes** no lugar da média.
-- **NPS dos alunos**: o resultado agrupado das notas de 0 a 10 que os alunos dão ao acompanhamento, no último trimestre fechado. O NPS é a % de promotores (9–10) menos a % de detratores (0–6); o card também mostra a média e a quantidade de respostas. Com menos de 10 respostas no trimestre, mostra **Poucas respostas para exibir**. Traz a tendência dos últimos 4 trimestres e nunca mostra a nota de um aluno. O professor vê as avaliações sobre ele; o administrador vê a equipe toda e o resultado de cada professor.
+- **NPS dos alunos**: o resultado agrupado das notas de 0 a 10 que os alunos dão ao acompanhamento, no último trimestre fechado. O NPS é a % de promotores (9–10) menos a % de detratores (0–6); o card também mostra a média e a quantidade de respostas. Com menos de 10 respostas no trimestre, mostra **Poucas respostas para exibir**. Traz a tendência dos últimos 4 trimestres e nunca mostra a nota de um aluno. O professor vê as avaliações sobre ele; o personal vê a conta toda e o resultado de cada professor.
 
-> O administrador vê os números de todos os alunos da conta; o professor, só dos alunos pelos quais é responsável. Os dias seguem o horário de Brasília.
+> O personal vê os números de todos os alunos da conta; o professor, só dos alunos pelos quais é responsável. Os dias seguem o horário de Brasília.
 - **Personalizar**: escolha quais cards aparecem.
 
 ## Alunos
@@ -88,7 +89,7 @@ Em cada aluno há um atalho de WhatsApp, um lápis para editar e o menu **⋯** 
 
 ### Cadastros públicos
 
-Em [Cadastros públicos](/alunos/cadastros-publicos) o administrador da conta gera um link de cadastro para enviar aos alunos. Os cadastros chegam para aprovação e só ocupam vaga depois de aprovados. Somente o administrador gerencia esta tela.
+Em [Cadastros públicos](/alunos/cadastros-publicos) o personal gera um link de cadastro para enviar aos alunos. Os cadastros chegam para aprovação e só ocupam vaga depois de aprovados. Somente o personal gerencia esta tela.
 
 ### Grupos especiais
 
@@ -98,9 +99,33 @@ Em [Grupos especiais](/alunos/grupos) você cria grupos para marcar alunos que p
 
 Em [Turmas](/turmas) você organiza alunos que treinam juntos.
 
-1. Clique em **Nova turma** e dê um nome. Se você é o administrador, escolha também o professor responsável.
+1. Clique em **Nova turma** e dê um nome. Se você é o personal, escolha também o professor responsável.
 2. Use **Gerenciar alunos** para incluir ou remover alunos.
 3. Em Meus alunos, use o filtro **Turma** para ver só os alunos daquela turma.
+
+## Feed
+
+Em [Feed](/feed) você publica dicas, imagens e vídeos para os seus alunos. Eles veem tudo na aba **Comunidade** do app,
+podem curtir, mas não publicam nem comentam.
+
+1. Clique em **Novo post** e escolha o **Tipo**:
+   - **Texto**: até 2000 caracteres.
+   - **Imagem**: a imagem é reduzida no seu aparelho antes de enviar, com limite de 5 MB.
+   - **Vídeo (link)**: link do YouTube, Vimeo ou Instagram. Não há envio de arquivo de vídeo.
+2. Em **Quem vê**, escolha uma destas opções:
+   - Todos os seus alunos.
+   - Uma modalidade: consultoria, presencial ou híbrido.
+   - Uma turma.
+
+   Professores da equipe publicam só para os próprios alunos.
+3. Para publicar depois, preencha **Agendar publicação** (horário de Brasília). Antes da hora, o aluno não vê o post.
+4. Marque **Fixar no topo** para o post ficar acima dos outros.
+5. Confira a **Prévia** e clique em **Publicar** (ou **Agendar**).
+
+Na lista você pode **Editar**, **Fixar no topo** ou **Desafixar** e **Apagar** cada post, e vê quantas curtidas ele
+recebeu. Ninguém vê quem curtiu, nem você nem os outros alunos.
+
+> Não publique dados de saúde nem fotos de alunos sem autorização deles. O aviso fica fixo no editor.
 
 ## Treinos e exercícios
 
@@ -108,7 +133,7 @@ Em [Turmas](/turmas) você organiza alunos que treinam juntos.
 - [Exercícios](/treinos/exercicios): a biblioteca do {{marca}} mais os exercícios da sua equipe. Dá para buscar, filtrar por grupo muscular e equipamento, ver instruções e vídeo e criar um **Novo exercício**. **Personalizar** cria uma cópia editável de um exercício da biblioteca só para a sua equipe.
 - [Modelos prontos](/treinos/modelos): treinos reutilizáveis. Crie com **Novo modelo** ou salve um treino de aluno como modelo.
 - [Condições de saúde](/treinos/condicoes): o catálogo de condições usado nos alertas, com um **Guia** de apoio para cada uma.
-- [Métodos e objetivos](/treinos/listas): listas usadas nos exercícios do treino. Somente o administrador altera.
+- [Métodos e objetivos](/treinos/listas): listas usadas nos exercícios do treino. Somente o personal altera.
 
 ## Chat
 
@@ -123,7 +148,7 @@ O botão **Recado para todos** publica um recado que aparece na tela Hoje de tod
 
 1. Abra [Meus alunos](/alunos) e clique em **Adicionar aluno**.
 2. Preencha **Nome**, **Sobrenome** e **E-mail** (obrigatórios). Os outros campos são opcionais.
-3. Se você é o administrador, escolha o **Professor responsável**. Se você é professor, você será o responsável.
+3. Se você é o personal, escolha o **Professor responsável**. Se você é professor, você será o responsável.
    Em **Modalidade**, indique se o aluno é de **Consultoria** (padrão), **Presencial** ou **Híbrido**.
 4. Para o aluno usar o app, deixe ligado **Enviar convite de acesso** (já vem ligado).
 5. Clique em **Cadastrar aluno**.
@@ -145,7 +170,7 @@ O convite não chegou? No menu **⋯** do aluno, use **Copiar link de acesso** e
 
 Não importe dados de saúde (lesões, restrições, medicamentos…) nas observações: cadastre-os depois na ficha do aluno.
 Colunas com cara de dado de saúde não são sugeridas. Objetivo e data de início entram nas observações do aluno. Alunos
-importados por um professor ficam com ele; pelo administrador, ficam sem professor designado.
+importados por um professor ficam com ele; pelo personal, ficam sem professor designado.
 
 Os alunos entram em **pré-cadastro**, sem acesso ao app: nenhum e-mail ou convite é enviado na importação. Mande o
 acesso depois, aluno por aluno. Errou a importação? Em **Importações recentes**, **Desfazer** (até 7 dias) arquiva os
@@ -211,7 +236,7 @@ Na tela de treinos do aluno, em **Avaliação do acompanhamento (NPS)**, você v
 - **Ainda não disponível**, com o motivo: quantos treinos faltam ou a partir de quando ele pode avaliar.
 - **Nenhuma avaliação pendente para este aluno agora.**
 
-O professor responsável e o administrador veem essa situação. O lembrete é enviado para um aluno por vez.
+O professor responsável e o personal veem essa situação. O lembrete é enviado para um aluno por vez.
 
 ### Responder o chat
 
@@ -223,7 +248,7 @@ O professor responsável e o administrador veem essa situação. O lembrete é e
 
 ### Por que não vejo todos os alunos?
 
-O professor vê os alunos pelos quais é responsável. Peça ao administrador para trocar o professor responsável no cadastro do aluno.
+O professor vê os alunos pelos quais é responsável. Peça ao personal para trocar o professor responsável no cadastro do aluno.
 
 ### O aluno saiu da lista. Para onde ele foi?
 

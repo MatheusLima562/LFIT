@@ -171,7 +171,7 @@ ok("após a confirmação, o owner passa a ver os grupos", (await page.locator("
 const tctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const tp = await login(tctx, "trainer2.seed@example.com");
 await tp.goto(`${BASE}/alunos/cadastros-publicos`); await settle(tp);
-ok("trainer: página restrita ao administrador", await tp.getByText("Somente o administrador").isVisible());
+ok("trainer: página restrita ao personal", await tp.getByText("Somente o personal").isVisible());
 ok("trainer: sem botão Cadastros públicos em Meus alunos", await (async () => { await tp.goto(`${BASE}/alunos`); await settle(tp); return (await tp.getByRole("main").getByRole("link", { name: /Cadastros públicos/ }).count()) === 0; })());
 
 // Escuro

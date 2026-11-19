@@ -15,6 +15,7 @@ nomes e nenhum valor real.
 | `NEXT_PUBLIC_SITE_URL` | pública (endereço do site) | não | **sim em produção** (sem ela, os links de convite/acesso/cadastro usam o cabeçalho `Host` da requisição) | `features/auth/actions.ts`, `features/students/actions.ts`, `app/(app)/alunos/cadastros-publicos/page.tsx` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | pública (chave do widget) | não (lida no servidor) | sim em produção (sem ela o cadastro público fica "temporariamente indisponível") | `features/signup/turnstile.ts` (`server-only`) |
 | `TURNSTILE_SECRET_KEY` | **só servidor** | não | sim em produção (idem) | `features/signup/turnstile.ts` (`server-only`) |
+| `CRON_SECRET` | **só servidor** | não | sim em produção para a limpeza diária do feed (sem ela a rota recusa e as imagens órfãs ficam; a Vercel envia `Authorization: Bearer $CRON_SECRET` nas chamadas do cron) | `app/api/cron/feed-media/route.ts`, agendada em `vercel.json` |
 | `ANTHROPIC_API_KEY` | **só servidor** | não | só para o Assistente de IA (sem ela o recurso fica indisponível, com mensagem amigável) | `features/assistant/anthropic.ts` (`server-only`), rota `app/aluno/assistente/route.ts` |
 | `AI_PROVIDER` / `AI_FAKE_MODE` | só servidor | não | **nunca em produção**: `fake` liga o provedor falso para testes/e2e (recusado quando `VERCEL_ENV=production`); `AI_FAKE_MODE` = `ok`/`fail`/`slow` | `features/assistant/anthropic.ts` |
 | `ALLOW_PUBLIC_SIGNUP` | só servidor (flag) | não | não (padrão desligado; só `"true"` abre `/criar-conta`) | `app/(auth)/criar-conta/page.tsx`, `features/auth/actions.ts` |

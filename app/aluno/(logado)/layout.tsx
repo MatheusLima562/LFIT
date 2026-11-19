@@ -6,6 +6,7 @@ import { StudentBrand } from "@/features/student-app/components/StudentBrand";
 import { StudentNav } from "@/features/student-app/components/StudentNav";
 import { getMyConsentRequest, getMyProfile } from "@/features/student-app/queries";
 import { getStudentUnread } from "@/features/chat/queries";
+import { getMyFeedNewCount } from "@/features/feed/queries";
 import { HealthConsentForm } from "@/features/students/components/HealthConsentForm";
 import { RouteError } from "@/components/layout/RouteError";
 import { messages } from "@/messages/pt-BR";
@@ -99,13 +100,13 @@ export default async function StudentLoggedLayout({ children }: LayoutProps<"/al
     );
   }
 
-  const unread = await getStudentUnread(profile.student_id);
+  const [unread, feedNew] = await Promise.all([getStudentUnread(profile.student_id), getMyFeedNewCount()]);
 
   return (
     <>
       <Header name={name} />
       <main className="mx-auto max-w-md px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</main>
-      <StudentNav studentId={profile.student_id} initialUnread={unread} />
+      <StudentNav studentId={profile.student_id} initialUnread={unread} initialFeedNew={feedNew} />
     </>
   );
 }

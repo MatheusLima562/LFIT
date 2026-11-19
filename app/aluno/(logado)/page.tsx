@@ -86,11 +86,11 @@ function TrainerCard({ profile }: { profile: AppProfile }) {
   return (
     <section aria-labelledby="trainer" className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-card">
       <div className="flex items-center gap-3">
-        <TrainerAvatar name={profile.trainer_name ?? profile.organization_name} />
+        <TrainerAvatar name={profile.trainer_name ?? profile.personal_name ?? t.today.noTrainer} />
         <div className="min-w-0">
           <p className="text-xs font-medium text-ink-3">{profile.trainer_name ? t.today.trainerTitle : t.today.noTrainer}</p>
           <h2 id="trainer" className="text-[15px] font-semibold text-ink">
-            {profile.trainer_name ?? profile.organization_name}
+            {profile.trainer_name ?? profile.personal_name ?? t.today.noTrainer}
           </h2>
           {profile.trainer_office_hours && (
             <p className="flex items-center gap-1 text-xs text-ink-2">
@@ -130,7 +130,13 @@ export default async function StudentTodayPage() {
         </>
       )}
       {reply && <ReplyNotice entry={reply} />}
-      {nps && <NpsPromptCard trainerFirstName={nps.trainerFirstName} intervalDays={nps.intervalDays} reminded={nps.reminded} />}
+      {nps && (
+        <NpsPromptCard
+          trainerFirstName={nps.trainerFirstName ?? profile?.personal_name ?? null}
+          intervalDays={nps.intervalDays}
+          reminded={nps.reminded}
+        />
+      )}
     </>
   );
 

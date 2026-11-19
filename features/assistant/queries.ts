@@ -6,7 +6,7 @@ export interface AssistantConversation {
   sessionId: string;
   workoutLabel: string;
   startedAt: string;
-  messages: { id: string; role: "student" | "assistant"; kind: string; body: string; createdAt: string }[];
+  messages: { id: string; seq: number; role: "student" | "assistant"; kind: string; body: string; createdAt: string }[];
 }
 
 /**
@@ -18,10 +18,10 @@ export async function getAssistantConversations(studentId: string): Promise<Assi
   const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
   const { data, error } = await supabase
     .from("ai_messages")
-    .select("id, session_id, role, kind, body, created_at")
+    .select("id, seq, session_id, role, kind, body, created_at")
     .eq("student_id", studentId)
     .gte("created_at", since)
-    .order("created_at", { ascending: true })
+    .order("seq", { ascending: true })
     .limit(300);
   if (error || !data?.length) return [];
   const ids = [...new Set(data.map((m) => m.session_id))];
@@ -36,7 +36,7 @@ export async function getAssistantConversations(studentId: string): Promise<Assi
       startedAt: s?.started_at ?? m.created_at,
       messages: [],
     };
-    conv.messages.push({ id: m.id, role: m.role === "assistant" ? "assistant" : "student", kind: m.kind, body: m.body, createdAt: m.created_at });
+    conv.messages.push({ id: m.id, seq: m.seq, role: m.role === "assistant" ? "assistant" : "student", kind: m.kind, body: m.body, createdAt: m.created_at });
     bySession.set(m.session_id, conv);
   }
   for (const c of bySession.values()) c.messages = conversationOrder(c.messages);

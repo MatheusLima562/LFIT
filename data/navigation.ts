@@ -8,6 +8,7 @@ import {
   LifeBuoy,
   Megaphone,
   MessageCircle,
+  Newspaper,
   Printer,
   Settings,
   TrendingUp,
@@ -38,6 +39,7 @@ export const navigation: NavSection[] = [
         ],
       },
       { id: "turmas", label: "Turmas", href: "/turmas", icon: UsersRound, status: "available" },
+      { id: "feed", label: "Feed", href: "/feed", icon: Newspaper, status: "available" },
       {
         id: "treinos",
         label: "Treinos & Exercícios",

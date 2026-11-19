@@ -1,5 +1,6 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
+import { resetCamilaChat } from "./_fixtures.mjs";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -68,6 +69,9 @@ async function desk(email) {
   await settle(page);
   return page;
 }
+// Dados próprios (A4): conversa e cursores de leitura da Camila no estado do seed, qualquer que seja o roteiro anterior
+// (o AO VIVO abre a conversa como o Caio e o cursor dele andava; o próprio k212 também lê).
+await resetCamilaChat(admin);
 const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
 const userId = (email) => users.users.find((x) => x.email === email).id;
 const CAMILA = (await admin.from("students").select("id").eq("user_id", userId("aluno.seed@example.com")).single()).data.id;
@@ -76,11 +80,11 @@ const sidebarChat = (p) => p.locator('nav[aria-label="Menu principal"] a[href="/
 const chatTab = (p) => p.getByRole("navigation", { name: "Navegação do app" }).locator('a[href="/aluno/chat"]');
 
 try {
-  // --- Aluno: barra com 4 abas (3.2), nenhum link morto ---------------------------------------------
+  // --- Aluno: barra com 5 abas (Comunidade desde o feed), nenhum link morto ----------------------------
   const sp = await phone("aluno.seed@example.com");
   const nav = sp.getByRole("navigation", { name: "Navegação do app" });
   const tabs = await nav.getByRole("link").allInnerTexts();
-  ok("barra inferior com 4 abas: Hoje · Histórico · Chat · Perfil", JSON.stringify(tabs.map((x) => x.trim())) === JSON.stringify(["Hoje", "Histórico", "Chat", "Perfil"]), JSON.stringify(tabs));
+  ok("barra inferior com 5 abas: Hoje · Histórico · Comunidade · Chat · Perfil", JSON.stringify(tabs.map((x) => x.trim())) === JSON.stringify(["Hoje", "Histórico", "Comunidade", "Chat", "Perfil"]), JSON.stringify(tabs));
   for (const href of await nav.getByRole("link").evaluateAll((as) => as.map((a) => a.getAttribute("href")))) {
     const res = await sp.request.get(`${BASE}${href}`);
     ok(`aba ${href} abre (sem link morto)`, res.status() === 200, String(res.status()));
@@ -91,7 +95,8 @@ try {
   await sp.waitForURL(`${BASE}/aluno/chat`);
   await settle(sp);
   ok("aviso de emergência fixo", await waitText(sp, "Não é canal de emergência. Dor forte, falta de ar ou dor no peito: ligue 192."));
-  ok("aviso de quem vê a conversa", await waitText(sp, "Sua conversa é vista pelo seu professor e pela coordenação do estúdio"));
+  // Professor designado (Caio) + o personal (Rafael, dono da conta), pelo nome — sem "coordenação do estúdio".
+  ok("aviso de quem vê a conversa", await waitText(sp, "Sua conversa é vista por Caio e por Rafael"));
   ok("mensagens do seed aparecem", (await waitText(sp, "Combinado, obrigada!")) && (await waitText(sp, "Pode sim, Camila.", 3000)));
   const input = sp.getByRole("textbox", { name: "Mensagem" });
   ok("campo com fonte de 16 px (sem zoom no iOS)", (await input.evaluate((el) => getComputedStyle(el).fontSize)) === "16px");

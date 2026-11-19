@@ -30,7 +30,14 @@ export default async function StudentChatPage() {
         initial={initial}
         emptyText={t.emptyStudent}
         attachGroups={attachGroups}
-        header={<StudentChatHeader trainerName={profile.trainer_name} officeHours={profile.trainer_office_hours} />}
+        header={
+          <StudentChatHeader
+            trainerName={profile.trainer_name}
+            personalName={profile.personal_name}
+            ownerFirstName={profile.owner_first_name}
+            officeHours={profile.trainer_office_hours}
+          />
+        }
       />
     </StudentChatFrame>
   );

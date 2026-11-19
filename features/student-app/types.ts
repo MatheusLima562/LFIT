@@ -129,6 +129,10 @@ export interface AppProfile {
   effective_status: "active" | "blocked" | "inactive" | "expired";
   sessions_this_month: number;
   week_streak: number;
+  /** Primeiro nome do personal (owner mais antigo da conta); nulo se vazio. */
+  owner_first_name: string | null;
+  /** Quem acompanha: primeiro nome do professor designado, senão o do personal; nulo se vazio → "seu personal". */
+  personal_name: string | null;
 }
 
 export interface AppHistoryEntry {

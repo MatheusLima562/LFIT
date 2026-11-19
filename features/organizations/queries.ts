@@ -9,7 +9,7 @@ const PLAN_NAMES = { free: "Free", pro: "Pro", gold: "Gold" } as const;
 export const getOrganizationPlanUsage = cache(async (): Promise<PlanUsage> => {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("organization_plan_usage").single();
-  if (error || !data) throw new Error("Não foi possível carregar o plano da organização.");
+  if (error || !data) throw new Error("Não foi possível carregar o plano da sua conta.");
 
   return {
     planName: PLAN_NAMES[data.plan],

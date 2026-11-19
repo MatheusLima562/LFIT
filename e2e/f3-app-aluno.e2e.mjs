@@ -1,5 +1,6 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
+import { resetCamilaSessions, resetDiegoConsent } from "./_fixtures.mjs";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
@@ -31,6 +32,10 @@ const studentId = async (email) => {
   return (await admin.from("students").select("id").eq("user_id", u.id).single()).data.id;
 };
 const camila = await studentId("aluno.seed@example.com");
+// Dados próprios (A4): Camila sem treinos e Diego com consentimento pendente, qualquer que seja o roteiro anterior
+// (inclusive uma execução anterior do próprio f3).
+await resetCamilaSessions(admin);
+await resetDiegoConsent(admin);
 
 // --- Login: links cruzados "Sou professor" / "Sou aluno" ------------------------------
 {
@@ -52,13 +57,15 @@ ok("Hoje: constância sem cobrança (nenhum treino no mês)", await waitText(pag
 ok("Hoje: recado do professor", (await waitText(page, "Recado do seu professor")) && (await waitText(page, "Semana de deload: mantenha as cargas e capriche na execução.")));
 ok("Hoje: card do professor com horário e atalho", (await waitText(page, "Caio Exemplo")) && (await waitText(page, "Atendimento: Seg a sex, 7h às 12h")) && (await page.getByRole("link", { name: "Mandar mensagem" }).getAttribute("href")) === "/aluno/chat");
 
-// Barra de 4 abas, navegável por teclado, com a aba atual marcada.
+// Barra de 5 abas (Comunidade desde o feed), navegável por teclado, com a aba atual marcada.
 const tabs = page.getByRole("navigation", { name: "Navegação do app" }).getByRole("link");
-ok("barra com 4 abas", (await tabs.allInnerTexts()).map((x) => x.trim()).join("|") === "Hoje|Histórico|Chat|Perfil");
+ok("barra com 5 abas", (await tabs.allInnerTexts()).map((x) => x.trim()).join("|") === "Hoje|Histórico|Comunidade|Chat|Perfil");
 ok("aba atual marcada (aria-current)", (await tabs.first().getAttribute("aria-current")) === "page");
-const tabBox = await tabs.nth(3).boundingBox();
+// Pelo endereço (não pela posição): a barra ganhou a aba Comunidade.
+const tab = (href) => page.getByRole("navigation", { name: "Navegação do app" }).locator(`a[href="${href}"]`);
+const tabBox = await tab("/aluno/perfil").boundingBox();
 ok("área de toque das abas ≥ 44 px", tabBox && tabBox.height >= 44 && tabBox.width >= 44, JSON.stringify(tabBox));
-await tabs.nth(3).focus();
+await tab("/aluno/perfil").focus();
 await page.keyboard.press("Enter");
 await page.waitForURL(`${BASE}/aluno/perfil`, { timeout: 15000 });
 ok("Perfil pelo teclado: nome, estúdio, professor, horário e Sair", (await waitText(page, "Camila Freitas")) && (await waitText(page, "Studio Exemplo (fictício)")) && (await waitText(page, "Caio Exemplo")) && (await waitText(page, "Seg a sex, 7h às 12h")) && (await page.getByRole("button", { name: "Sair da conta" }).count()) === 1);
@@ -66,18 +73,18 @@ ok("cabeçalho sem 'Sair' dentro do app (fica no Perfil)", (await page.locator("
 await page.screenshot({ path: `${OUT}/f3-01b-perfil.png`, fullPage: true });
 
 // Chat: nome do professor no topo, aviso de emergência recolhível, barra some com o teclado.
-await tabs.nth(2).click();
+await tab("/aluno/chat").click();
 await page.waitForURL(`${BASE}/aluno/chat`, { timeout: 15000 });
 ok("chat: nome do professor no topo", (await page.getByRole("heading", { level: 1 }).innerText()).trim() === "Caio Exemplo");
 const notice = page.getByRole("button", { name: /Não é canal de emergência/ });
-ok("chat: primeiro acesso, aviso começa aberto", (await notice.getAttribute("aria-expanded")) === "true" && (await waitText(page, "Sua conversa é vista pelo seu professor")));
+ok("chat: primeiro acesso, aviso começa aberto", (await notice.getAttribute("aria-expanded")) === "true" && (await waitText(page, "Sua conversa é vista por Caio e por Rafael")));
 await page.reload();
 await settle(page);
-ok("chat: depois do primeiro acesso, aviso começa recolhido em uma linha", (await notice.getAttribute("aria-expanded")) === "false" && (await waitText(page, "Não é canal de emergência · ligue 192")) && !(await page.getByText("Sua conversa é vista pelo seu professor").isVisible()) && (await notice.boundingBox()).height <= 48);
+ok("chat: depois do primeiro acesso, aviso começa recolhido em uma linha", (await notice.getAttribute("aria-expanded")) === "false" && (await waitText(page, "Não é canal de emergência · ligue 192")) && !(await page.getByText("Sua conversa é vista por Caio e por Rafael").isVisible()) && (await notice.boundingBox()).height <= 48);
 await notice.click();
-ok("chat: aviso expandido mostra o texto completo e quem vê a conversa", (await notice.getAttribute("aria-expanded")) === "true" && (await waitText(page, "Não é canal de emergência. Dor forte, falta de ar ou dor no peito: ligue 192.")) && (await page.getByText("Sua conversa é vista pelo seu professor").isVisible()));
+ok("chat: aviso expandido mostra o texto completo e quem vê a conversa", (await notice.getAttribute("aria-expanded")) === "true" && (await waitText(page, "Não é canal de emergência. Dor forte, falta de ar ou dor no peito: ligue 192.")) && (await page.getByText("Sua conversa é vista por Caio e por Rafael").isVisible()));
 await notice.click();
-ok("chat: aviso recolhido mantém a linha de emergência", (await notice.getAttribute("aria-expanded")) === "false" && (await waitText(page, "Não é canal de emergência · ligue 192")) && !(await page.getByText("Sua conversa é vista pelo seu professor").isVisible()));
+ok("chat: aviso recolhido mantém a linha de emergência", (await notice.getAttribute("aria-expanded")) === "false" && (await waitText(page, "Não é canal de emergência · ligue 192")) && !(await page.getByText("Sua conversa é vista por Caio e por Rafael").isVisible()));
 await page.reload();
 await settle(page);
 ok("chat: aviso continua recolhido neste aparelho", (await page.getByRole("button", { name: /Não é canal de emergência/ }).getAttribute("aria-expanded")) === "false");
@@ -89,7 +96,7 @@ await page.getByRole("textbox", { name: "Mensagem" }).focus();
 ok("teclado aberto: a barra de abas some", await page.getByRole("navigation", { name: "Navegação do app" }).waitFor({ state: "detached", timeout: 5000 }).then(() => true, () => false));
 await page.getByRole("textbox", { name: "Mensagem" }).blur();
 ok("teclado fechado: a barra volta", await page.getByRole("navigation", { name: "Navegação do app" }).waitFor({ timeout: 5000 }).then(() => true, () => false));
-await tabs.nth(0).click();
+await tab("/aluno").click();
 await page.waitForURL(`${BASE}/aluno`, { timeout: 15000 });
 await settle(page);
 const sw = await page.evaluate(() => document.documentElement.scrollWidth);

@@ -115,6 +115,7 @@ export type Database = {
           organization_id: string
           reply_to: string | null
           role: string
+          seq: number
           session_id: string
           student_id: string
         }
@@ -127,6 +128,7 @@ export type Database = {
           organization_id: string
           reply_to?: string | null
           role: string
+          seq?: never
           session_id: string
           student_id: string
         }
@@ -139,6 +141,7 @@ export type Database = {
           organization_id?: string
           reply_to?: string | null
           role?: string
+          seq?: never
           session_id?: string
           student_id?: string
         }
@@ -806,6 +809,182 @@ export type Database = {
             columns: ["source_exercise_id"]
             isOneToOne: false
             referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_likes: {
+        Row: {
+          created_at: string
+          organization_id: string
+          post_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          organization_id: string
+          post_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          organization_id?: string
+          post_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_likes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_likes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_likes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_posts: {
+        Row: {
+          audience: string
+          audience_class_id: string | null
+          audience_modality: string | null
+          author_id: string
+          body: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          image_path: string | null
+          kind: string
+          organization_id: string
+          pinned: boolean
+          published_at: string
+          scope_trainer_id: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          audience?: string
+          audience_class_id?: string | null
+          audience_modality?: string | null
+          author_id: string
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          image_path?: string | null
+          kind: string
+          organization_id: string
+          pinned?: boolean
+          published_at?: string
+          scope_trainer_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          audience?: string
+          audience_class_id?: string | null
+          audience_modality?: string | null
+          author_id?: string
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          image_path?: string | null
+          kind?: string
+          organization_id?: string
+          pinned?: boolean
+          published_at?: string
+          scope_trainer_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_posts_audience_class_id_fkey"
+            columns: ["audience_class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_posts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_posts_scope_trainer_id_fkey"
+            columns: ["scope_trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_reads: {
+        Row: {
+          last_seen_at: string
+          organization_id: string
+          student_id: string
+        }
+        Insert: {
+          last_seen_at?: string
+          organization_id: string
+          student_id: string
+        }
+        Update: {
+          last_seen_at?: string
+          organization_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_reads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_reads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_reads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students_with_status"
             referencedColumns: ["id"]
           },
         ]
@@ -2996,6 +3175,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_feed_post: { Args: { p_id: string }; Returns: Json }
       duplicate_plan: { Args: { p_plan_id: string }; Returns: string }
       end_trainer_announcement: {
         Args: { p_announcement_id: string }
@@ -3102,6 +3282,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_my_feed: { Args: never; Returns: Json }
+      get_my_feed_new_count: { Args: never; Returns: number }
       get_my_health_consent_request: {
         Args: never
         Returns: {
@@ -3120,6 +3302,8 @@ export type Database = {
           first_name: string
           last_name: string
           organization_name: string
+          owner_first_name: string
+          personal_name: string
           photo_path: string
           sessions_this_month: number
           student_id: string
@@ -3193,6 +3377,7 @@ export type Database = {
           unread_count: number
         }[]
       }
+      list_feed_posts: { Args: never; Returns: Json }
       live_heartbeat: { Args: { p_session_id: string }; Returns: Json }
       log_set: {
         Args: {
@@ -3211,6 +3396,7 @@ export type Database = {
         Args: { p_student_id: string; p_until_message_id: string }
         Returns: undefined
       }
+      mark_feed_seen: { Args: never; Returns: undefined }
       organization_plan_usage: {
         Args: never
         Returns: {
@@ -3369,6 +3555,7 @@ export type Database = {
         Args: { p_data: Json; p_id: string; p_rules: Json }
         Returns: string
       }
+      save_feed_post: { Args: { p_data: Json; p_id?: string }; Returns: Json }
       save_plan_as_template: {
         Args: { p_name: string; p_plan_id: string }
         Returns: string
@@ -3404,6 +3591,10 @@ export type Database = {
       session_effective_status: {
         Args: { w: Database["public"]["Tables"]["workout_sessions"]["Row"] }
         Returns: string
+      }
+      set_feed_post_pinned: {
+        Args: { p_id: string; p_pinned: boolean }
+        Returns: undefined
       }
       set_live_enabled: { Args: { p_enabled: boolean }; Returns: undefined }
       set_student_modality: {
@@ -3494,6 +3685,10 @@ export type Database = {
       submit_public_signup: {
         Args: { p_consent: boolean; p_payload: Json; p_token: string }
         Returns: string
+      }
+      toggle_feed_like: {
+        Args: { p_like: boolean; p_post_id: string }
+        Returns: Json
       }
       undo_import_batch: { Args: { p_batch_id: string }; Returns: Json }
       update_student: {

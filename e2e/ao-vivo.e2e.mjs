@@ -1,5 +1,6 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
+import { resetCamilaSessions, resetLiveNotice, seedIds } from "./_fixtures.mjs";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
@@ -28,13 +29,14 @@ const login = async (path, email, viewport = { width: 375, height: 812 }) => {
 let sessionId = null;
 let aluna = null;
 try {
+  // Dados próprios (A4): Camila sem treinos (um treino aberto por outro roteiro podia ter a Série 1 já feita) e o aviso
+  // de transparência de volta a "não visto", para o roteiro passar em qualquer ordem.
+  await resetCamilaSessions(admin);
+  resetLiveNotice((await seedIds(admin)).camila);
   aluna = await login("/aluno", "aluno.seed@example.com");
-  // Depois do f3 pode haver um treino aberto ("Retomar treino"): usa ele e não o apaga no fim.
-  const resume = aluna.getByRole("link", { name: "Retomar treino" });
-  const resuming = (await resume.count()) > 0;
-  await (resuming ? resume.first() : aluna.getByRole("button", { name: "Iniciar treino" }).first()).click();
+  await aluna.getByRole("button", { name: "Iniciar treino" }).first().click();
   await aluna.waitForURL(/\/aluno\/treino\/[0-9a-f-]+/, { timeout: 20000 });
-  if (!resuming) sessionId = aluna.url().split("/treino/")[1].split("?")[0];
+  sessionId = aluna.url().split("/treino/")[1].split("?")[0];
   await aluna.getByText("Seu professor acompanha o treino").waitFor({ timeout: 15000 });
   ok("aviso de transparência no primeiro treino", true);
   await aluna.getByRole("button", { name: "Entendi" }).click();

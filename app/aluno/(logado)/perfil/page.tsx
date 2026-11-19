@@ -52,10 +52,10 @@ export default async function StudentProfilePage() {
           {profile.organization_name}
         </Row>
         <div className="flex items-start gap-3 px-4 py-3">
-          <TrainerAvatar name={profile.trainer_name} className="size-9 text-xs" />
+          <TrainerAvatar name={profile.trainer_name ?? profile.personal_name} className="size-9 text-xs" />
           <div className="min-w-0">
-            <dt className="text-xs font-medium text-ink-3">{t.profile.trainer}</dt>
-            <dd className="text-[15px] text-ink">{profile.trainer_name ?? t.profile.noTrainer}</dd>
+            <dt className="text-xs font-medium text-ink-3">{profile.trainer_name ? t.profile.trainer : t.profile.personalTitle}</dt>
+            <dd className="text-[15px] text-ink">{profile.trainer_name ?? t.profile.noTrainer(profile.personal_name)}</dd>
           </div>
         </div>
         {profile.trainer_office_hours && (
