@@ -3,7 +3,7 @@ title: Tour pela interface do professor
 summary: Conheça o painel do {{marca}} — o menu, as telas principais e o caminho para as tarefas do dia a dia.
 audience: professor
 order: 1
-updated: 2026-10-29
+updated: 2026-11-19
 ---
 
 ## Como entrar
@@ -41,6 +41,14 @@ No rodapé do menu você vê o seu plano (quantas vagas de aluno estão em uso),
 
 É a primeira tela depois de entrar.
 
+- **Treinando agora (AO VIVO)**: no topo, os alunos com o treino aberto neste momento — o nome, a divisão, quantos
+  exercícios já foram feitos e há quanto tempo começou. Aparece quem registrou algo no treino nos últimos 90 minutos
+  com a tela do treino aberta. **Enviar mensagem** abre a conversa com o aluno; ele vê a mensagem na própria tela do
+  treino. Responder é sempre opcional: o card mostra o que está acontecendo, não cobra resposta.
+- **Precisa de atenção**: ao lado, o que pode pedir um olhar seu — mensagem do aluno sem resposta há alguns minutos,
+  treino parado há mais de 20 minutos e, se você pode ver a saúde do aluno, dor relatada no treino.
+- O aluno é avisado no primeiro treino de que você vê quando ele está treinando. O administrador pode desligar o ao
+  vivo no próprio card (**Desligar ao vivo**).
 - **Buscar aluno**: digite um nome e tecle Enter para abrir a lista de alunos já filtrada.
 - **Novo**: atalho para cadastrar um aluno.
 - **Alunos ativos**: quantos alunos ocupam vaga no seu plano.

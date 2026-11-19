@@ -833,6 +833,7 @@ export type Database = {
           created_at: string
           id: string
           is_seed: boolean
+          live_enabled: boolean
           name: string
           overdue_grace_days: number
           plan: Database["public"]["Enums"]["plan_tier"]
@@ -845,6 +846,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_seed?: boolean
+          live_enabled?: boolean
           name: string
           overdue_grace_days?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
@@ -857,6 +859,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_seed?: boolean
+          live_enabled?: boolean
           name?: string
           overdue_grace_days?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
@@ -2362,6 +2365,7 @@ export type Database = {
       }
     }
     Functions: {
+      ack_live_notice: { Args: never; Returns: undefined }
       acknowledge_session_alert: {
         Args: { p_session_id: string }
         Returns: undefined
@@ -2371,6 +2375,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["plan_status"]
       }
       admin_activate_due_plans: { Args: never; Returns: number }
+      admin_purge_live_tracking: { Args: never; Returns: number }
       apply_plan_to_students: {
         Args: {
           p_activate: boolean
@@ -2726,6 +2731,7 @@ export type Database = {
           trainer_name: string
         }[]
       }
+      get_live_board: { Args: never; Returns: Json }
       get_my_nps_prompt: { Args: never; Returns: Json }
       get_my_student_profile: {
         Args: never
@@ -2803,6 +2809,7 @@ export type Database = {
           unread_count: number
         }[]
       }
+      live_heartbeat: { Args: { p_session_id: string }; Returns: Json }
       log_set: {
         Args: {
           p_data: Json
@@ -3013,6 +3020,7 @@ export type Database = {
         Args: { w: Database["public"]["Tables"]["workout_sessions"]["Row"] }
         Returns: string
       }
+      set_live_enabled: { Args: { p_enabled: boolean }; Returns: undefined }
       set_student_modality: {
         Args: { p_modality: string; p_student_id: string }
         Returns: undefined

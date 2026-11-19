@@ -15,6 +15,7 @@ import { parseDecimal, setTargets } from "../format";
 import { enqueue, flush, isNetworkError, loadQueue, saveQueue, type QueueOp, type RunResult } from "../queue";
 import { applyOp, firstOpenItem, initialRunState, nextOpenItem, type RunState, type SetEntry } from "../session-state";
 import type { AppTrainingSession } from "../types";
+import { LiveCompanion } from "@/features/live/components/LiveCompanion";
 import { FocusExercise } from "./FocusExercise";
 import { ProgressStrip } from "./ProgressStrip";
 import { RestTimer } from "./RestTimer";
@@ -223,6 +224,9 @@ export function SessionRunner({
           )}
         </p>
       </div>
+
+      {/* Ao vivo: batimento + aviso de transparência + mensagem do professor, no fluxo (não cobre "Feita"). */}
+      <LiveCompanion sessionId={sessionId} self={data.mode === "self"} active={!finishing} />
 
       <header>
         <h1 className="text-xl font-semibold tracking-tight text-ink">

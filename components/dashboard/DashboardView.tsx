@@ -36,9 +36,11 @@ interface DashboardViewProps {
   banner: Banner | null;
   /** Só os cards com dados reais; os ausentes não aparecem nem em "Personalizar". */
   cards: Partial<Record<DashboardCardId, ReactNode>>;
+  /** AO VIVO: sempre no topo e fora do "Personalizar" (é estado do momento, não indicador). */
+  live?: ReactNode;
 }
 
-export function DashboardView({ firstName, banner, cards }: DashboardViewProps) {
+export function DashboardView({ firstName, banner, cards, live }: DashboardViewProps) {
   const [hidden, setHidden] = useState<Set<DashboardCardId>>(() => new Set());
   const [bannerVisible, setBannerVisible] = useState(true);
   const [customizing, setCustomizing] = useState(false);
@@ -60,6 +62,8 @@ export function DashboardView({ firstName, banner, cards }: DashboardViewProps) 
       <DashboardHeader firstName={firstName} onCustomize={() => setCustomizing(true)} />
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+        {live}
+
         {banner && bannerVisible && <DashboardBanner banner={banner} onDismiss={() => setBannerVisible(false)} />}
 
         {/* Só ações disponíveis aparecem (nada de botões mortos). */}

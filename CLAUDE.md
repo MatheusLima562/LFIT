@@ -609,6 +609,29 @@ effective_status =
   respostas sobre ele; owner = organização + por professor. Nunca aluno, nome, nota individual ou data.
   Lógica de exibição em `features/nps/nps.ts`.
 
+### Ao vivo no Início (19/11/2026, migration `20261119120000` — escrita, aguardando push)
+- **"Treinando agora" vem de eventos reais do treino**, não de presença: gatilhos em `workout_sessions` (iniciou/mudou
+  status), `session_item_logs` (concluiu exercício) e `session_set_logs` (série) carimbam `live_sessions.last_event_at`
+  (`private.live_touch`). Nenhuma RPC de treino mudou.
+- **Sessão ao vivo** = `in_progress` (gravado e efetivo) + último evento < 90 min + batimento < 10 min. Batimento
+  (`live_heartbeat`) só com a tela de execução aberta e visível, a cada 60 s; o banco grava no máximo 1 a cada 30 s. Sem
+  batimento, a sessão sai do card sozinha — **calculado; nada é gravado na sessão** (o "abandonada" de 6 h segue igual).
+- **Card AO VIVO** no topo do Início (`features/live/`, fora do "Personalizar"): nome, divisão, progresso (exercícios
+  concluídos / itens da cópia da divisão) e há quanto tempo treina; "Enviar mensagem" abre `/chat?aluno=`. **Precisa de
+  atenção** (janela de 24 h): dor (dor > 5 ou "ainda incomoda", sessão não revisada — só nível completo; restrito vê
+  "aviso no treino"), última mensagem do aluno sem resposta há 5+ min, sessão ao vivo parada há 20+ min. Limites só na
+  RPC `get_live_board` (a tela recebe os números). O card mostra estado, nunca promete resposta.
+- Atualização: Realtime em `live_sessions` e `chat_messages` filtrado por `organization_id` (o RLS decide; o evento só
+  dispara a busca, no máximo 1 a cada 5 s) + busca a cada 30 s com a aba visível.
+- **Aluno:** na tela de execução (`LiveCompanion`, no fluxo, acima do exercício — não cobre "Feita" nem "Finalizar"),
+  aviso de transparência até "Entendi" (`private.live_notice_acks`, vale em qualquer aparelho) e banner com a última
+  mensagem do professor desde o início da sessão ainda não lida (sem push).
+- `organizations.live_enabled` (padrão ligado), só o owner muda pelo próprio card; desligar apaga `live_sessions` da org.
+- **Retenção de 30 dias:** `private.purge_live_tracking()` pelo pg_cron `lfit-purge-live-tracking` (03:20 UTC); o
+  histórico de treino (`workout_sessions`) não é tocado. Disparo manual: `admin_purge_live_tracking()` (service_role).
+- "Alerta da IA" em "Precisa de atenção": **não implementado** (Pacote 3 sem especificação; ver
+  `docs/decisoes-autonomas.md`).
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -678,8 +701,10 @@ sem efeitos colaterais).
 | **Nota de satisfação (3.2)** | `rate_workout_session` | escopo `is_own_student` da sessão: **só o aluno dono** (staff, inclusive no modo presencial, recebe `STUDENT_NOT_FOUND`, como sessão alheia, inexistente ou de outro tenant); nota fora de 1–5 ou sessão não concluída → `INVALID_INPUT`. Coluna sem grant de escrita; testes em `tests/db/session-rating.test.ts` |
 | **NPS — aluno (titular)** | `submit_nps`, `get_my_nps_prompt`, `snooze_nps_prompt` | escopo `students.user_id = auth.uid()` (staff/anônimo: `STUDENT_NOT_FOUND`/sem EXECUTE; `get_my_nps_prompt` devolve nulo). `submit_nps` exige `private.nps_eligibility` (critérios de `private.nps_settings` → senão `NPS_NOT_ELIGIBLE` com o motivo no `detail`); nota 0–10; comentário recusado desde a v2 (`INVALID_INPUT`, `detail = 'comment'`); os 90 dias também pela exclusion constraint. Sem auditoria. `20261029130000` + `20261030120000`; testes em `tests/db/nps.test.ts` |
 | **NPS — equipe** | `get_nps_status`, `send_nps_reminder`, `get_nps_summary`, `request_nps` | `get_nps_status`: `require_staff` + `can_access_student` (owner ou responsável); devolve só o estado (`pending`/`unavailable`/`not_yet`/`no_account`/`inactive`/`none`) — nunca nota, data de resposta ou o "Agora não" (vira `unavailable`, sem data). `send_nps_reminder`: `lock_accessible_student`, **um aluno por chamada**, só em `pending`, um por ciclo (`nps_reminders`, unique); não cria nem antecipa o cartão. `get_nps_summary`: `require_staff`; só agregados por trimestre fechado com ≥ `min_responses` (senão `{enough:false}`); professor = respostas sobre ele; owner = organização + `by_trainer`. `request_nps` (v1): **sem EXECUTE** para `authenticated` desde `20261030120000` (substituída pelo lembrete) |
+| **Ao vivo — painel (Início)** | `get_live_board`, `set_live_enabled` | `get_live_board`: `require_staff()` + `private.dashboard_students()` (owner = organização; professor = os seus); só nome, rótulo da divisão, horários e contagens; dor só com `can_view_student_health` (`pain`), restrito sem o tipo (`session_alert`, via `is_restricted_health_viewer`), oculto = nada; nunca texto do chat. `set_live_enabled`: `require_owner()`, auditado (`live_settings_update`, só o booleano); desligar apaga `live_sessions` da organização. `20261119120000`; testes em `tests/db/live.test.ts` |
+| **Ao vivo — tela de execução** | `live_heartbeat`, `ack_live_notice` | `live_heartbeat`: chamador duplo por `private.training_mode` da sessão (titular ou staff presencial; senão `SESSION_NOT_FOUND`); grava no máximo 1 batimento a cada 30 s por sessão (`private.live_heartbeats`) e só se a sessão tem registro ao vivo; só para o titular devolve `show_notice` e a última mensagem do staff não lida desde o início da sessão (o banner). `ack_live_notice`: escopo `students.user_id = auth.uid()` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
-| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
 Checklist para toda função `SECURITY DEFINER` nova:
 1. `set search_path = ''` e nomes totalmente qualificados.
