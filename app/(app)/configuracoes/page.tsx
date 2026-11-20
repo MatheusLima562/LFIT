@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { BusinessForm, ExportPanel, PasswordForm, ProfileForm } from "@/features/settings/components/SettingsForms";
+import { BusinessForm, ExportPanel, PasswordForm, ProfileForm, TimeZoneForm } from "@/features/settings/components/SettingsForms";
+import { createClient } from "@/lib/db/server";
 import { getMyBranding, getMyStaffProfile } from "@/features/settings/queries";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
 import { getMySubscription } from "@/features/subscription/queries";
@@ -15,12 +16,15 @@ export const metadata: Metadata = { title: t.title };
 export default async function SettingsPage() {
   const session = await requireStaff();
   const isOwner = session.role === "owner";
-  const [profile, branding, plan, sub] = await Promise.all([
+  const supabase = await createClient();
+  const [profile, branding, plan, sub, org] = await Promise.all([
     getMyStaffProfile(session.userId),
     getMyBranding(),
     getOrganizationPlanUsage(),
     getMySubscription(),
+    supabase.from("organizations").select("time_zone").eq("id", session.organizationId).maybeSingle(),
   ]);
+  const timeZone = org.data?.time_zone ?? "America/Sao_Paulo";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
@@ -32,7 +36,10 @@ export default async function SettingsPage() {
       <ProfileForm orgId={session.organizationId} userId={session.userId} initial={profile} />
 
       {isOwner && branding ? (
-        <BusinessForm orgId={session.organizationId} initial={branding} />
+        <>
+          <BusinessForm orgId={session.organizationId} initial={branding} />
+          <TimeZoneForm initial={timeZone} />
+        </>
       ) : (
         <p className="text-xs text-ink-3">{t.business.ownerOnly}</p>
       )}

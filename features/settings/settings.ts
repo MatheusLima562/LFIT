@@ -12,6 +12,14 @@ export function brandingPath(orgId: string, kind: "logo" | "avatar", fileId: str
   return kind === "logo" ? `${orgId}/logo-${fileId}.${ext(mime)}` : `${orgId}/avatar-${userId}-${fileId}.${ext(mime)}`;
 }
 
+/** Fusos aceitos para a conta (mesma lista de `private.allowed_time_zones()` no banco). */
+export const TIME_ZONES = [
+  "America/Sao_Paulo", "America/Bahia", "America/Fortaleza", "America/Recife", "America/Maceio", "America/Belem",
+  "America/Araguaina", "America/Santarem", "America/Manaus", "America/Cuiaba", "America/Campo_Grande",
+  "America/Porto_Velho", "America/Boa_Vista", "America/Rio_Branco", "America/Eirunepe", "America/Noronha",
+  "Europe/Lisbon",
+] as const;
+
 export type ExportKind = "students" | "sessions";
 
 const dateBR = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" });

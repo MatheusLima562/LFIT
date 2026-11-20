@@ -808,6 +808,20 @@ effective_status =
 - **App do aluno:** card gentil no Hoje ("Sentimos sua falta!"), sem push/e-mail, no máximo 1 vez a cada 7 dias
   (`claim_my_nudge` decide e marca); nada para aluno em pausa, sem plano ou de conta limitada.
 
+### Ajustes do sprint de venda (1.7, migration `20261120170000` — escrita, ainda não aplicada)
+- **Fuso por conta:** `organizations.time_zone` (padrão `America/Sao_Paulo`; Configurações → "Fuso horário da conta",
+  só o personal). `private.today_br`, `private.sp_day` e `private.sp_day_start` (nomes mantidos) usam o fuso da conta de
+  quem chama (`private.current_time_zone`; sem sessão = SP). Reescritas com o fuso: gatilho do NPS (`submitted_on`),
+  `record_red_flag_clearance` e `get_my_student_profile` (mês/semanas). **Função nova que calcula dia/semana/mês: use os
+  helpers, nunca 'America/Sao_Paulo' escrito.** A exibição de datas no cliente (`lib/format.ts`) segue em SP.
+- **Retenção do Início** conta alunos arquivados (`private.dashboard_students_for_counts`, só contagens): quem treinou
+  nos dias 31–60 e foi arquivado fica na base como não retido (resolve o item do backlog).
+- **Botão fixo no Hoje** (`StickyStartBar`): "Começar treino {letra}" (ou "Retomar treino") logo acima da barra de abas;
+  espaçador no fim da página. e2e `e2e/hoje-botao-fixo.e2e.mjs` (375×667 e 390×844).
+- **Limpeza dos testes no lfit-dev:** `npm run db:cleanup-tests` (simulação) / `-- --apply`. Só e-mails
+  `lfit-test-…@example.com` e organizações `lfit-test-…` fora do seed (`scripts/test-data-filters.mts`); trava do ref.
+- **Suporte e Configurações** no menu (sem "Em breve"). Fora do escopo de propósito: `docs/planos/pendentes.md`.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -888,6 +902,7 @@ sem efeitos colaterais).
 | **Configurações (1.3)** | `update_my_profile`, `update_organization_profile`, `get_my_branding`, `export_account_data`, `log_account_export` | `update_my_profile`: `require_staff()` + conta gravável (`private.assert_org_writable`); foto só da própria pasta (`<org>/avatar-<uid>-…`) e já enviada. `update_organization_profile`: `require_owner()` + gravável; logo da pasta da org, WhatsApp E.164; auditado sem os valores. `get_my_branding`: equipe ou aluno da org (nome, logo, WhatsApp de contato do negócio). `export_account_data`: `require_owner()`; saúde (grupos, observações do cadastro; dor e comentário do treino) só com `p_include_health` **e** `can_view_student_health`; funciona com a conta encerrada. `log_account_export`: só tipo, contagem e opt-in. `20261120130000`; testes em `tests/db/account-settings.test.ts` |
 | **Convites dos alunos (1.4)** | `create_student_invites`, `student_invite_statuses`, `get_invite_quota` | `create_student_invites`: `require_staff()` + `lock_accessible_student` por aluno (owner ou responsável), só sem login (`STUDENT_HAS_ACCOUNT`); 1–200 por chamada; limite diário da conta (`private.account_rules.invite_daily_limit`, dia civil, trava por organização) → lote inteiro recusado com `INVITE_LIMIT_REACHED` (detail = quantos cabem); token só na resposta (banco guarda o hash), auditado sem o token. `student_invite_statuses`: só alunos com `can_access_student` (vazio para quem não acessa). `get_invite_quota`: `require_staff()`. `20261120140000`; testes em `tests/db/student-invites.test.ts` |
 | **Ausência e pausa (1.5)** | `set_student_pause`, `end_student_pause`, `get_inactive_students`, `claim_my_nudge` | Pausa: `lock_accessible_student` (owner ou responsável), motivo só `viagem`/`ferias`/`outro` (nunca saúde), volta ≥ hoje; auditadas. `get_inactive_students`: `require_staff()` + `private.dashboard_students()`; só nome, dias e limite. `claim_my_nudge`: escopo `students.user_id = auth.uid()`; ativo, com plano ativo, fora de pausa, conta sem limitação, 7+ dias e último aviso há 7+ dias (marca a hora em `private.student_nudges`). `20261120150000`; testes em `tests/db/pause-absence.test.ts` |
+| **Fuso da conta (1.7)** | `set_organization_time_zone` | `require_owner()` + conta gravável; só fusos de `private.allowed_time_zones()` (Brasil + Lisboa); auditado. `20261120170000`; testes em `tests/db/time-zone-retention.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `get_access_link_branding` (nome/logo do negócio na tela do link, só com token válido, sem consumir), `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
@@ -917,12 +932,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
   atualizada — revise sua cópia" quando uma regra global do exercício de origem mudar depois da personalização.
 - **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
   `npm run bootstrap:owner` e trainers de teste existem só no seed. O item "Equipe" segue "Em breve".
-- **Dashboard — retenção superestimada:** `private.dashboard_students()` exclui alunos arquivados/excluídos
-  (`deleted_at`). Quem treinou nos dias 31–60 e depois foi excluído sai da base, então a Retenção fica maior do que é.
-  Corrigir contando a base pelas sessões (inclusive de alunos excluídos depois), sem expor nomes deles.
-- **Dashboard — fuso fixo:** "hoje", "semana" e os dias do Início usam `America/Sao_Paulo` fixo
-  (`private.today_br()`, `private.sp_day`, `private.sp_day_start`). Antes de vender fora desse fuso, virar coluna por
-  organização (`organizations.time_zone`) e passar para as RPCs.
+- ~~Dashboard — retenção superestimada~~ e ~~fuso fixo~~: resolvidos no sprint de venda (1.7, `20261120170000`).
 - **Código sem uso:** `lib/dashboard.ts` (inteiro) e os mocks de `data/dashboard.ts` (tudo menos `banner`) não são mais
   usados pelo Início. Apagar (exige `rm`; pedir na sessão).
 - **CSP com nonce:** hoje `script-src` tem `'unsafe-inline'` (scripts de hidratação do Next sem nonce). Passar para nonce

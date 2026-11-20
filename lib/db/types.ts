@@ -1373,6 +1373,7 @@ export type Database = {
           status_changed_at: string
           student_limit: number
           subscription_status: string
+          time_zone: string
           updated_at: string
           video_quota_bytes: number | null
         }
@@ -3310,6 +3311,7 @@ export type Database = {
       get_inactive_students: { Args: never; Returns: Json }
       claim_my_nudge: { Args: never; Returns: Json }
       get_my_pinned_post: { Args: never; Returns: Json }
+      set_organization_time_zone: { Args: { p_time_zone: string }; Returns: undefined }
       get_access_link_branding: { Args: { p_token: string }; Returns: Json }
       export_account_data: { Args: { p_include_health: boolean; p_kind: string }; Returns: Json }
       log_account_export: { Args: { p_count: number; p_include_health: boolean; p_kind: string }; Returns: undefined }

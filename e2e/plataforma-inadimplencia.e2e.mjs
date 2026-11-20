@@ -93,7 +93,7 @@ try {
   const aluna = await login("/aluno/entrar", "aluno.seed@example.com", PW, { width: 375, height: 812 });
   await waitLoggedIn(aluna, `${BASE}/aluno`);
   ok("aluno vê 'acesso temporariamente limitado' com o nome", await visible(aluna.getByText("Seu acesso está temporariamente limitado. Fale com Caio.")));
-  ok("sem 'Iniciar treino'", (await aluna.getByRole("button", { name: /Iniciar treino/ }).count()) === 0);
+  ok("sem 'Iniciar treino' nem o botão fixo 'Começar treino'", (await aluna.getByRole("button", { name: /Iniciar treino|Começar treino/ }).count()) === 0);
   ok("aluno: sem rolagem horizontal", await aluna.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await aluna.screenshot({ path: `${OUT}/plataforma-04-aluno-limitado.png`, fullPage: true });
 

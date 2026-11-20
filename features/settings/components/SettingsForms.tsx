@@ -13,7 +13,7 @@ import { resizeImage } from "@/lib/image-resize";
 import { formatPhoneDisplay, isValidPhone, toE164 } from "@/lib/phone";
 import { uuidV4 } from "@/lib/uuid";
 import { dbErrorMessage, messages } from "@/messages/pt-BR";
-import { BRANDING_BUCKET, BRANDING_MAX_BYTES, BRANDING_MAX_DIM, brandingPath, type ExportKind } from "../settings";
+import { BRANDING_BUCKET, BRANDING_MAX_BYTES, BRANDING_MAX_DIM, TIME_ZONES, brandingPath, type ExportKind } from "../settings";
 
 const t = messages.settings;
 const box = "flex flex-col gap-4 rounded-2xl bg-surface p-5 ring-1 ring-line";
@@ -163,6 +163,40 @@ export function BusinessForm({ orgId, initial }: { orgId: string; initial: { nam
         <p id={`${id}-wh`} className={`text-xs ${phoneOk ? "text-ink-3" : "text-danger-ink"}`}>{phoneOk ? t.business.whatsappHint : t.business.whatsappInvalid}</p>
       </div>
       <Button type="button" className="self-start" disabled={saving || img.busy || name.trim().length < 2 || !phoneOk} onClick={() => void save()}>{t.business.save}</Button>
+    </section>
+  );
+}
+
+/** Fuso da conta (só o personal). Lista fixa, igual à do banco (`private.allowed_time_zones`). */
+export function TimeZoneForm({ initial }: { initial: string }) {
+  const id = useId();
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+  const [tz, setTz] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc("set_organization_time_zone", { p_time_zone: tz });
+      if (error) return void toast.error(dbErrorMessage(error));
+      toast.success(t.timeZone.saved);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <section aria-labelledby={`${id}-t`} className={box}>
+      <div>
+        <h2 id={`${id}-t`} className="text-[15px] font-semibold text-ink">{t.timeZone.title}</h2>
+        <p className="mt-0.5 text-xs text-ink-3">{t.timeZone.hint}</p>
+      </div>
+      <label htmlFor={`${id}-z`} className={label}>{t.timeZone.label}</label>
+      <select id={`${id}-z`} value={tz} onChange={(e) => setTz(e.target.value)}
+        className="h-10 rounded-lg border border-line bg-surface px-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-w-sm">
+        {TIME_ZONES.map((z) => <option key={z} value={z}>{t.timeZone.zones[z] ?? z}</option>)}
+      </select>
+      <Button type="button" className="self-start" disabled={saving || tz === initial} onClick={() => void save()}>{t.timeZone.save}</Button>
     </section>
   );
 }

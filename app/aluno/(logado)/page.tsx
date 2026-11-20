@@ -7,6 +7,7 @@ import { itemSummary } from "@/features/student-app/format";
 import { consistency, greeting, workoutDayLabel } from "@/features/student-app/humanize";
 import { StartWorkoutButton } from "@/features/student-app/components/StartWorkoutButton";
 import { NudgeCard } from "@/features/student-app/components/NudgeCard";
+import { StickyStartBar } from "@/features/student-app/components/StickyStartBar";
 import { PinnedPostCard } from "@/features/feed/components/PinnedPostCard";
 import { getMyPinnedPost } from "@/features/feed/queries";
 import { TrainerAvatar } from "@/features/student-app/components/TrainerAvatar";
@@ -258,6 +259,14 @@ export default async function StudentTodayPage() {
           <h2 className="text-xs font-semibold tracking-wide text-ink-3 uppercase">{t.today.planNotes}</h2>
           <p className="mt-1 text-sm whitespace-pre-line text-ink-2">{plan.notes}</p>
         </section>
+      )}
+
+      {/* Botão fixo acima da barra de abas (1.7); o espaçador reserva a altura para nada ficar por baixo dele. */}
+      {suggested && !readOnly && (
+        <>
+          <div aria-hidden className="h-16" />
+          <StickyStartBar planId={plan.id} workout={{ id: suggested.id, label: suggested.label }} openSessionId={open?.id ?? null} />
+        </>
       )}
     </div>
   );
