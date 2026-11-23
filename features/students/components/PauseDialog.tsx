@@ -24,7 +24,7 @@ export function PauseDialog({ studentId, name, open, onOpenChange }: { studentId
   const save = async () => {
     setBusy(true);
     try {
-      const { error } = await supabase.rpc("set_student_pause", { p_student_id: studentId, p_reason: reason, p_until: until || null });
+      const { error } = await supabase.rpc("set_student_pause", { p_student_id: studentId, p_reason: reason, p_until: (until || null) as string }); // null = pausa sem data de fim (o gerador de tipos não marca args nulos)
       if (error) return void toast.error(dbErrorMessage(error));
       toast.success(t.saved);
       onOpenChange(false);

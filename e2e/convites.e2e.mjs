@@ -67,7 +67,8 @@ try {
   await phone.getByLabel("Confirmar senha").fill(NEW_PW);
   await phone.getByRole("button", { name: "Salvar senha" }).click();
   await phone.waitForURL(/\/acesso\/(pronto|consentimento)/, { timeout: 30000 });
-  ok("aluno criou a senha (primeiro acesso concluído)", /\/acesso\/pronto/.test(phone.url()), phone.url());
+  // Pronto, ou o pedido de consentimento de saúde antes (fluxo do primeiro acesso quando há dado de saúde a consentir).
+  ok("aluno criou a senha (primeiro acesso concluído)", /\/acesso\/(pronto|consentimento)/.test(phone.url()), phone.url());
   ok("celular sem rolagem horizontal", await phone.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await phone.screenshot({ path: `${OUT}/convites-02-aluno.png` });
 

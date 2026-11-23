@@ -59,7 +59,7 @@ export function InviteManager({ students, preselected, template, quota }: {
 
   return (
     <div className="flex flex-col gap-4">
-      <section aria-labelledby={`${id}-msg`} className="flex flex-col gap-2 rounded-2xl bg-surface p-4 ring-1 ring-line">
+      <section className="flex flex-col gap-2 rounded-2xl bg-surface p-4 ring-1 ring-line">
         <label id={`${id}-msg`} htmlFor={`${id}-txt`} className="text-sm font-medium text-ink">{t.message}</label>
         <Textarea id={`${id}-txt`} rows={3} maxLength={600} value={text} onChange={(e) => setText(e.target.value)} className="text-base md:text-sm" />
         <p className="text-xs text-ink-3">{t.messageHint}</p>

@@ -15,12 +15,12 @@ export function NudgeCard({ neverTrained }: { neverTrained: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const [days, setDays] = useState<number | null>(null);
   useEffect(() => {
-    let alive = true;
+    // Sem "ignorar depois do cleanup": o 1º chamado MARCA o aviso como mostrado no banco; se a resposta dele fosse
+    // descartada (efeito rodando 2x no modo estrito/remontagem), o 2º receberia show=false e o aviso se perderia.
     supabase.rpc("claim_my_nudge").then(({ data }) => {
       const r = (data ?? {}) as { show?: boolean; days_since?: number };
-      if (alive && r.show) setDays(r.days_since ?? 0);
+      if (r.show) setDays(r.days_since ?? 0);
     }, () => {});
-    return () => { alive = false; };
   }, [supabase]);
   if (days === null) return null;
   return (

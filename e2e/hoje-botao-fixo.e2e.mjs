@@ -57,6 +57,8 @@ try {
       ok("o botão fixo inicia o treino sugerido", Boolean(created));
       await page.goto(`${BASE}/aluno`);
       ok("com treino aberto vira 'Retomar treino'", (await bar.getByRole("link", { name: "Retomar treino" }).count()) === 1);
+      // A próxima tela começa de novo sem treino aberto.
+      await resetCamilaSessions(admin);
     }
     ok(`${w}×${h}: sem erro de página`, page.errors.length === 0, page.errors.join(" | "));
     await page.context().close();

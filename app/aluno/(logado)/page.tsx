@@ -264,7 +264,8 @@ export default async function StudentTodayPage() {
       {/* Botão fixo acima da barra de abas (1.7); o espaçador reserva a altura para nada ficar por baixo dele. */}
       {suggested && !readOnly && (
         <>
-          <div aria-hidden className="h-16" />
+          {/* Espaço do botão fixo: 65 px (borda + padding + botão) + 1 px da borda da barra de abas. */}
+          <div aria-hidden className="h-[66px]" />
           <StickyStartBar planId={plan.id} workout={{ id: suggested.id, label: suggested.label }} openSessionId={open?.id ?? null} />
         </>
       )}
