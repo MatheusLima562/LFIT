@@ -58,6 +58,21 @@ export function parseAccounts(raw: unknown): PlatformAccount[] {
   });
 }
 
+/**
+ * "Pagamento vencido, revisar": o período pago (`paidUntil`, último dia coberto) já passou e a situação continua "Em dia".
+ * Só destaque para a plataforma revisar; a situação NUNCA muda sozinha. Sem pagamento registrado → sem destaque.
+ * `today` = data civil aaaa-mm-dd (São Paulo).
+ */
+export function needsPaymentReview(a: Pick<PlatformAccount, "status" | "paidUntil">, today: string): boolean {
+  return a.status === "active" && a.paidUntil !== null && a.paidUntil < today;
+}
+
+/** Contas a revisar primeiro (as que venceram há mais tempo no topo); o resto mantém a ordem da RPC (mais novas antes). */
+export function sortForReview(accounts: PlatformAccount[], today: string): PlatformAccount[] {
+  const review = accounts.filter((a) => needsPaymentReview(a, today)).sort((x, y) => x.paidUntil!.localeCompare(y.paidUntil!));
+  return [...review, ...accounts.filter((a) => !needsPaymentReview(a, today))];
+}
+
 export interface AccountDetail {
   note: string;
   payments: { id: string; paidOn: string; amountCents: number; periodStart: string; periodEnd: string; note: string | null }[];

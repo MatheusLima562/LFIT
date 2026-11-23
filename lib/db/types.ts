@@ -3279,6 +3279,7 @@ export type Database = {
       get_dashboard_training_stats: { Args: never; Returns: Json }
       get_live_board: { Args: never; Returns: Json }
       is_platform_admin: { Args: never; Returns: boolean }
+      platform_access: { Args: never; Returns: string }
       platform_list_accounts: { Args: never; Returns: Json }
       platform_account_detail: { Args: { p_org: string }; Returns: Json }
       platform_create_account: {

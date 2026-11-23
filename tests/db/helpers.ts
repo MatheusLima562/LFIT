@@ -42,6 +42,8 @@ export interface TestUser {
   email: string;
   role: Role;
   client: SupabaseClient;
+  /** Senha gerada (para abrir uma segunda sessão do mesmo usuário, ex.: aal1 × aal2 no MFA da plataforma). */
+  password: string;
 }
 
 export interface TestOrg {
@@ -90,7 +92,7 @@ export class Fixture {
     const signIn = await client.auth.signInWithPassword({ email, password });
     if (signIn.error) throw signIn.error;
 
-    const user = { id, email, role, client };
+    const user = { id, email, role, client, password };
     org.users.push(user);
     return user;
   }

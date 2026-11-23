@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PaymentReviewBadge } from "@/features/platform/components/PaymentReviewBadge";
+import { needsPaymentReview, sortForReview } from "@/features/platform/platform";
 import { listPlatformAccounts } from "@/features/platform/queries";
+import { todayISO } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
@@ -17,7 +20,8 @@ const TONE = {
 
 /** Contas dos personais. Só dados da conta: nada de aluno, treino, chat, feed, NPS ou saúde. */
 export default async function PlatformPage() {
-  const accounts = await listPlatformAccounts();
+  const today = todayISO();
+  const accounts = sortForReview(await listPlatformAccounts(), today);
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -61,6 +65,7 @@ export default async function PlatformPage() {
                   <td className="px-4 py-3">
                     <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", TONE[a.status])}>{t.status[a.status]}</span>
                     <span className="mt-1 block text-xs text-ink-3">{t.state[a.accessState]}</span>
+                    {needsPaymentReview(a, today) && <PaymentReviewBadge paidUntil={a.paidUntil!} />}
                   </td>
                 </tr>
               ))}

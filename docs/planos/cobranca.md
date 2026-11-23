@@ -47,3 +47,17 @@ C2 em `docs/planos/fase-c.md`. A decisão comercial é do dono.
 - **Contrato e termos de uso da assinatura:** passam por revisão jurídica.
 - **Política de reembolso e de troca de plano**, com cobrança pró-rata ou não.
 - **Envio de e-mail** (SMTP próprio) para recibos e avisos de vencimento: hoje só há avisos dentro do app.
+
+## Acesso ao painel da plataforma (hoje)
+
+1. Criar o usuário só no Auth, sem organização: Supabase → Authentication → Users → Add user → Create new user (e-mail
+   + senha, "Auto Confirm User" marcado). Assim o login cai direto no painel da plataforma. (Um usuário que já é
+   personal também pode entrar na lista; ele acessa digitando `/plataforma`.)
+2. Entra na lista por SQL (SQL Editor do Supabase):
+   `insert into private.platform_admins (user_id) select id from auth.users where email = '<e-mail>';`
+3. Em **Authentication → Multi-Factor**, o TOTP (App Authenticator) precisa estar ligado.
+4. Entra em `/entrar`, vai para `/plataforma` → `/plataforma-verificacao` → "Gerar QR code" → escaneia no aplicativo
+   autenticador → digita o código. A partir daí, cada entrada pede só o código de 6 dígitos.
+5. **Perdeu o celular:** remover o fator em Authentication → Users → (usuário) → MFA, ou
+   `delete from auth.mfa_factors where user_id = (select id from auth.users where email = '<e-mail>');` e repetir o passo 4.
+6. Sair da lista: `delete from private.platform_admins where user_id = (select id from auth.users where email = '<e-mail>');`

@@ -14,7 +14,7 @@ const inviteUrl = async (tokenHash: string, type: "invite" | "recovery") =>
 
 /**
  * Cria a conta de um personal. Ordem (secret key só depois da autorização com a sessão do admin):
- * 1) `is_platform_admin` com a sessão; 2) a secret key cria o usuário do Auth por convite (sem senha, sem e-mail
+ * 1) `platform_access = 'ok'` com a sessão (lista + MFA); 2) a secret key cria o usuário do Auth por convite (sem senha, sem e-mail
  * enviado) e devolve o token; 3) `platform_create_account` (sessão do admin) cria organização + owner e audita.
  * Falhou o passo 3 → o usuário criado no passo 2 é apagado. O link volta só nesta resposta.
  */
@@ -24,7 +24,8 @@ export async function createPersonalAccount(input: CreateAccountInput): Promise<
   const v = parsed.data;
 
   const supabase = await createClient();
-  if ((await supabase.rpc("is_platform_admin")).data !== true) return { ok: false, error: messages.dbErrors.FORBIDDEN };
+  // Lista + MFA (aal2) conferidos pelo banco ANTES de a secret key entrar em cena.
+  if ((await supabase.rpc("platform_access")).data !== "ok") return { ok: false, error: messages.dbErrors.FORBIDDEN };
 
   const admin = createAdminClient();
   const link = await admin.auth.admin.generateLink({ type: "invite", email: v.email });

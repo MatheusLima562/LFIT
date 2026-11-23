@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { totpCode } from "../../scripts/totp.mts";
 import { anon, dbTestsEnabled, Fixture, rpc, studentData, type TestOrg, type TestUser } from "./helpers";
 import { CLI_TIMEOUT_MS, sqlLinked, uuidLiteral } from "./linked-sql";
 
@@ -14,6 +16,8 @@ describe.runIf(dbTestsEnabled)("plataforma e inadimplência", () => {
   let org: TestOrg, orgB: TestOrg, adminOrg: TestOrg;
   let owner: TestUser, trainer: TestUser, studentUser: TestUser, ownerB: TestUser;
   let platform: TestUser;
+  let platformAal1: SupabaseClient;
+  let totpSecret: string;
   let s1: string;
   const createdOrgs: string[] = [];
   const CANARY = `Canário${randomUUID().slice(0, 6)}`;
@@ -37,6 +41,16 @@ describe.runIf(dbTestsEnabled)("plataforma e inadimplência", () => {
     platform = await fx.user(adminOrg, "owner", "plataforma");
     await fx.db.from("profiles").delete().eq("id", platform.id);
     sqlLinked(`insert into private.platform_admins (user_id) values (${uuidLiteral(platform.id)}) on conflict do nothing;`);
+    // Sessão sem o segundo fator (aal1) — guardada antes de o mesmo usuário cadastrar e verificar o TOTP.
+    platformAal1 = anon();
+    const s = await platformAal1.auth.signInWithPassword({ email: platform.email, password: platform.password });
+    if (s.error) throw s.error;
+    // Sessão principal do admin vira aal2: cadastra o fator TOTP e verifica com o código gerado da chave.
+    const { data: f, error: fe } = await platform.client.auth.mfa.enroll({ factorType: "totp", friendlyName: "teste" });
+    if (fe) throw fe;
+    totpSecret = f.totp.secret;
+    const v = await platform.client.auth.mfa.challengeAndVerify({ factorId: f.id, code: totpCode(totpSecret) });
+    if (v.error) throw v.error;
 
     s1 = (await rpc<{ id: string }>(owner.client, "create_student", { p_data: studentData({ first_name: CANARY }) })).id;
     await fx.db.from("students").update({ trainer_id: trainer.id, user_id: studentUser.id }).eq("id", s1);
@@ -61,8 +75,38 @@ describe.runIf(dbTestsEnabled)("plataforma e inadimplência", () => {
       expect(data).toMatchObject({ plan: "free", subscription_status: "active" });
     });
 
+    it("MFA: admin da lista SEM aal2 é recusado em toda RPC da plataforma e não fura o somente leitura", async () => {
+      expect(await rpc(platformAal1, "is_platform_admin")).toBe(true);
+      expect(await rpc(platformAal1, "platform_access")).toBe("mfa_required");
+      await expect(rpc(platformAal1, "platform_list_accounts")).rejects.toThrow("FORBIDDEN");
+      await expect(rpc(platformAal1, "platform_account_detail", { p_org: org.id })).rejects.toThrow("FORBIDDEN");
+      await expect(rpc(platformAal1, "platform_set_status", { p_org: org.id, p_status: "suspended" })).rejects.toThrow("FORBIDDEN");
+      await expect(rpc(platformAal1, "platform_account_owner", { p_org: org.id })).rejects.toThrow("FORBIDDEN");
+      await expect(rpc(platformAal1, "platform_create_account", { p_user_id: randomUUID(), p_org_name: "X Y", p_owner_name: "X Y", p_plan: "pro", p_student_limit: 1 })).rejects.toThrow("FORBIDDEN");
+      const { data } = await fx.db.from("organizations").select("subscription_status").eq("id", org.id).single();
+      expect(data!.subscription_status).toBe("active");
+      // Fora da lista: 'none', mesmo com sessão normal.
+      expect(await rpc(owner.client, "platform_access")).toBe("none");
+      // Uma nova entrada do mesmo admin começa em aal1; com o código TOTP vira aal2 e passa.
+      const again = anon();
+      await again.auth.signInWithPassword({ email: platform.email, password: platform.password });
+      expect(await rpc(again, "platform_access")).toBe("mfa_required");
+      const { data: factors } = await again.auth.mfa.listFactors();
+      const factor = factors!.totp.find((f) => f.status === "verified")!;
+      expect((await again.auth.mfa.challengeAndVerify({ factorId: factor.id, code: "000000" })).error).not.toBeNull();
+      const ok = await again.auth.mfa.challengeAndVerify({ factorId: factor.id, code: totpCode(totpSecret) });
+      if (ok.error) {
+        // O código desta janela de 30 s pode já ter sido usado no setup: espera a próxima janela e tenta de novo.
+        await new Promise((r) => setTimeout(r, 30_000 - (Date.now() % 30_000) + 1_000));
+        expect((await again.auth.mfa.challengeAndVerify({ factorId: factor.id, code: totpCode(totpSecret) })).error).toBeNull();
+      }
+      expect(await rpc(again, "platform_access")).toBe("ok");
+      await expect(rpc(again, "platform_list_accounts")).resolves.toBeTruthy();
+    }, 60_000);
+
     it("admin vê as contas só com dados da conta (nunca nome ou contato de aluno)", async () => {
       expect(await rpc(platform.client, "is_platform_admin")).toBe(true);
+      expect(await rpc(platform.client, "platform_access")).toBe("ok");
       const list = await rpc<{ id: string; seats_used: number; owner_email: string }[]>(platform.client, "platform_list_accounts");
       const mine = list.find((a) => a.id === org.id);
       expect(mine).toMatchObject({ seats_used: 1, owner_email: owner.email });

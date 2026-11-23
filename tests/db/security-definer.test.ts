@@ -135,6 +135,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     expect(await rpc<unknown[]>(student.client, "list_chat_inbox")).toHaveLength(0);
     expect(await rpc(student.client, "staff_total_unread_count")).toBe(0);
     expect(await rpc<unknown[]>(student.client, "student_invite_statuses", {})).toHaveLength(0);
+    expect(await rpc(student.client, "platform_access")).toBe("none");
   });
 
   it("funções do titular (intencionais) só enxergam o próprio cadastro", async () => {
@@ -157,7 +158,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "submit_nps", "get_my_nps_prompt", "snooze_nps_prompt", "request_nps", "get_nps_summary", "get_nps_status", "send_nps_reminder",
     "save_feed_post", "delete_feed_post", "set_feed_post_pinned", "list_feed_posts", "get_my_feed", "get_my_feed_new_count",
     "mark_feed_seen", "toggle_feed_like",
-    "is_platform_admin", "platform_list_accounts", "platform_account_detail", "platform_create_account", "platform_account_owner",
+    "is_platform_admin", "platform_access", "platform_list_accounts", "platform_account_detail", "platform_create_account", "platform_account_owner",
     "platform_log_invite", "platform_update_plan", "platform_record_payment", "platform_set_status", "platform_set_note",
     "get_my_subscription", "get_platform_support", "get_my_access_limits",
     "update_my_profile", "update_organization_profile", "get_my_branding", "get_access_link_branding", "export_account_data",

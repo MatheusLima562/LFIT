@@ -1,6 +1,7 @@
 import "./_guard.mjs";
 import { waitLoggedIn } from "./_login.mjs";
 import { setPlatformAdmin, setSeedSubscription } from "./_fixtures.mjs";
+import { totpCode } from "../scripts/totp.mts";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -49,8 +50,27 @@ try {
 
   // --- Admin da plataforma -------------------------------------------------------------------------------------------
   const plat = await login("/entrar", platformEmail, platformPw);
+  // MFA: sem o segundo fator, o painel manda para a verificação (cadastro do autenticador com QR code).
+  await plat.waitForURL(`${BASE}/plataforma-verificacao`, { timeout: 30000 });
+  ok("admin sem MFA cai na verificação em duas etapas", plat.url() === `${BASE}/plataforma-verificacao`);
+  await plat.getByRole("button", { name: "Gerar QR code" }).click();
+  ok("QR code do autenticador aparece", await visible(plat.getByRole("img", { name: "QR code do autenticador" })));
+  await plat.screenshot({ path: `${OUT}/plataforma-00-mfa.png`, fullPage: true });
+  const secret = (await plat.getByTestId("mfa-secret").innerText()).trim();
+  await plat.getByLabel("Código").fill("000000");
+  await plat.getByRole("button", { name: "Confirmar" }).click();
+  ok("código errado é recusado", await visible(plat.getByRole("alert")));
+  await plat.getByLabel("Código").fill(totpCode(secret));
+  await plat.getByRole("button", { name: "Confirmar" }).click();
   await plat.waitForURL(`${BASE}/plataforma`, { timeout: 30000 });
-  ok("admin sem perfil de organização cai no painel da plataforma", plat.url() === `${BASE}/plataforma`);
+  ok("admin com MFA verificado entra no painel da plataforma", plat.url() === `${BASE}/plataforma`);
+  // Nova entrada: pede só o código (fator já cadastrado).
+  const plat2 = await login("/entrar", platformEmail, platformPw);
+  await plat2.waitForURL(`${BASE}/plataforma-verificacao`, { timeout: 30000 });
+  ok("nova entrada pede o código (sem novo QR)", await visible(plat2.getByText("Digite o código de 6 dígitos")));
+  const res2 = await plat2.goto(`${BASE}/plataforma/nova`);
+  ok("sem o código, /plataforma/nova também manda para a verificação", plat2.url() === `${BASE}/plataforma-verificacao`, String(res2?.status()));
+  await plat2.context().close();
   const table = plat.getByRole("table");
   ok("lista mostra a conta do seed", await visible(table.getByRole("link", { name: "Studio Exemplo (fictício)" })));
   const text = await plat.locator("main").innerText();

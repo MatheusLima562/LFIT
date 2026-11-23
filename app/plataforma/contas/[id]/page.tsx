@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { AccountManager } from "@/features/platform/components/AccountManager";
+import { PaymentReviewBadge } from "@/features/platform/components/PaymentReviewBadge";
+import { needsPaymentReview } from "@/features/platform/platform";
 import { getPlatformAccount } from "@/features/platform/queries";
+import { isoToBR, todayISO } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import { messages } from "@/messages/pt-BR";
 
@@ -26,6 +29,12 @@ export default async function PlatformAccountPage({ params }: PageProps<"/plataf
           {account.ownerName} · {account.ownerEmail} · {t.columns.createdAt} {formatDate(account.createdAt)}
           {account.paidUntil ? ` · ${t.detail.paidUntil(formatDate(account.paidUntil))}` : ""}
         </p>
+        {needsPaymentReview(account, todayISO()) && (
+          <div className="mt-2 flex flex-col gap-1">
+            <PaymentReviewBadge paidUntil={account.paidUntil!} />
+            <p className="text-xs text-ink-2">{t.paymentReviewHint(isoToBR(account.paidUntil!))}</p>
+          </div>
+        )}
       </header>
       <AccountManager account={account} detail={detail} />
     </div>

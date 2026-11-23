@@ -3,6 +3,7 @@
 -- * A plataforma gerencia contas (organizações = personais) e cobrança MANUAL. Nunca lê alunos, treinos, chat, feed, NPS
 --   ou saúde: o acesso é por lista própria (`private.platform_admins`, preenchida só por SQL), não por papel da
 --   organização, e as RPCs devolvem só dados da conta (nome, dono, plano, contagem de vagas, datas, situação).
+-- * MFA obrigatório: toda RPC da plataforma exige sessão aal2 (TOTP do Supabase Auth); só estar na lista não basta.
 -- * Situação da assinatura (`organizations.subscription_status`): active (em dia) · past_due (em atraso) · suspended ·
 --   canceled. O ESTADO de acesso é calculado (`private.org_access_state`) com as regras de `private.account_rules`:
 --     ok        em dia
@@ -12,7 +13,7 @@
 --     closed    cancelada depois disso: só o personal (owner) entra, para exportar (regra aplicada nas telas)
 -- * Só leitura garantido no BANCO por um gatilho genérico (`private.enforce_org_writable`) em toda tabela de negócio com
 --   `organization_id`: qualquer gravação com sessão de usuário (equipe ou aluno) numa conta suspensa/cancelada é recusada
---   com ACCOUNT_READ_ONLY. Sem sessão (servidor, cron) e admin da plataforma passam. Nada é apagado.
+--   com ACCOUNT_READ_ONLY. Sem sessão (servidor, cron) e admin da plataforma com aal2 passam. Nada é apagado.
 -- * Sem gateway de pagamento: pagamentos registrados à mão (docs/planos/cobranca.md).
 
 -- 1) Regras (linha única; muda só por SQL/migration) ------------------------------------------------------------------
@@ -119,6 +120,17 @@ as $$
   select exists (select 1 from private.platform_admins a where a.user_id = (select auth.uid()))
 $$;
 
+-- MFA obrigatório no painel da plataforma: a sessão precisa ser aal2 (TOTP verificado no Supabase Auth). Estar na lista
+-- sem o segundo fator = FORBIDDEN em toda RPC da plataforma (e nada de passe livre no gatilho de somente leitura).
+create function private.platform_mfa_ok()
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce((select auth.jwt()) ->> 'aal', '') = 'aal2'
+$$;
+
 create function private.require_platform_admin()
 returns uuid
 language plpgsql
@@ -127,7 +139,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if not private.is_platform_admin() then
+  if not private.is_platform_admin() or not private.platform_mfa_ok() then
     raise exception 'FORBIDDEN' using errcode = '42501';
   end if;
   return (select auth.uid());
@@ -160,7 +172,7 @@ begin
     return coalesce(new, old);
   end if;
   v_org := case when tg_op = 'DELETE' then old.organization_id else new.organization_id end;
-  if v_org is null or private.is_platform_admin() then
+  if v_org is null or (private.is_platform_admin() and private.platform_mfa_ok()) then
     return coalesce(new, old);
   end if;
   v_state := private.org_access_state(v_org);
@@ -206,6 +218,22 @@ security definer
 set search_path = ''
 as $$
   select private.is_platform_admin()
+$$;
+
+-- Portão das telas: 'none' (fora da lista: 404) · 'mfa_required' (na lista, sessão sem aal2: tela do autenticador) ·
+-- 'ok'. Só diz respeito ao próprio usuário.
+create function public.platform_access()
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when not private.is_platform_admin() then 'none'
+    when not private.platform_mfa_ok() then 'mfa_required'
+    else 'ok'
+  end
 $$;
 
 -- Contas: só dados da conta e contagens. Nunca nome, contato ou dado de aluno.
@@ -524,11 +552,11 @@ $$;
 -- 7) Permissões ------------------------------------------------------------------------------------------------------
 revoke execute on function
   private.account_config(), private.org_access_state(uuid), private.is_platform_admin(), private.require_platform_admin(),
-  private.platform_log(uuid, text, jsonb)
+  private.platform_log(uuid, text, jsonb), private.platform_mfa_ok()
 from public, anon, authenticated;
 
 revoke execute on function
-  public.is_platform_admin(), public.platform_list_accounts(), public.platform_account_detail(uuid),
+  public.is_platform_admin(), public.platform_access(), public.platform_list_accounts(), public.platform_account_detail(uuid),
   public.platform_create_account(uuid, text, text, public.plan_tier, integer), public.platform_account_owner(uuid),
   public.platform_log_invite(uuid), public.platform_update_plan(uuid, public.plan_tier, integer),
   public.platform_record_payment(uuid, date, integer, date, date, text), public.platform_set_status(uuid, text),
@@ -536,7 +564,7 @@ revoke execute on function
   public.get_my_access_limits()
 from public, anon;
 grant execute on function
-  public.is_platform_admin(), public.platform_list_accounts(), public.platform_account_detail(uuid),
+  public.is_platform_admin(), public.platform_access(), public.platform_list_accounts(), public.platform_account_detail(uuid),
   public.platform_create_account(uuid, text, text, public.plan_tier, integer), public.platform_account_owner(uuid),
   public.platform_log_invite(uuid), public.platform_update_plan(uuid, public.plan_tier, integer),
   public.platform_record_payment(uuid, date, integer, date, date, text), public.platform_set_status(uuid, text),
