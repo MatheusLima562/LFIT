@@ -92,6 +92,8 @@ export const feedPostSchema = z
     pinned: z.boolean(),
     /** ISO; nulo = publicar agora. */
     publishAt: z.string().nullable(),
+    /** "Fixado até" (ISO); nulo = fixado até desafixar. Só vale com `pinned`. */
+    unpinAt: z.string().nullable().default(null),
   })
   .superRefine((v, ctx) => {
     const body = sanitizeFeedText(v.body);
@@ -115,7 +117,18 @@ export function toFeedPayload(v: FeedPostForm) {
     audience_class_id: v.audience === "class" ? v.classId : null,
     pinned: v.pinned,
     published_at: v.publishAt,
+    unpin_at: v.pinned ? v.unpinAt : null,
   };
+}
+
+/** "Fixado até" escolhido como dia (aaaa-mm-dd) = até 23:59 desse dia em São Paulo. Inválido → null. */
+export function unpinDayToISO(day: string): string | null {
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? spLocalToISO(`${day}T23:59`) : null;
+}
+
+/** Dia (aaaa-mm-dd, em SP) daqui a `days` dias — padrão do "fixado até" do recado para todos (7 dias). */
+export function spDayFromNow(days: number, now: number = Date.now()): string {
+  return new Date(now + days * 86_400_000 - 3 * 3_600_000).toISOString().slice(0, 10);
 }
 
 /**
@@ -202,6 +215,7 @@ export interface StaffFeedPost extends Omit<StudentFeedPost, "liked" | "authorFi
   audienceModality: FeedModality | null;
   audienceClassId: string | null;
   audienceClassName: string | null;
+  unpinAt: string | null;
   authorName: string;
   ownStudentsOnly: boolean;
   canEdit: boolean;
@@ -251,6 +265,7 @@ export function parseStaffFeed(raw: unknown): StaffFeedPost[] {
       audienceModality: modality,
       audienceClassId: strOrNull(o.audience_class_id),
       audienceClassName: strOrNull(o.audience_class_name),
+      unpinAt: strOrNull(o.unpin_at),
       authorName: str(o.author_name),
       ownStudentsOnly: o.own_students_only === true,
       canEdit: o.can_edit === true,

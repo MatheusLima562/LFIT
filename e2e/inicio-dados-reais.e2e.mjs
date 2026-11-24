@@ -50,11 +50,14 @@ for (const email of ["owner.seed@example.com", "trainer1.seed@example.com"]) {
   // Satisfação só com nota nos últimos 30 dias (o seed não tem nenhuma).
   ok(`${email}: Satisfação só com notas`, (await main.getByText("Satisfação dos alunos", { exact: true }).count()) === (eng?.satisfaction?.ratings > 0 ? 1 : 0));
   for (const gone of ["Avaliação física", "Vendas"]) ok(`${email}: sem "${gone}"`, (await main.getByText(gone, { exact: true }).count()) === 0);
+  // + card "NPS dos alunos" quando aparece no Início (sprint do NPS; este roteiro é anterior a ele). Lido antes de abrir
+  // o painel (o modal esconde o resto da página da árvore de acessibilidade).
+  const npsShown = (await main.getByText("NPS dos alunos", { exact: true }).count()) > 0;
   await p.getByRole("button", { name: "Personalizar" }).click();
   const sh = p.getByRole("dialog");
   await sh.waitFor();
   // Visão geral + 4 cards de cadastro + 3 de treino (+ Satisfação se houver nota); "Em breve" só Avaliação física e Vendas.
-  const expectedSwitches = 8 + (eng?.satisfaction?.ratings > 0 ? 1 : 0);
+  const expectedSwitches = 8 + (eng?.satisfaction?.ratings > 0 ? 1 : 0) + (npsShown ? 1 : 0);
   ok(`${email}: Personalizar só com os cards reais`, (await sh.getByRole("switch").count()) === expectedSwitches, String(await sh.getByRole("switch").count()));
   ok(`${email}: 'Em breve' só Avaliação física e Vendas`, (await sh.getByText("Avaliação física", { exact: true }).count()) === 1 && (await sh.getByText("Vendas", { exact: true }).count()) === 1 && (await sh.getByText("Satisfação dos alunos", { exact: true }).count()) === (eng?.satisfaction?.ratings > 0 ? 1 : 0));
   await p.keyboard.press("Escape");

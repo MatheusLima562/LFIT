@@ -95,6 +95,10 @@ async function reset() {
     const { data: feedFiles } = await admin.storage.from("feed-media").list(org.id, { limit: 1000 });
     const feedPaths = (feedFiles ?? []).map((f) => `${org.id}/${f.name}`);
     if (feedPaths.length) await admin.storage.from("feed-media").remove(feedPaths);
+    // Logo e fotos (Configurações) também ficam direto na pasta da organização.
+    const { data: brandFiles } = await admin.storage.from("org-branding").list(org.id, { limit: 1000 });
+    const brandPaths = (brandFiles ?? []).map((f) => `${org.id}/${f.name}`);
+    if (brandPaths.length) await admin.storage.from("org-branding").remove(brandPaths);
     const { error } = await admin.from("organizations").delete().eq("id", org.id);
     if (error) throw new Error(`apagar organização: ${error.message}`);
   }

@@ -120,6 +120,12 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
   ("Clamshell Sleep" no `pmset -g log`) o `caffeinate` não segura: os prazos da regra 7 limitam a espera; rode de novo o
   arquivo afetado.
 - Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
+- **Cadastro público no build de produção:** sem `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY`, o build de
+  produção recusa o cadastro (fail-closed) e `fase1-saude-consentimento` falha. Rode esse roteiro contra o `npm run dev`
+  (usa as chaves de teste oficiais do Turnstile) ou configure as chaves.
+- **Localizador por papel depois de diálogo:** enquanto um diálogo fecha, o resto da página fica `aria-hidden` e
+  `getByRole(...)` "some" na hora. Para esperar um item sair da lista depois de confirmar, espere o diálogo sair e use o
+  elemento do DOM (`page.locator("li").filter(...)`).
 - `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
   `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
   `trainer1/2.seed@example.com`) e a senha de `SEED_USER_PASSWORD` do `.env.local` (12+ caracteres; o seed recusa senha
@@ -130,6 +136,10 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
   1x00000000000000000000AA`, `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`, públicas da Cloudflare).
 - `inicio-professor-cards`: confere os cards do Início (logado como o professor do seed) contra as RPCs e salva o print em
   `tutoriais-video/inicio-professor.png`; rode depois do f3 ou do `db:seed:demo`, com `--no-reseed`.
+- **Rastro automático de falha** (`e2e/_trace.mjs`, carregado pelo `_guard.mjs`): todo contexto do Playwright grava
+  trace; se o roteiro falhar (linha "✗", exceção não tratada ou saída ≠ 0) salva `test-results/<roteiro>-<data>/` com
+  `trace-N.zip` (`npx playwright show-trace`), captura de cada página aberta e `console.log` (console, erros de página e
+  requisições que falharam). Roteiro que passa não grava nada. `test-results/` fica fora do git.
 - **Dados próprios por roteiro** (`e2e/_fixtures.mjs`): no começo, cada roteiro devolve ao estado do seed só o que usa
   (`resetCamilaChat`: conversa + cursores de leitura da Camila; `resetCamilaSessions`: Camila sem treinos;
   `resetDiegoConsent`: consentimento pendente; `resetLiveNotice`: aviso do AO VIVO, por SQL direto com a trava do
@@ -741,8 +751,91 @@ effective_status =
   `Authorization: Bearer $CRON_SECRET`, fail-closed sem a variável): `purgeFeedMedia` remove imagem de post apagado e
   imagem enviada há mais de 24 h que nenhum post usa (regra pura `pickFeedMediaToRemove`); nunca a de post ativo ou
   agendado. Testes: `tests/unit/feed.test.ts` e `tests/db/feed.test.ts`.
-- `trainer_announcements` (recado) continua; proposta de unificar e a fase 2 (comentários moderados, denúncia, nome de
-  exibição) em `docs/planos/feed.md` — só plano.
+- **Recado para todos = post fixado** (1.6, `20261120160000`): `unpin_at` ("Fixado até", fim do dia em SP); fixado
+  efetivo = `pinned` e data no futuro (`private.feed_is_pinned`), job `lfit-unpin-feed-posts` (de hora em hora) grava
+  `pinned = false`. "Recado para todos" no `/chat` → `/feed?novo=fixado` (editor fixado por 7 dias). `set_trainer_announcement`
+  sem aluno → `INVALID_INPUT` (`use_feed`); recado para UM aluno continua em `trainer_announcements`. Hoje do aluno:
+  `PinnedPostCard` (`get_my_pinned_post`). Fase 2 (comentários moderados, denúncia, nome de exibição) só em
+  `docs/planos/feed.md`.
+
+### Plataforma e inadimplência (sprint de venda, migration `20261120120000` — escrita, ainda não aplicada)
+- **Plataforma** = quem vende o app. Área `/plataforma` (fora do AppShell; `requirePlatformAdmin()` → 404 para quem não
+  está na lista). Entrar na lista: **só por SQL** (`insert into private.platform_admins (user_id) values (...)`). O admin
+  pode não ter perfil em organização: o login cai em `/plataforma` (`requireStaff` redireciona).
+- **MFA obrigatório no painel:** toda RPC da plataforma exige sessão **aal2** (TOTP do Supabase Auth); na lista sem
+  aal2 = `FORBIDDEN`. `requirePlatformAdmin()` manda para `/plataforma-verificacao` (cadastro do autenticador com QR
+  code na primeira vez; depois só o código de 6 dígitos). TOTP precisa estar ligado no Auth do projeto.
+- **"Pagamento vencido, revisar":** selo na lista e na conta quando o "pago até" já passou e a situação ainda é "Em
+  dia"; essas contas vêm primeiro. Só destaque: a situação nunca muda sozinha (`needsPaymentReview`/`sortForReview`).
+- Vê por conta: negócio, personal (nome/e-mail), plano, vagas usadas/limite, criação, último acesso (Auth), situação.
+  Ações: criar conta de personal (link de convite para criar a senha — **sem e-mail**: copiar/WhatsApp), novo link de
+  acesso, plano e limite, pagamento manual, situação, observação interna. Tudo auditado (`private.platform_audit`).
+  Gateway: só plano (`docs/planos/cobranca.md`).
+- **Regras** em `private.account_rules` (linha única, muda por SQL): tolerância 10 dias, acesso de cancelada 30 dias,
+  100 convites/dia, ausência 7 dias, aviso ao aluno a cada 7 dias, contato de suporte (WhatsApp/e-mail).
+- **Estado** (`private.org_access_state`): `ok` · `grace` (em atraso < 10 dias: banner com os dias) · `suspended` (em
+  atraso depois disso, ou suspensa) · `canceled` (cancelada < 30 dias) · `closed` (depois: só o personal entra, só
+  Configurações/Regularizar/Suporte — regra de tela, `closedAllows`).
+- **Somente leitura no banco:** gatilho `org_writable` (`private.enforce_org_writable`) em toda tabela de negócio com
+  `organization_id` recusa gravação com sessão de usuário (equipe **e aluno**) em `suspended`/`canceled`/`closed` →
+  `ACCOUNT_READ_ONLY`. Sem sessão (servidor, cron) e admin da plataforma com MFA (aal2) passam. Nada é apagado.
+  **Tabela nova com `organization_id`: crie o gatilho `org_writable` na migration dela** ou acrescente-a à lista abaixo
+  com o motivo — `tests/db/org-writable-coverage.test.ts` falha para tabela sem gatilho fora da lista (a lista é lida
+  daqui, desta linha).
+  - Exceções do gatilho org_writable: `audit_logs`, `profiles`, `feed_reads`, `live_sessions`, `organization_counters`, `ai_usage_daily`, `ai_session_state`, `nps_prompts`
+  - Motivos: `audit_logs` (a exportação e o próprio bloqueio registram), `profiles` (entrar/sair, nome), `feed_reads` e
+    `nps_prompts` (cursores/cartões de leitura), `live_sessions` (registro técnico do ao vivo), `organization_counters`
+    (contador interno), `ai_usage_daily` e `ai_session_state` (estado técnico da IA, desligada).
+- Telas: banner no painel (`SubscriptionNotice`), `/regularizar` (contato da plataforma). Aluno de conta limitada:
+  "Seu acesso está temporariamente limitado. Fale com {nome}." no topo, último treino só leitura (sem iniciar), chat sem
+  caixa de envio; conta encerrada: tela de acesso indisponível. e2e `e2e/plataforma-inadimplencia.e2e.mjs`.
+
+### Configurações do personal (1.3, migration `20261120130000` — escrita, ainda não aplicada; e2e `e2e/configuracoes.e2e.mjs`)
+- `/configuracoes` (menu e menu da conta): **perfil** (nome, foto — qualquer membro da equipe), **negócio** (nome, logo,
+  WhatsApp de contato — só o owner), **senha** (`supabase.auth.updateUser`), **plano e assinatura** (só leitura) e
+  **exportar** (só o owner): `/configuracoes/exportar?tipo=students|sessions[&saude=1]`, CSV de `lib/spreadsheet.ts`.
+  Sem `saude=1` nem o cabeçalho de saúde aparece; marcar "Incluir ficha de saúde" mostra o aviso e pede confirmação.
+- Bucket **privado** `org-branding` (2 MB, JPEG/WebP; `lib/image-resize.ts` reduz para 512 px no navegador e tira EXIF):
+  `<org>/logo-<uuid>` (owner) e `<org>/avatar-<uid>-<uuid>` (cada um a própria). Leitura: equipe e alunos da org (URL
+  assinada de 1 h com a sessão). A imagem substituída é apagada pelo cliente depois de salvar.
+- **App do aluno:** logo e nome do negócio no topo (`StudentBrand`); tela do link de acesso/convite mostra "Convite de
+  {negócio}" e o logo (`get_access_link_branding`, só servidor, sem consumir o token).
+- Conta em somente leitura recusa as configurações (`ACCOUNT_READ_ONLY`); exportar continua (inclusive encerrada).
+- `/suporte`: WhatsApp/e-mail da plataforma (`get_platform_support`, de `private.account_rules`).
+
+### Convites dos alunos (1.4, migration `20261120140000` — escrita, ainda não aplicada; e2e `e2e/convites.e2e.mjs`)
+- `/alunos/convites` ("Convidar alunos" em Meus alunos; "Convidar" no menu da linha leva já com o aluno marcado):
+  alunos **sem login** (inclusive importados em pré-cadastro), escolha um ou vários → link individual de **uso único,
+  7 dias** (`access_links.kind = 'invite'`). Por aluno: "Copiar link" e "Abrir no WhatsApp" (wa.me para o número do
+  cadastro) com a mensagem **editável** (`{nome}`, `{link}`; sem `{link}` o link vai no fim). **Sem e-mail.**
+- Limite diário por conta (padrão 100, `private.account_rules`). Status na lista (coluna "Convite"): Aceito (tem login)
+  · Convite enviado · Convite expirado · Sem convite. Convite novo invalida o anterior.
+- Aceitar = o fluxo de sempre do link de acesso (`/acesso/[token]` → POST consome → definir senha → consentimento de
+  saúde se o professor declarou → `/acesso/pronto`). A tela do link mostra "Convite de {negócio}" e o logo.
+
+### Aluno ausente e pausa (1.5, migration `20261120150000` — escrita, ainda não aplicada; e2e `e2e/ausencia-pausa.e2e.mjs`)
+- **Pausa** (`student_pauses`, uma por aluno): motivo viagem/férias/outro (sem saúde), volta opcional. Em pausa = sem data
+  ou data ≥ hoje. "Colocar em pausa"/"Encerrar pausa" no menu da linha de Meus alunos e no card do Início; a lista
+  mostra "Em pausa (até dd/mm)". Tabela com o gatilho `org_writable`.
+- **Início — "Sem treinar há 7+ dias"** (`InactiveStudentsCard`, abaixo do AO VIVO): ativos, com plano ativo, fora de
+  pausa, desde o último treino iniciado (ou o início do plano). Limite = maior entre 7 e 1,5 × (dias do plano ÷ sessões
+  previstas) — `absenceThreshold` repete a regra do banco. Botões "Enviar mensagem" (chat) e "Colocar em pausa".
+- **App do aluno:** card gentil no Hoje ("Sentimos sua falta!"), sem push/e-mail, no máximo 1 vez a cada 7 dias
+  (`claim_my_nudge` decide e marca); nada para aluno em pausa, sem plano ou de conta limitada.
+
+### Ajustes do sprint de venda (1.7, migration `20261120170000` — escrita, ainda não aplicada)
+- **Fuso por conta:** `organizations.time_zone` (padrão `America/Sao_Paulo`; Configurações → "Fuso horário da conta",
+  só o personal). `private.today_br`, `private.sp_day` e `private.sp_day_start` (nomes mantidos) usam o fuso da conta de
+  quem chama (`private.current_time_zone`; sem sessão = SP). Reescritas com o fuso: gatilho do NPS (`submitted_on`),
+  `record_red_flag_clearance` e `get_my_student_profile` (mês/semanas). **Função nova que calcula dia/semana/mês: use os
+  helpers, nunca 'America/Sao_Paulo' escrito.** A exibição de datas no cliente (`lib/format.ts`) segue em SP.
+- **Retenção do Início** conta alunos arquivados (`private.dashboard_students_for_counts`, só contagens): quem treinou
+  nos dias 31–60 e foi arquivado fica na base como não retido (resolve o item do backlog).
+- **Botão fixo no Hoje** (`StickyStartBar`): "Começar treino {letra}" (ou "Retomar treino") logo acima da barra de abas;
+  espaçador no fim da página. e2e `e2e/hoje-botao-fixo.e2e.mjs` (375×667 e 390×844).
+- **Limpeza dos testes no lfit-dev:** `npm run db:cleanup-tests` (simulação) / `-- --apply`. Só e-mails
+  `lfit-test-…@example.com` e organizações `lfit-test-…` fora do seed (`scripts/test-data-filters.mts`); trava do ref.
+- **Suporte e Configurações** no menu (sem "Em breve"). Fora do escopo de propósito: `docs/planos/pendentes.md`.
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
@@ -818,9 +911,15 @@ sem efeitos colaterais).
 | **Ao vivo — painel (Início)** | `get_live_board`, `set_live_enabled` | `get_live_board`: `require_staff()` + `private.dashboard_students()` (owner = organização; professor = os seus); só nome, rótulo da divisão, horários e contagens; dor só com `can_view_student_health` (`pain`), restrito sem o tipo (`session_alert`, via `is_restricted_health_viewer`), oculto = nada; nunca texto do chat. `set_live_enabled`: `require_owner()`, auditado (`live_settings_update`, só o booleano); desligar apaga `live_sessions` da organização. `20261119120000`; testes em `tests/db/live.test.ts` |
 | **Ao vivo — tela de execução** | `live_heartbeat`, `ack_live_notice` | `live_heartbeat`: chamador duplo por `private.training_mode` da sessão (titular ou staff presencial; senão `SESSION_NOT_FOUND`); grava no máximo 1 batimento a cada 30 s por sessão (`private.live_heartbeats`) e só se a sessão tem registro ao vivo; só para o titular devolve `show_notice` e a última mensagem do staff não lida desde o início da sessão (o banner). `ack_live_notice`: escopo `students.user_id = auth.uid()` |
 | **Feed — personal / equipe** | `save_feed_post`, `delete_feed_post`, `set_feed_post_pinned`, `list_feed_posts` | `private.require_staff()`; editar/apagar/fixar via `private.lock_editable_feed_post` (mesma org, não apagado, **owner ou autor**; senão `FEED_POST_NOT_FOUND`). `save_feed_post` valida tipo, texto sem HTML (≤ 2000), link de vídeo (só https de YouTube/Vimeo/Instagram), imagem na pasta da org **já enviada** ao bucket `feed-media`, turma da org e agendamento (≤ 365 dias; criar no passado = agora). Professor da equipe publica só para os próprios alunos (`scope_trainer_id`). `list_feed_posts` devolve só a contagem de curtidas, nunca quem curtiu. Sem auditoria de conteúdo. `20261119160000`; testes em `tests/db/feed.test.ts` |
-| **Feed — aluno (titular)** | `get_my_feed`, `get_my_feed_new_count`, `mark_feed_seen`, `toggle_feed_like` | `private.feed_me()` (`students.user_id = auth.uid()`, status efetivo `active`, senão `STUDENT_NOT_FOUND`/`ACCESS_SUSPENDED`); visibilidade única em `private.feed_visible_posts` (mesma org, publicado, não apagado, autor = owner ou o professor do aluno, público todos/modalidade/turma). Curtir só post visível (`FEED_POST_NOT_FOUND`); devolve contagem + o próprio estado, nunca quem curtiu |
+| **Feed — aluno (titular)** | `get_my_feed`, `get_my_feed_new_count`, `mark_feed_seen`, `toggle_feed_like`, `get_my_pinned_post` | `private.feed_me()` (`students.user_id = auth.uid()`, status efetivo `active`, senão `STUDENT_NOT_FOUND`/`ACCESS_SUSPENDED`); visibilidade única em `private.feed_visible_posts` (mesma org, publicado, não apagado, autor = owner ou o professor do aluno, público todos/modalidade/turma). Curtir só post visível (`FEED_POST_NOT_FOUND`); devolve contagem + o próprio estado, nunca quem curtiu |
+| **Plataforma (quem vende o app)** | `is_platform_admin`, `platform_access`, `platform_list_accounts`, `platform_account_detail`, `platform_create_account`, `platform_account_owner`, `platform_log_invite`, `platform_update_plan`, `platform_record_payment`, `platform_set_status`, `platform_set_note` | `private.require_platform_admin()` = usuário em `private.platform_admins` (lista só por SQL; nunca papel da organização) **e sessão aal2** (TOTP do Supabase Auth, `private.platform_mfa_ok()`) → senão `FORBIDDEN` (`is_platform_admin` devolve só o booleano da lista; `platform_access` devolve `none`/`mfa_required`/`ok` para o portão das telas — `/plataforma-verificacao` cadastra o autenticador e pede o código). Só dados de conta (nome do negócio, dono, plano, contagem de vagas, datas, situação, pagamentos manuais, observação interna) — **nunca** nome/contato/dado de aluno; o admin sem perfil não lê tabela nenhuma de aluno (RLS por `current_org_id`). Toda ação em `private.platform_audit` (observação sem o texto). Criar conta: o servidor autoriza (`platform_access = 'ok'`), cria o usuário do Auth por convite com a secret key e só então `platform_create_account` (sessão do admin) cria organização + owner. `20261120120000`; testes em `tests/db/platform-billing.test.ts` |
+| **Assinatura — personal / aluno** | `get_my_subscription`, `get_platform_support`, `get_my_access_limits` | `get_my_subscription`: `require_staff()`; situação, estado (`private.org_access_state`), datas de tolerância/fim e contato da plataforma — sem pagamentos nem observação. `get_platform_support`: qualquer logado (só o contato). `get_my_access_limits`: escopo `students.user_id = auth.uid()`; devolve `ok`/`limited`/`closed` e o primeiro nome de quem acompanha — nunca valores ou cobrança |
+| **Configurações (1.3)** | `update_my_profile`, `update_organization_profile`, `get_my_branding`, `export_account_data`, `log_account_export` | `update_my_profile`: `require_staff()` + conta gravável (`private.assert_org_writable`); foto só da própria pasta (`<org>/avatar-<uid>-…`) e já enviada. `update_organization_profile`: `require_owner()` + gravável; logo da pasta da org, WhatsApp E.164; auditado sem os valores. `get_my_branding`: equipe ou aluno da org (nome, logo, WhatsApp de contato do negócio). `export_account_data`: `require_owner()`; saúde (grupos, observações do cadastro; dor e comentário do treino) só com `p_include_health` **e** `can_view_student_health`; funciona com a conta encerrada. `log_account_export`: só tipo, contagem e opt-in. `20261120130000`; testes em `tests/db/account-settings.test.ts` |
+| **Convites dos alunos (1.4)** | `create_student_invites`, `student_invite_statuses`, `get_invite_quota` | `create_student_invites`: `require_staff()` + `lock_accessible_student` por aluno (owner ou responsável), só sem login (`STUDENT_HAS_ACCOUNT`); 1–200 por chamada; limite diário da conta (`private.account_rules.invite_daily_limit`, dia civil, trava por organização) → lote inteiro recusado com `INVITE_LIMIT_REACHED` (detail = quantos cabem); token só na resposta (banco guarda o hash), auditado sem o token. `student_invite_statuses`: só alunos com `can_access_student` (vazio para quem não acessa). `get_invite_quota`: `require_staff()`. `20261120140000`; testes em `tests/db/student-invites.test.ts` |
+| **Ausência e pausa (1.5)** | `set_student_pause`, `end_student_pause`, `get_inactive_students`, `claim_my_nudge` | Pausa: `lock_accessible_student` (owner ou responsável), motivo só `viagem`/`ferias`/`outro` (nunca saúde), volta ≥ hoje; auditadas. `get_inactive_students`: `require_staff()` + `private.dashboard_students()`; só nome, dias e limite. `claim_my_nudge`: escopo `students.user_id = auth.uid()`; ativo, com plano ativo, fora de pausa, conta sem limitação, 7+ dias e último aviso há 7+ dias (marca a hora em `private.student_nudges`). `20261120150000`; testes em `tests/db/pause-absence.test.ts` |
+| **Fuso da conta (1.7)** | `set_organization_time_zone` | `require_owner()` + conta gravável; só fusos de `private.allowed_time_zones()` (Brasil + Lisboa); auditado. `20261120170000`; testes em `tests/db/time-zone-retention.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
-| **Só servidor** (`service_role`) | `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
+| **Só servidor** (`service_role`) | `get_access_link_branding` (nome/logo do negócio na tela do link, só com token válido, sem consumir), `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 
 Checklist para toda função `SECURITY DEFINER` nova:
 1. `set search_path = ''` e nomes totalmente qualificados.
@@ -848,12 +947,7 @@ Checklist para toda função `SECURITY DEFINER` nova:
   atualizada — revise sua cópia" quando uma regra global do exercício de origem mudar depois da personalização.
 - **Equipe (convite de trainers)** — adiado para a fase de comercialização. Hoje o owner é criado por
   `npm run bootstrap:owner` e trainers de teste existem só no seed. O item "Equipe" segue "Em breve".
-- **Dashboard — retenção superestimada:** `private.dashboard_students()` exclui alunos arquivados/excluídos
-  (`deleted_at`). Quem treinou nos dias 31–60 e depois foi excluído sai da base, então a Retenção fica maior do que é.
-  Corrigir contando a base pelas sessões (inclusive de alunos excluídos depois), sem expor nomes deles.
-- **Dashboard — fuso fixo:** "hoje", "semana" e os dias do Início usam `America/Sao_Paulo` fixo
-  (`private.today_br()`, `private.sp_day`, `private.sp_day_start`). Antes de vender fora desse fuso, virar coluna por
-  organização (`organizations.time_zone`) e passar para as RPCs.
+- ~~Dashboard — retenção superestimada~~ e ~~fuso fixo~~: resolvidos no sprint de venda (1.7, `20261120170000`).
 - **Código sem uso:** `lib/dashboard.ts` (inteiro) e os mocks de `data/dashboard.ts` (tudo menos `banner`) não são mais
   usados pelo Início. Apagar (exige `rm`; pedir na sessão).
 - **CSP com nonce:** hoje `script-src` tem `'unsafe-inline'` (scripts de hidratação do Next sem nonce). Passar para nonce

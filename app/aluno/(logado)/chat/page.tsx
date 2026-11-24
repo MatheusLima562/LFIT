@@ -3,7 +3,7 @@ import { ChatThread, type AttachGroup } from "@/features/chat/components/ChatThr
 import { StudentChatFrame } from "@/features/chat/components/StudentChatFrame";
 import { StudentChatHeader } from "@/features/chat/components/StudentChatHeader";
 import { getChatMessages } from "@/features/chat/queries";
-import { getMyActivePlan, getMyProfile } from "@/features/student-app/queries";
+import { getMyAccessLimits, getMyActivePlan, getMyProfile } from "@/features/student-app/queries";
 import { messages } from "@/messages/pt-BR";
 
 const t = messages.chat;
@@ -15,7 +15,11 @@ export default async function StudentChatPage() {
   const profile = await getMyProfile();
   if (!profile || profile.effective_status !== "active") return null;
 
-  const [initial, active] = await Promise.all([getChatMessages(profile.student_id), getMyActivePlan().catch(() => null)]);
+  const [initial, active, limits] = await Promise.all([
+    getChatMessages(profile.student_id),
+    getMyActivePlan().catch(() => null),
+    getMyAccessLimits(),
+  ]);
   const attachGroups: AttachGroup[] = (active?.workouts ?? []).map((w) => ({
     label: w.name ? `Treino ${w.label} · ${w.name}` : `Treino ${w.label}`,
     items: w.items.map((it) => ({ id: it.id, name: it.exercise.name })),
@@ -30,6 +34,7 @@ export default async function StudentChatPage() {
         initial={initial}
         emptyText={t.emptyStudent}
         attachGroups={attachGroups}
+        readOnlyNotice={limits.state === "ok" ? undefined : messages.aluno.limited.chat}
         header={
           <StudentChatHeader
             trainerName={profile.trainer_name}

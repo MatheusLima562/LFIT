@@ -15,6 +15,7 @@
     "db:types": "supabase gen types typescript --linked --schema public > lib/db/types.ts",
     "db:seed": "node --env-file=.env.local scripts/seed.mts",
     "db:seed:demo": "node --env-file=.env.local scripts/seed-demo.mts",
+    "db:cleanup-tests": "node --env-file=.env.local scripts/cleanup-test-users.mts",
     "bootstrap:owner": "node --env-file=.env.local scripts/bootstrap-owner.mts"
   },
   "dependencies": {

@@ -83,7 +83,15 @@ describe.runIf(dbTestsEnabled)("3.3 enxuta: resposta ao feedback com saúde no s
   });
 
   it("recado para todos: o autor encerra o próprio; outro staff não", async () => {
-    const id = await rpc<string>(owner.client, "set_trainer_announcement", { p_body: "Recado geral do owner" });
+    // Recado para todos novo sai pelo Feed (1.6): a RPC recusa. Os antigos (linhas já gravadas) continuam encerráveis.
+    await expect(rpc(owner.client, "set_trainer_announcement", { p_body: "Recado geral do owner" })).rejects.toThrow("INVALID_INPUT");
+    const { data: row, error } = await fx.db
+      .from("trainer_announcements")
+      .insert({ organization_id: org.id, trainer_id: owner.id, student_id: null, body: "Recado geral do owner" })
+      .select("id")
+      .single();
+    if (error) throw error;
+    const id = row.id as string;
     await expect(rpc(trainer.client, "end_trainer_announcement", { p_announcement_id: id })).rejects.toThrow("ANNOUNCEMENT_NOT_FOUND");
     await rpc(owner.client, "end_trainer_announcement", { p_announcement_id: id });
     expect((await fx.db.from("trainer_announcements").select("active").eq("id", id).single()).data!.active).toBe(false);

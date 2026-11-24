@@ -27,10 +27,19 @@ function audienceSummary(p: StaffFeedItem) {
 }
 
 /** Página "Feed" do painel: criar, prévia, editar, fixar, agendar, apagar; contagem de curtidas (nunca quem curtiu). */
-export function FeedManager({ posts, orgId, isOwner, classes, now }: { posts: StaffFeedItem[]; orgId: string; isOwner: boolean; classes: { id: string; name: string }[]; now: string }) {
+export function FeedManager({ posts, orgId, isOwner, classes, now, startPinned = null }: {
+  posts: StaffFeedItem[];
+  orgId: string;
+  isOwner: boolean;
+  classes: { id: string; name: string }[];
+  now: string;
+  /** Abrir já o editor de um "recado para todos" (post fixado até este dia), vindo do Chat. */
+  startPinned?: string | null;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
-  const [editing, setEditing] = useState<StaffFeedItem | "new" | null>(null);
+  const [editing, setEditing] = useState<StaffFeedItem | "new" | null>(startPinned ? "new" : null);
+  const [defaults, setDefaults] = useState(startPinned ? { pinned: true, unpinDay: startPinned } : null);
   const [deleting, setDeleting] = useState<StaffFeedItem | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const reference = new Date(now);
@@ -71,7 +80,7 @@ export function FeedManager({ posts, orgId, isOwner, classes, now }: { posts: St
                     {p.pinned && (
                       <span className="inline-flex items-center gap-1 font-medium text-ink-2">
                         <Pin aria-hidden className="size-3.5" />
-                        {t.pinned}
+                        {p.unpinAt ? t.pinnedUntil(formatDate(p.unpinAt)) : t.pinned}
                       </span>
                     )}
                     {scheduled ? (
@@ -126,7 +135,7 @@ export function FeedManager({ posts, orgId, isOwner, classes, now }: { posts: St
         </ol>
       )}
 
-      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
+      <Dialog open={editing !== null} onOpenChange={(open) => { if (!open) { setEditing(null); setDefaults(null); } }}>
         <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editing === "new" ? t.newPost : t.editPost}</DialogTitle>
@@ -139,7 +148,11 @@ export function FeedManager({ posts, orgId, isOwner, classes, now }: { posts: St
               isOwner={isOwner}
               classes={classes}
               post={editing === "new" ? null : editing}
-              onDone={() => setEditing(null)}
+              defaults={editing === "new" ? defaults : null}
+              onDone={() => {
+                setEditing(null);
+                setDefaults(null);
+              }}
             />
           )}
         </DialogContent>
@@ -163,7 +176,12 @@ export function FeedManager({ posts, orgId, isOwner, classes, now }: { posts: St
             try {
               const r = await callAction(() => deleteFeedPost(p.id));
               if (!r) return;
-              if (!r.ok) return void toast.error(r.error);
+              // Erro: o post continua na lista (o servidor desfez o apagamento); a lista é relida para refletir o banco.
+              if (!r.ok) {
+                toast.error(r.error);
+                router.refresh();
+                return;
+              }
               toast.success(t.deleted);
               router.refresh();
             } finally {

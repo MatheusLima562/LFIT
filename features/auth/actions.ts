@@ -42,6 +42,9 @@ export async function signIn(input: unknown, next?: string): Promise<ActionResul
   if (error || !data.user) return { ok: false, error: signInErrorMessage(error) };
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
+  // Admin da plataforma (lista própria, sem perfil de organização): entra e vai para o painel da plataforma, onde o
+  // segundo fator (TOTP) é pedido antes de qualquer dado.
+  if (!profile && (await supabase.rpc("is_platform_admin")).data === true) redirect("/plataforma");
   if (!profile || profile.role === "student") {
     await supabase.auth.signOut();
     return { ok: false, error: t.errors.noProfile };

@@ -6,8 +6,12 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { itemSummary } from "@/features/student-app/format";
 import { consistency, greeting, workoutDayLabel } from "@/features/student-app/humanize";
 import { StartWorkoutButton } from "@/features/student-app/components/StartWorkoutButton";
+import { NudgeCard } from "@/features/student-app/components/NudgeCard";
+import { StickyStartBar } from "@/features/student-app/components/StickyStartBar";
+import { PinnedPostCard } from "@/features/feed/components/PinnedPostCard";
+import { getMyPinnedPost } from "@/features/feed/queries";
 import { TrainerAvatar } from "@/features/student-app/components/TrainerAvatar";
-import { getMyActivePlan, getMyAnnouncement, getMyHistory, getMyProfile } from "@/features/student-app/queries";
+import { getMyAccessLimits, getMyActivePlan, getMyAnnouncement, getMyHistory, getMyProfile } from "@/features/student-app/queries";
 import { AnnouncementSeen } from "@/features/notifications/AnnouncementSeen";
 import { NpsPromptCard } from "@/features/nps/components/NpsPromptCard";
 import { getMyNpsPrompt } from "@/features/nps/queries";
@@ -112,23 +116,31 @@ function TrainerCard({ profile }: { profile: AppProfile }) {
 
 export default async function StudentTodayPage() {
   // A página roda em paralelo ao layout: com acesso suspenso a RPC recusa e quem mostra a tela é o layout.
-  const [profile, active, announcement, history, nps] = await Promise.all([
+  const [profile, active, announcement, history, nps, limits, pinned] = await Promise.all([
     getMyProfile(),
     getMyActivePlan().catch(() => null),
     getMyAnnouncement(),
     getMyHistory(),
     getMyNpsPrompt(),
+    getMyAccessLimits(),
+    getMyPinnedPost(),
   ]);
+  // Conta do personal limitada: o último treino aparece só para leitura (sem iniciar nem retomar).
+  const readOnly = limits.state !== "ok";
   const reply = recentReply(history);
   const humane = profile && (
     <>
       <Hello profile={profile} />
+      {/* 7+ dias sem treinar (1.5): o banco decide e limita a 1 vez a cada 7 dias. */}
+      {!readOnly && active && <NudgeCard neverTrained={history.length === 0} />}
       {announcement && (
         <>
           <Announcement body={announcement.body} />
           <AnnouncementSeen id={announcement.id} />
         </>
       )}
+      {/* Recado para todos = post fixado mais recente do feed (1.6). */}
+      {pinned && <PinnedPostCard post={pinned} />}
       {reply && <ReplyNotice entry={reply} />}
       {nps && (
         <NpsPromptCard
@@ -193,7 +205,9 @@ export default async function StudentTodayPage() {
             ))}
           </ol>
           <div className="mt-4">
-            {open && open.workout_id === suggested.id ? (
+            {readOnly ? (
+              <p className="text-sm text-ink-3">{t.limited.noStart}</p>
+            ) : open && open.workout_id === suggested.id ? (
               <Button asChild size="lg" className="h-12 w-full text-base">
                 <Link href={`/aluno/treino/${open.id}`}>{t.today.resume}</Link>
               </Button>
@@ -229,9 +243,11 @@ export default async function StudentTodayPage() {
                     </li>
                   ))}
                 </ol>
-                <div className="mt-3">
-                  <StartWorkoutButton planId={plan.id} workoutId={w.id} label={`${t.today.start} ${w.label}`} variant="outline" />
-                </div>
+                {!readOnly && (
+                  <div className="mt-3">
+                    <StartWorkoutButton planId={plan.id} workoutId={w.id} label={`${t.today.start} ${w.label}`} variant="outline" />
+                  </div>
+                )}
               </div>
             </details>
           ))}
@@ -243,6 +259,15 @@ export default async function StudentTodayPage() {
           <h2 className="text-xs font-semibold tracking-wide text-ink-3 uppercase">{t.today.planNotes}</h2>
           <p className="mt-1 text-sm whitespace-pre-line text-ink-2">{plan.notes}</p>
         </section>
+      )}
+
+      {/* Botão fixo acima da barra de abas (1.7); o espaçador reserva a altura para nada ficar por baixo dele. */}
+      {suggested && !readOnly && (
+        <>
+          {/* Espaço do botão fixo: 65 px (borda + padding + botão) + 1 px da borda da barra de abas. */}
+          <div aria-hidden className="h-[66px]" />
+          <StickyStartBar planId={plan.id} workout={{ id: suggested.id, label: suggested.label }} openSessionId={open?.id ?? null} />
+        </>
       )}
     </div>
   );

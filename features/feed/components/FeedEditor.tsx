@@ -20,6 +20,7 @@ import {
   sanitizeFeedText,
   spLocalToISO,
   toFeedPayload,
+  unpinDayToISO,
   type FeedAudience,
   type FeedKind,
   type FeedModality,
@@ -41,6 +42,8 @@ interface Props {
   /** Post em edição; nulo = novo. */
   post: StaffFeedItem | null;
   onDone: () => void;
+  /** Novo post já como "recado para todos": fixado até `unpinDay` (aaaa-mm-dd). */
+  defaults?: { pinned: boolean; unpinDay: string } | null;
 }
 
 /**
@@ -48,7 +51,7 @@ interface Props {
  * privado, vídeo só por link. Do navegador direto para `save_feed_post` (o texto nunca passa por server action, toast
  * ou console). Sem órfãos: imagem enviada e não usada (falha ao salvar, troca, cancelar) é apagada.
  */
-export function FeedEditor({ orgId, isOwner, classes, post, onDone }: Props) {
+export function FeedEditor({ orgId, isOwner, classes, post, onDone, defaults = null }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const id = useId();
@@ -61,7 +64,9 @@ export function FeedEditor({ orgId, isOwner, classes, post, onDone }: Props) {
   const [audience, setAudience] = useState<FeedAudience>(post?.audience ?? "all");
   const [modality, setModality] = useState<FeedModality | null>(post?.audienceModality ?? null);
   const [classId, setClassId] = useState<string | null>(post?.audienceClassId ?? null);
-  const [pinned, setPinned] = useState(post?.pinned ?? false);
+  const [pinned, setPinned] = useState(post?.pinned ?? defaults?.pinned ?? false);
+  // "Fixado até" (dia em SP); vazio = até desafixar.
+  const [unpinDay, setUnpinDay] = useState(post?.unpinAt ? isoToSpLocal(post.unpinAt).slice(0, 10) : (defaults?.unpinDay ?? ""));
   // Hora de abertura do editor (fixa durante a edição; o banco confere de novo ao salvar).
   const [openedAt] = useState(() => Date.now());
   const wasScheduled = post !== null && new Date(post.publishedAt).getTime() > openedAt;
@@ -82,10 +87,13 @@ export function FeedEditor({ orgId, isOwner, classes, post, onDone }: Props) {
   const publishAt = scheduleLocal ? spLocalToISO(scheduleLocal) : wasScheduled ? new Date(openedAt).toISOString() : null;
   const scheduleInvalid =
     scheduleLocal !== "" && (!publishAt || new Date(publishAt).getTime() > openedAt + FEED_SCHEDULE_MAX_DAYS * 86_400_000);
-  const form: FeedPostForm = { kind, body, imagePath, videoUrl, audience, modality, classId, pinned, publishAt };
+  const unpinAt = unpinDay ? unpinDayToISO(unpinDay) : null;
+  const unpinInvalid =
+    pinned && unpinDay !== "" && (!unpinAt || new Date(unpinAt).getTime() <= Math.max(openedAt, publishAt ? new Date(publishAt).getTime() : 0));
+  const form: FeedPostForm = { kind, body, imagePath, videoUrl, audience, modality, classId, pinned, publishAt, unpinAt };
   const parsed = feedPostSchema.safeParse(form);
   const issues = new Set(parsed.success ? [] : parsed.error.issues.map((i) => i.message));
-  const valid = parsed.success && !scheduleInvalid;
+  const valid = parsed.success && !scheduleInvalid && !unpinInvalid;
   const cleanBody = sanitizeFeedText(body);
   const scheduled = publishAt !== null && new Date(publishAt).getTime() > openedAt;
 
@@ -116,7 +124,7 @@ export function FeedEditor({ orgId, isOwner, classes, post, onDone }: Props) {
 
   const save = async () => {
     setShowErrors(true);
-    if (!parsed.success || scheduleInvalid) return;
+    if (!parsed.success || scheduleInvalid || unpinInvalid) return;
     setBusy("save");
     try {
       const payload = toFeedPayload(parsed.data);
@@ -281,6 +289,13 @@ export function FeedEditor({ orgId, isOwner, classes, post, onDone }: Props) {
         <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="size-4 accent-[var(--color-control)]" />
         {t.pin}
       </label>
+      {pinned && (
+        <div className="-mt-2 flex flex-col gap-1.5">
+          <label htmlFor={`${id}-unpin`} className="text-sm font-medium text-ink">{t.unpinAt.label}</label>
+          <Input id={`${id}-unpin`} type="date" value={unpinDay} aria-invalid={unpinInvalid || undefined} onChange={(e) => setUnpinDay(e.target.value)} className="text-base sm:max-w-48 md:text-sm" />
+          <p className={`text-xs ${unpinInvalid ? "text-danger-ink" : "text-ink-3"}`}>{unpinInvalid ? t.unpinAt.invalid : t.unpinAt.hint}</p>
+        </div>
+      )}
 
       <section aria-labelledby={`${id}-preview`} className="flex flex-col gap-2 rounded-2xl bg-canvas p-3 ring-1 ring-line">
         <h3 id={`${id}-preview`} className="text-xs font-medium text-ink-3">{t.preview}</h3>

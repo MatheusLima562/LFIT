@@ -64,7 +64,8 @@ await page.getByRole("button", { name: "Limpar filtros" }).click(); await page.w
 await page.getByRole("combobox", { name: "Grupo especial" }).click();
 await page.getByRole("option", { name: "Dor na Coluna" }).click();
 await page.waitForURL(/grupo=/); await settle(page);
-const chips = await rows(page).locator("td:nth-child(8)").allInnerTexts();
+// Coluna dos grupos: 9ª desde a coluna "Convite" (venda 1.4), antes do plano.
+const chips = await rows(page).locator("td:nth-child(9)").allInnerTexts();
 ok("filtro por grupo especial", chips.length > 0 && chips.every((c) => c.includes("Dor na Coluna")), `${chips.length} linhas`);
 await page.getByRole("button", { name: "Limpar filtros" }).click(); await page.waitForURL(`${BASE}/alunos`); await settle(page);
 

@@ -35,7 +35,15 @@ Status: **só plano, nada implementado.** A fase 1 já está no código (migrati
 4. **Risco:** o aviso de recado novo (N1) depende de `get_my_announcement`. Ele precisaria também olhar o post fixado
    mais novo. É um teste a mais no `n1-notificacoes`.
 
-Decisão do dono pendente. Até lá, as duas coisas convivem: o recado na Hoje e o feed na Comunidade.
+**Implementado no sprint de venda (1.6, migration `20261120160000`), conforme esta proposta:**
+- `feed_posts.unpin_at` ("Fixado até"); um job de hora em hora desafixa.
+- Os recados para todos ainda válidos foram migrados para posts fixados e encerrados.
+- `set_trainer_announcement` sem aluno recusa (`use_feed`).
+- O botão "Recado para todos" do Chat abre o editor do Feed já fixado por 7 dias.
+- O Hoje do aluno mostra o post fixado mais recente, com "Ver na Comunidade".
+- O recado para UM aluno continua em `trainer_announcements`.
+- O aviso N1 ("Novo recado") segue só para o recado individual; o post fixado novo aparece pelo marcador de novidades
+  da aba Comunidade.
 
 ## 2. Fase 2: comentários com moderação, denúncia e nome de exibição
 

@@ -32,11 +32,13 @@ interface ChatThreadProps {
   /** Rótulo das mensagens do aluno vistas pelo staff. */
   studentLabel?: string;
   className?: string;
+  /** Preenchido = sem caixa de envio (conta limitada), com este aviso no lugar. */
+  readOnlyNotice?: string;
 }
 
 /** Conversa aluno ↔ professor: mesma tela nos dois lados. Nada aqui coloca o corpo em URL, título, toast ou console. */
 export function ChatThread(props: ChatThreadProps) {
-  const { studentId, viewer, initial, header, emptyText, attachGroups, staffNames, studentLabel, className } = props;
+  const { studentId, viewer, initial, header, emptyText, attachGroups, staffNames, studentLabel, className, readOnlyNotice } = props;
   const thread = useChatThread({ studentId, viewer, initial });
   const listRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
@@ -210,17 +212,22 @@ export function ChatThread(props: ChatThreadProps) {
         </ol>
       </div>
 
-      <Composer
-        inputRef={inputRef}
-        draft={draft}
-        onDraft={setDraft}
-        attachment={attachment}
-        onAttachment={setAttachment}
-        attachGroups={attachGroups}
-        busy={busy}
-        notice={notice}
-        onSubmit={() => void submit()}
-      />
+      {readOnlyNotice ? (
+        // Conta do personal limitada (assinatura): a conversa fica só para leitura; o banco também recusa o envio.
+        <p role="status" className="shrink-0 border-t border-line px-4 py-3 text-sm text-ink-2">{readOnlyNotice}</p>
+      ) : (
+        <Composer
+          inputRef={inputRef}
+          draft={draft}
+          onDraft={setDraft}
+          attachment={attachment}
+          onAttachment={setAttachment}
+          attachGroups={attachGroups}
+          busy={busy}
+          notice={notice}
+          onSubmit={() => void submit()}
+        />
+      )}
     </div>
   );
 }

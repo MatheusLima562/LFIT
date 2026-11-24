@@ -37,9 +37,9 @@ const { data: ownerProfile } = await admin.from("profiles").select("id").eq("org
 const hidden = withGroups.find((s) => !s.health_data_consent_at && s.trainer_id && s.trainer_id !== ownerProfile.id);
 const visible = withGroups.find((s) => s.health_data_consent_at);
 await page.goto(`${BASE}/alunos?q=${encodeURIComponent(hidden.first_name + " " + hidden.last_name)}`); await settle(page);
-ok("owner NÃO vê grupos só declarados (aluno de outro professor)", (await page.locator("table tbody tr").first().locator("td:nth-child(8)").innerText()).trim() === "—");
+ok("owner NÃO vê grupos só declarados (aluno de outro professor)", (await page.locator("table tbody tr").first().locator("td:nth-child(9)").innerText()).trim() === "—");
 await page.goto(`${BASE}/alunos?q=${encodeURIComponent(visible.first_name + " " + visible.last_name)}`); await settle(page);
-ok("owner vê grupos confirmados pelo titular", (await page.locator("table tbody tr").first().locator("td:nth-child(8)").innerText()).includes("Dor"));
+ok("owner vê grupos confirmados pelo titular", (await page.locator("table tbody tr").first().locator("td:nth-child(9)").innerText()).includes("Dor"));
 
 // editar o oculto: aviso e grupos preservados
 await page.goto(`${BASE}/alunos?editar=${hidden.id}`); const dlg = page.getByRole("dialog"); await dlg.waitFor(); await page.waitForTimeout(300);
@@ -165,7 +165,7 @@ await sp.waitForURL(/\/acesso\/pronto\?consentimento=aceito/, { timeout: 20000 }
 await sp.screenshot({ path: `${OUT}/08-aluno-pronto.png` });
 ok("confirmação registrada", !!(await admin.from("students").select("health_data_consent_at").eq("id", hidden.id).single()).data.health_data_consent_at);
 await page.goto(`${BASE}/alunos?q=${encodeURIComponent(hidden.first_name + " " + hidden.last_name)}`); await settle(page);
-ok("após a confirmação, o owner passa a ver os grupos", (await page.locator("table tbody tr").first().locator("td:nth-child(8)").innerText()).includes("Dor"));
+ok("após a confirmação, o owner passa a ver os grupos", (await page.locator("table tbody tr").first().locator("td:nth-child(9)").innerText()).includes("Dor"));
 
 // Trainer na página do owner
 const tctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });

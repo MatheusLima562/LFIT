@@ -20,6 +20,7 @@ export type Database = {
           created_by: string | null
           expires_at: string
           id: string
+          kind: string
           organization_id: string
           student_id: string
           token_hash: string
@@ -30,6 +31,7 @@ export type Database = {
           created_by?: string | null
           expires_at: string
           id?: string
+          kind?: string
           organization_id: string
           student_id: string
           token_hash: string
@@ -40,6 +42,7 @@ export type Database = {
           created_by?: string | null
           expires_at?: string
           id?: string
+          kind?: string
           organization_id?: string
           student_id?: string
           token_hash?: string
@@ -879,6 +882,7 @@ export type Database = {
           pinned: boolean
           published_at: string
           scope_trainer_id: string | null
+          unpin_at: string | null
           updated_at: string
           video_url: string | null
         }
@@ -897,6 +901,7 @@ export type Database = {
           pinned?: boolean
           published_at?: string
           scope_trainer_id?: string | null
+          unpin_at?: string | null
           updated_at?: string
           video_url?: string | null
         }
@@ -915,6 +920,7 @@ export type Database = {
           pinned?: boolean
           published_at?: string
           scope_trainer_id?: string | null
+          unpin_at?: string | null
           updated_at?: string
           video_url?: string | null
         }
@@ -1354,43 +1360,58 @@ export type Database = {
       organizations: {
         Row: {
           ai_assistant_enabled: boolean
+          contact_whatsapp: string | null
           created_at: string
           id: string
           is_seed: boolean
           live_enabled: boolean
+          logo_path: string | null
           name: string
           overdue_grace_days: number
           plan: Database["public"]["Enums"]["plan_tier"]
           slug: string
+          status_changed_at: string
           student_limit: number
+          subscription_status: string
+          time_zone: string
           updated_at: string
           video_quota_bytes: number | null
         }
         Insert: {
           ai_assistant_enabled?: boolean
+          contact_whatsapp?: string | null
           created_at?: string
           id?: string
           is_seed?: boolean
           live_enabled?: boolean
+          logo_path?: string | null
           name: string
           overdue_grace_days?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
           slug: string
+          status_changed_at?: string
           student_limit?: number
+          subscription_status?: string
+          time_zone?: string
           updated_at?: string
           video_quota_bytes?: number | null
         }
         Update: {
           ai_assistant_enabled?: boolean
+          contact_whatsapp?: string | null
           created_at?: string
           id?: string
           is_seed?: boolean
           live_enabled?: boolean
+          logo_path?: string | null
           name?: string
           overdue_grace_days?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
           slug?: string
+          status_changed_at?: string
           student_limit?: number
+          subscription_status?: string
+          time_zone?: string
           updated_at?: string
           video_quota_bytes?: number | null
         }
@@ -1813,6 +1834,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
           avatar_url: string | null
           created_at: string
           full_name: string
@@ -1823,6 +1845,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_path?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name: string
@@ -1833,6 +1856,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_path?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name?: string
@@ -2152,6 +2176,55 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "students_with_status"
             referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      student_pauses: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          organization_id: string
+          reason: string
+          student_id: string
+          until: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          organization_id: string
+          reason: string
+          student_id: string
+          until?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          organization_id?: string
+          reason?: string
+          student_id?: string
+          until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_pauses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_pauses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_pauses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3037,6 +3110,7 @@ export type Database = {
         Returns: boolean
       }
       chat_unread_count: { Args: { p_student_id: string }; Returns: number }
+      claim_my_nudge: { Args: never; Returns: Json }
       clear_student_expiration: {
         Args: { p_student_id: string }
         Returns: {
@@ -3135,6 +3209,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_student_invites: {
+        Args: { p_student_ids: string[] }
+        Returns: {
+          expires_at: string
+          student_id: string
+          token: string
+        }[]
+      }
       customize_exercise: { Args: { p_id: string }; Returns: string }
       deactivate_student: {
         Args: { p_student_id: string }
@@ -3177,6 +3259,7 @@ export type Database = {
       }
       delete_feed_post: { Args: { p_id: string }; Returns: Json }
       duplicate_plan: { Args: { p_plan_id: string }; Returns: string }
+      end_student_pause: { Args: { p_student_id: string }; Returns: undefined }
       end_trainer_announcement: {
         Args: { p_announcement_id: string }
         Returns: undefined
@@ -3238,10 +3321,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      export_account_data: {
+        Args: { p_include_health: boolean; p_kind: string }
+        Returns: Json
+      }
       finish_workout_session: {
         Args: { p_feedback?: string; p_rpe?: number; p_session_id: string }
         Returns: undefined
       }
+      get_access_link_branding: { Args: { p_token: string }; Returns: Json }
       get_ai_assistant_state: { Args: { p_session_id: string }; Returns: Json }
       get_chat_messages: {
         Args: { p_before?: string; p_student_id: string }
@@ -3261,7 +3349,10 @@ export type Database = {
       }
       get_dashboard_engagement_retention: { Args: never; Returns: Json }
       get_dashboard_training_stats: { Args: never; Returns: Json }
+      get_inactive_students: { Args: never; Returns: Json }
+      get_invite_quota: { Args: never; Returns: Json }
       get_live_board: { Args: never; Returns: Json }
+      get_my_access_limits: { Args: never; Returns: Json }
       get_my_active_plan: { Args: { p_student_id?: string }; Returns: Json }
       get_my_announcement: {
         Args: { p_student_id?: string }
@@ -3282,6 +3373,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_my_branding: { Args: never; Returns: Json }
       get_my_feed: { Args: never; Returns: Json }
       get_my_feed_new_count: { Args: never; Returns: number }
       get_my_health_consent_request: {
@@ -3295,6 +3387,7 @@ export type Database = {
         }[]
       }
       get_my_nps_prompt: { Args: never; Returns: Json }
+      get_my_pinned_post: { Args: never; Returns: Json }
       get_my_student_profile: {
         Args: never
         Returns: {
@@ -3313,6 +3406,7 @@ export type Database = {
           week_streak: number
         }[]
       }
+      get_my_subscription: { Args: never; Returns: Json }
       get_my_workout_history: {
         Args: { p_student_id?: string }
         Returns: {
@@ -3341,6 +3435,7 @@ export type Database = {
           trainer_name: string
         }[]
       }
+      get_platform_support: { Args: never; Returns: Json }
       get_public_signup_form: {
         Args: { p_token: string }
         Returns: {
@@ -3365,6 +3460,7 @@ export type Database = {
         Args: { p_batch_id: string; p_rows: Json }
         Returns: Json
       }
+      is_platform_admin: { Args: never; Returns: boolean }
       list_chat_inbox: {
         Args: never
         Returns: {
@@ -3379,6 +3475,10 @@ export type Database = {
       }
       list_feed_posts: { Args: never; Returns: Json }
       live_heartbeat: { Args: { p_session_id: string }; Returns: Json }
+      log_account_export: {
+        Args: { p_count: number; p_include_health: boolean; p_kind: string }
+        Returns: undefined
+      }
       log_set: {
         Args: {
           p_data: Json
@@ -3433,6 +3533,54 @@ export type Database = {
         }[]
       }
       plan_red_flag_pending: { Args: { p_plan_id: string }; Returns: boolean }
+      platform_access: { Args: never; Returns: string }
+      platform_account_detail: { Args: { p_org: string }; Returns: Json }
+      platform_account_owner: {
+        Args: { p_org: string }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
+      platform_create_account: {
+        Args: {
+          p_org_name: string
+          p_owner_name: string
+          p_plan: Database["public"]["Enums"]["plan_tier"]
+          p_student_limit: number
+          p_user_id: string
+        }
+        Returns: string
+      }
+      platform_list_accounts: { Args: never; Returns: Json }
+      platform_log_invite: { Args: { p_org: string }; Returns: undefined }
+      platform_record_payment: {
+        Args: {
+          p_amount_cents: number
+          p_note: string
+          p_org: string
+          p_paid_on: string
+          p_period_end: string
+          p_period_start: string
+        }
+        Returns: string
+      }
+      platform_set_note: {
+        Args: { p_note: string; p_org: string }
+        Returns: undefined
+      }
+      platform_set_status: {
+        Args: { p_org: string; p_status: string }
+        Returns: undefined
+      }
+      platform_update_plan: {
+        Args: {
+          p_org: string
+          p_plan: Database["public"]["Enums"]["plan_tier"]
+          p_student_limit: number
+        }
+        Returns: undefined
+      }
       preview_plan_alerts_for_students: {
         Args: { p_source: string; p_students: string[] }
         Returns: {
@@ -3597,8 +3745,16 @@ export type Database = {
         Returns: undefined
       }
       set_live_enabled: { Args: { p_enabled: boolean }; Returns: undefined }
+      set_organization_time_zone: {
+        Args: { p_time_zone: string }
+        Returns: undefined
+      }
       set_student_modality: {
         Args: { p_modality: string; p_student_id: string }
+        Returns: undefined
+      }
+      set_student_pause: {
+        Args: { p_reason: string; p_student_id: string; p_until: string }
         Returns: undefined
       }
       set_trainer_announcement: {
@@ -3647,6 +3803,15 @@ export type Database = {
         Args: { s: Database["public"]["Tables"]["students"]["Row"] }
         Returns: Database["public"]["Enums"]["effective_status"]
       }
+      student_invite_statuses: {
+        Args: { p_student_ids?: string[] }
+        Returns: {
+          expires_at: string
+          sent_at: string
+          status: string
+          student_id: string
+        }[]
+      }
       student_plan_counts: {
         Args: never
         Returns: {
@@ -3691,6 +3856,18 @@ export type Database = {
         Returns: Json
       }
       undo_import_batch: { Args: { p_batch_id: string }; Returns: Json }
+      update_my_profile: {
+        Args: { p_avatar_path: string; p_full_name: string }
+        Returns: Json
+      }
+      update_organization_profile: {
+        Args: {
+          p_contact_whatsapp: string
+          p_logo_path: string
+          p_name: string
+        }
+        Returns: Json
+      }
       update_student: {
         Args: { p_patch: Json; p_student_id: string }
         Returns: {

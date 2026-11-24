@@ -16,8 +16,10 @@ import {
   pickFeedMediaToRemove,
   safeHref,
   sanitizeFeedText,
+  spDayFromNow,
   spLocalToISO,
   toFeedPayload,
+  unpinDayToISO,
   type FeedPostForm,
 } from "@/features/feed/feed";
 import { navigation } from "@/data/navigation";
@@ -78,7 +80,7 @@ describe("vídeo por link", () => {
 });
 
 describe("formulário do editor", () => {
-  const base: FeedPostForm = { kind: "text", body: "Dica", imagePath: null, videoUrl: "", audience: "all", modality: null, classId: null, pinned: false, publishAt: null };
+  const base: FeedPostForm = { kind: "text", body: "Dica", imagePath: null, videoUrl: "", audience: "all", modality: null, classId: null, pinned: false, publishAt: null, unpinAt: null };
   it("texto exige corpo; imagem exige arquivo; vídeo exige link válido", () => {
     expect(feedPostSchema.safeParse(base).success).toBe(true);
     expect(feedPostSchema.safeParse({ ...base, body: "<b></b>  " }).success).toBe(false);
@@ -96,8 +98,26 @@ describe("formulário do editor", () => {
     const p = toFeedPayload({ ...base, kind: "video", body: "<i>olha</i>", videoUrl: " https://youtu.be/dQw4w9WgXcQ ", imagePath: "sobrou", audience: "modality", modality: "hibrido", classId: "sobrou" });
     expect(p).toEqual({
       kind: "video", body: "olha", image_path: null, video_url: "https://youtu.be/dQw4w9WgXcQ",
-      audience: "modality", audience_modality: "hibrido", audience_class_id: null, pinned: false, published_at: null,
+      audience: "modality", audience_modality: "hibrido", audience_class_id: null, pinned: false, published_at: null, unpin_at: null,
     });
+  });
+});
+
+describe("recado para todos = post fixado (1.6)", () => {
+  it("'fixado até' = fim do dia em SP; só vai no payload com o post fixado", () => {
+    expect(unpinDayToISO("2026-11-27")).toBe("2026-11-28T02:59:00.000Z");
+    expect(unpinDayToISO("27/11/2026")).toBeNull();
+    const form = { kind: "text" as const, body: "Recado", imagePath: null, videoUrl: "", audience: "all" as const, modality: null, classId: null, publishAt: null, unpinAt: "2026-11-28T02:59:00.000Z" };
+    expect(toFeedPayload({ ...form, pinned: true }).unpin_at).toBe("2026-11-28T02:59:00.000Z");
+    expect(toFeedPayload({ ...form, pinned: false }).unpin_at).toBeNull();
+  });
+  it("padrão do recado para todos: 7 dias a partir de hoje (dia de SP)", () => {
+    expect(spDayFromNow(7, new Date("2026-11-20T02:00:00Z").getTime())).toBe("2026-11-26");
+  });
+  it("migration: recado para todos recusado no banco e migrado para post fixado", () => {
+    const m = readFileSync(join(process.cwd(), "supabase/migrations/20261120160000_announcement_feed.sql"), "utf8");
+    expect(m).toMatch(/if p_student_id is null then\s+raise exception 'INVALID_INPUT' using errcode = 'P0001', detail = 'use_feed'/);
+    expect(m).toMatch(/where a\.student_id is null and a\.active and a\.expires_at > now\(\)/);
   });
 });
 

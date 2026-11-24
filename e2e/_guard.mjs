@@ -5,6 +5,8 @@
  */
 import { mkdirSync } from "node:fs";
 import { assertDevProject } from "../scripts/dev-guard.mts";
+// Rastro automático (trace, capturas e console) em test-results/ quando o roteiro falha.
+import "./_trace.mjs";
 
 assertDevProject(process.env.NEXT_PUBLIC_SUPABASE_URL);
 if (!process.env.SEED_USER_PASSWORD) {
