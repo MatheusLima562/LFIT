@@ -110,9 +110,13 @@ try {
   // Apagar post com imagem: o servidor remove o arquivo do Storage na hora.
   await imageItem.getByRole("button", { name: "Apagar" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Apagar" }).click();
-  ok("post com imagem apagado", await imageItem.waitFor({ state: "detached", timeout: 10000 }).then(() => true, () => false));
-  const { data: deletedRow } = await admin.from("feed_posts").select("deleted_at").eq("id", imageRow.id).single();
-  ok("banco: post com imagem apagado (soft delete)", Boolean(deletedRow?.deleted_at));
+  // Pelo elemento do DOM, não pelo papel: enquanto o diálogo fecha, o resto da página fica aria-hidden e um localizador
+  // por papel "some" na hora — o roteiro lia o banco antes de o apagamento terminar (causa da falha intermitente).
+  await page.getByRole("alertdialog").waitFor({ state: "detached", timeout: 10000 });
+  const imageLi = page.locator("li").filter({ hasText: `Foto do espaço ${MARK}` });
+  ok("post com imagem apagado", await imageLi.waitFor({ state: "detached", timeout: 15000 }).then(() => true, () => false));
+  const { data: deletedRow, error: deletedErr } = await admin.from("feed_posts").select("id, deleted_at, pinned").eq("id", imageRow.id).maybeSingle();
+  ok("banco: post com imagem apagado (soft delete)", Boolean(deletedRow?.deleted_at), JSON.stringify({ id: imageRow.id, deletedRow, deletedErr }));
   const fileName = imageRow.image_path.split("/")[1];
   const fileLeft = async () => ((await admin.storage.from("feed-media").list(org, { search: fileName })).data ?? []).some((f) => f.name === fileName);
   ok("arquivo da imagem removido do Storage", await until(async () => !(await fileLeft()), 10000));

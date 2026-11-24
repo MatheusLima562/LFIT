@@ -1951,6 +1951,8 @@ export const messages = {
     deleteTitle: "Apagar este post?",
     deleteText: "O post some do feed dos alunos na hora. As curtidas deixam de aparecer.",
     deleted: "Post apagado.",
+    deleteImageFailed: "Não foi possível apagar a imagem do post. O post continua publicado; tente de novo.",
+    deleteFailed: "Não foi possível confirmar o apagamento. O post continua publicado; tente de novo.",
     pinnedToast: "Post fixado no topo.",
     unpinnedToast: "Post desafixado.",
     failed: "Não foi possível salvar. Confira a conexão e tente de novo.",

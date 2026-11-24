@@ -176,7 +176,12 @@ export function FeedManager({ posts, orgId, isOwner, classes, now, startPinned =
             try {
               const r = await callAction(() => deleteFeedPost(p.id));
               if (!r) return;
-              if (!r.ok) return void toast.error(r.error);
+              // Erro: o post continua na lista (o servidor desfez o apagamento); a lista é relida para refletir o banco.
+              if (!r.ok) {
+                toast.error(r.error);
+                router.refresh();
+                return;
+              }
               toast.success(t.deleted);
               router.refresh();
             } finally {

@@ -120,6 +120,12 @@ BASE=http://localhost:3100 npm run test:e2e -- k210 m28 # só os que casarem com
   ("Clamshell Sleep" no `pmset -g log`) o `caffeinate` não segura: os prazos da regra 7 limitam a espera; rode de novo o
   arquivo afetado.
 - Sem `BASE`, usa `http://localhost:3000`. Capturas em `e2e/.output/` (fora do git; `OUT=` muda a pasta).
+- **Cadastro público no build de produção:** sem `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY`, o build de
+  produção recusa o cadastro (fail-closed) e `fase1-saude-consentimento` falha. Rode esse roteiro contra o `npm run dev`
+  (usa as chaves de teste oficiais do Turnstile) ou configure as chaves.
+- **Localizador por papel depois de diálogo:** enquanto um diálogo fecha, o resto da página fica `aria-hidden` e
+  `getByRole(...)` "some" na hora. Para esperar um item sair da lista depois de confirmar, espere o diálogo sair e use o
+  elemento do DOM (`page.locator("li").filter(...)`).
 - `e2e/_guard.mjs` (no topo de todo roteiro) reusa a trava do seed: recusa rodar fora do lfit-dev ou sem
   `ALLOW_DB_TESTS=true`. Login só com os usuários **fictícios** do seed (`owner.seed@example.com`,
   `trainer1/2.seed@example.com`) e a senha de `SEED_USER_PASSWORD` do `.env.local` (12+ caracteres; o seed recusa senha

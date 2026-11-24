@@ -56,12 +56,12 @@ export function AccountManager({ account, detail }: { account: PlatformAccount; 
       <section aria-labelledby={`${id}-plan`} className={box}>
         <h2 id={`${id}-plan`} className="text-[15px] font-semibold text-ink">{d.plan}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1.5">
-            <span className={label}>{t.create.plan}</span>
-            <select value={plan} onChange={(e) => setPlan(e.target.value as Plan)} className={select}>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`${id}-plan-select`} className={label}>{t.create.plan}</label>
+            <select id={`${id}-plan-select`} value={plan} onChange={(e) => setPlan(e.target.value as Plan)} className={select}>
               {PLANS.map((p) => <option key={p} value={p}>{t.plans[p]}</option>)}
             </select>
-          </label>
+          </div>
           <label className="flex flex-col gap-1.5">
             <span className={label}>{t.create.limit}</span>
             <Input type="number" min={1} max={100000} value={limit} onChange={(e) => setLimit(e.target.value)} />
@@ -76,12 +76,13 @@ export function AccountManager({ account, detail }: { account: PlatformAccount; 
 
       <section aria-labelledby={`${id}-status`} className={box}>
         <h2 id={`${id}-status`} className="text-[15px] font-semibold text-ink">{d.status}</h2>
-        <label className="flex flex-col gap-1.5">
-          <span className={label}>{t.columns.status}</span>
-          <select value={status} onChange={(e) => setStatus(e.target.value as SubscriptionStatus)} className={select}>
+        {/* Rótulo explícito: com o <select> dentro do <label>, o nome acessível incluiria a opção escolhida. */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={`${id}-status-select`} className={label}>{t.columns.status}</label>
+          <select id={`${id}-status-select`} value={status} onChange={(e) => setStatus(e.target.value as SubscriptionStatus)} className={select}>
             {SUBSCRIPTION_STATUSES.map((s) => <option key={s} value={s}>{t.status[s]}</option>)}
           </select>
-        </label>
+        </div>
         <p className="text-xs text-ink-3">{t.state[account.accessState]} · {d.statusHint}</p>
         <Button type="button" className="self-start" disabled={busy !== null || status === account.status}
           onClick={() => void run("status", () => supabase.rpc("platform_set_status", { p_org: account.id, p_status: status }), d.statusSaved)}>
