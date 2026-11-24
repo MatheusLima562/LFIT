@@ -846,6 +846,29 @@ effective_status =
   aluno. Sem plano ativo → o bloco não aparece. O sistema não tem tipo de plano comercial (mensal, trimestral…): não é
   inventado (`docs/decisoes-autonomas.md`).
 
+### Edição rápida da prescrição (sprint edição, PARTE A, migration `20261124130000` — escrita, ainda não aplicada; e2e `e2e/edicao-rapida.e2e.mjs`)
+- **Um só ponto de escrita:** `apply_prescription_changes(p_changes, p_source, p_session_id)` — `[{item_id, field, old,
+  new, unit?}]`, tudo ou nada. Cada mudança leva o valor ANTIGO esperado: se o item mudou desde que a tela leu →
+  `PRESCRIPTION_CHANGED` e nada é gravado. Campos: `load_value` (na unidade do item, kg/lb), `sets` (1–20),
+  `quantity_min`/`quantity_max` (só itens em repetições, 1–300, máx ≥ mín). Itens com séries detalhadas
+  (`plan_item_sets`) ou carga em texto e planos-modelo (sem aluno) ficam para o montador. Permissão =
+  `private.lock_editable_plan` (quem pode editar o plano). Conta somente leitura → `ACCOUNT_READ_ONLY`.
+  **A PARTE B (IA) aplica pelo mesmo caminho**, origem `ai`.
+- **Histórico** `prescription_changes` (cópia própria: treino, exercício, campo, antes → depois, quem, quando, origem
+  `quick`/`suggestion`/`bulk`/`ai`/`undo`). O montador recria os itens ao salvar o plano inteiro: o histórico fica e o
+  desfazer (`undo_prescription_batch`, lote inteiro) avisa `PRESCRIPTION_ITEM_GONE` / `PRESCRIPTION_CHANGED` /
+  `ALREADY_UNDONE`. Leitura por RLS (equipe com acesso ao aluno) e `list_prescription_changes`.
+- **Sugestões** "Atualizar prescrição para X?": `get_prescription_review` devolve, para o plano ATIVO, as séries
+  registradas na sessão concluída mais recente de cada item (60 dias; sem dor, sem comentário). A regra fica em
+  `features/prescription/prescription.ts` (`computeSuggestions`): carga = valor mais usado ≠ prescrito; repetições =
+  valor fixo diferente ou faixa ultrapassada (a faixa anda mantendo a largura). Aparecem agrupadas por sessão (a mais
+  recente primeiro) na ficha do aluno (`/alunos/[id]/treinos`) e na edição rápida, com "Atualizar", "Atualizar as N
+  desta sessão" e "Manter" (`dismiss_prescription_suggestion`). **Nunca atualiza sozinho.**
+- **Edição rápida** `/alunos/[id]/treinos/ficha` (celular): +/− carga (passo da conta `organizations.load_step`,
+  padrão 2,5, Configurações → só o personal, `set_load_step`), repetições e séries; toques seguidos no mesmo exercício
+  viram uma gravação (~1 s). **Progressão em lote** por treino (±%, arredondado ao passo, nunca inverte o sentido) com
+  prévia antes → depois.
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -928,6 +951,7 @@ sem efeitos colaterais).
 | **Ausência e pausa (1.5)** | `set_student_pause`, `end_student_pause`, `get_inactive_students`, `claim_my_nudge` | Pausa: `lock_accessible_student` (owner ou responsável), motivo só `viagem`/`ferias`/`outro` (nunca saúde), volta ≥ hoje; auditadas. `get_inactive_students`: `require_staff()` + `private.dashboard_students()`; só nome, dias e limite. `claim_my_nudge`: escopo `students.user_id = auth.uid()`; ativo, com plano ativo, fora de pausa, conta sem limitação, 7+ dias e último aviso há 7+ dias (marca a hora em `private.student_nudges`). `20261120150000`; testes em `tests/db/pause-absence.test.ts` |
 | **Fuso da conta (1.7)** | `set_organization_time_zone` | `require_owner()` + conta gravável; só fusos de `private.allowed_time_zones()` (Brasil + Lisboa); auditado. `20261120170000`; testes em `tests/db/time-zone-retention.test.ts` |
 | **Meu plano (aluno, edição 0)** | `get_my_plan_summary` | Só o aluno da sessão (`students.user_id = auth.uid()`, sem exclusão) → senão `STUDENT_NOT_FOUND`; acesso não ativo → `null`. Devolve só o plano ativo (nome, datas) e o próximo pagamento pendente (valor, data) — nada de histórico nem de outro aluno. `20261124120000`; testes em `tests/db/student-my-plan.test.ts` |
+| **Edição rápida da prescrição (edição A)** | `apply_prescription_changes`, `undo_prescription_batch`, `list_prescription_changes`, `get_prescription_review`, `dismiss_prescription_suggestion`, `set_load_step` | `require_staff()` + conta gravável nas escritas; item → `private.lock_editable_plan` (quem pode editar o plano de ALUNO, não arquivado) dentro de `private.prescription_apply_one`; valor antigo esperado (`PRESCRIPTION_CHANGED`); leitura/desfazer/revisão com `private.can_access_student`. `set_load_step`: `require_owner()`. Revisão sem dor nem comentário. `20261124130000`; testes em `tests/db/prescription-quick-edit.test.ts` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `get_access_link_branding` (nome/logo do negócio na tela do link, só com token válido, sem consumir), `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 

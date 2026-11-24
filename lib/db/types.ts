@@ -1360,11 +1360,13 @@ export type Database = {
       organizations: {
         Row: {
           ai_assistant_enabled: boolean
+          ai_coach_enabled: boolean
           contact_whatsapp: string | null
           created_at: string
           id: string
           is_seed: boolean
           live_enabled: boolean
+          load_step: number
           logo_path: string | null
           name: string
           overdue_grace_days: number
@@ -3461,6 +3463,12 @@ export type Database = {
         Returns: Json
       }
       get_my_plan_summary: { Args: never; Returns: Json }
+      set_load_step: { Args: { p_step: number }; Returns: undefined }
+      apply_prescription_changes: { Args: { p_changes: Json; p_source: string; p_session_id?: string }; Returns: Json }
+      undo_prescription_batch: { Args: { p_batch_id: string }; Returns: Json }
+      list_prescription_changes: { Args: { p_student_id: string; p_limit?: number }; Returns: Json }
+      get_prescription_review: { Args: { p_student_id: string; p_session_id?: string }; Returns: Json }
+      dismiss_prescription_suggestion: { Args: { p_session_id: string; p_item_id: string; p_field: string }; Returns: undefined }
       is_platform_admin: { Args: never; Returns: boolean }
       list_chat_inbox: {
         Args: never

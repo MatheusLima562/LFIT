@@ -110,6 +110,13 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["end_student_pause", () => ({ p_student_id: studentId })],
     ["get_inactive_students", () => ({})],
     ["set_organization_time_zone", () => ({ p_time_zone: "Europe/Lisbon" })],
+    // Edição rápida da prescrição (20261124130000): só equipe.
+    ["set_load_step", () => ({ p_step: 5 })],
+    ["apply_prescription_changes", () => ({ p_changes: [{ item_id: randomUUID(), field: "sets", old: 3, new: 4 }], p_source: "quick" })],
+    ["undo_prescription_batch", () => ({ p_batch_id: randomUUID() })],
+    ["list_prescription_changes", () => ({ p_student_id: studentId })],
+    ["get_prescription_review", () => ({ p_student_id: studentId })],
+    ["dismiss_prescription_suggestion", () => ({ p_session_id: randomUUID(), p_item_id: randomUUID(), p_field: "load_value" })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -165,6 +172,8 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "log_account_export", "create_student_invites", "student_invite_statuses", "get_invite_quota",
     "set_student_pause", "end_student_pause", "get_inactive_students", "claim_my_nudge", "get_my_pinned_post",
     "set_organization_time_zone", "get_my_plan_summary",
+    "set_load_step", "apply_prescription_changes", "undo_prescription_batch", "list_prescription_changes",
+    "get_prescription_review", "dismiss_prescription_suggestion",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();
