@@ -3464,6 +3464,9 @@ export type Database = {
       }
       get_my_plan_summary: { Args: never; Returns: Json }
       set_load_step: { Args: { p_step: number }; Returns: undefined }
+      get_ai_coach_status: { Args: never; Returns: Json }
+      ai_coach_begin: { Args: { p_student_id: string; p_command: string }; Returns: Json }
+      ai_coach_finish: { Args: { p_request_id: string; p_input_tokens: number; p_output_tokens: number; p_failed: boolean }; Returns: undefined }
       apply_prescription_changes: { Args: { p_changes: Json; p_source: string; p_session_id?: string }; Returns: Json }
       undo_prescription_batch: { Args: { p_batch_id: string }; Returns: Json }
       list_prescription_changes: { Args: { p_student_id: string; p_limit?: number }; Returns: Json }

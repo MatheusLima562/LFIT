@@ -117,6 +117,9 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["list_prescription_changes", () => ({ p_student_id: studentId })],
     ["get_prescription_review", () => ({ p_student_id: studentId })],
     ["dismiss_prescription_suggestion", () => ({ p_session_id: randomUUID(), p_item_id: randomUUID(), p_field: "load_value" })],
+    // Comando com IA (20261124140000): só equipe (e desligado por padrão).
+    ["get_ai_coach_status", () => ({})],
+    ["ai_coach_begin", () => ({ p_student_id: studentId, p_command: "supino +2 kg" })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -174,6 +177,7 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "set_organization_time_zone", "get_my_plan_summary",
     "set_load_step", "apply_prescription_changes", "undo_prescription_batch", "list_prescription_changes",
     "get_prescription_review", "dismiss_prescription_suggestion",
+    "get_ai_coach_status", "ai_coach_begin", "ai_coach_finish",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();

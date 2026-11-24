@@ -869,6 +869,24 @@ effective_status =
   viram uma gravação (~1 s). **Progressão em lote** por treino (±%, arredondado ao passo, nunca inverte o sentido) com
   prévia antes → depois.
 
+### Comando do personal com IA — DESLIGADO por padrão (sprint edição, PARTE B, migration `20261124140000` — escrita, ainda não aplicada; e2e `e2e/comando-ia.e2e.mjs` com `AI_PROVIDER=fake npx next start -p 3100`)
+- Flag `organizations.ai_coach_enabled` (padrão **false**; liga só por SQL — nenhuma tela liga; equipe não grava a
+  coluna) **e** plano Pro/Gold. **Nenhuma conta ligada.** Campo "Comando (IA)" na edição rápida
+  (`/alunos/[id]/treinos/ficha`); o ditado do teclado do iPhone serve como voz.
+- Fluxo (`features/coach-ai/actions.ts`): `ai_coach_begin` (sessão do personal) confere acesso ao aluno, conta
+  gravável, flag, plano, tamanho (300), limite do dia por conta (30) e treino ativo; reserva 1 do limite e devolve o
+  contexto MÍNIMO (refs A1, A2…, exercício, séries, repetições, carga). O servidor tira o nome do aluno do texto
+  (`redactNames`), chama o provedor (reaproveita `features/assistant/provider.ts` / `anthropic.ts`, prazo 20 s →
+  "a IA demorou demais"), valida a resposta contra a prescrição atual (`validateProposal`: ref existe, item editável,
+  campo e limites; qualquer erro derruba a proposta inteira) e fecha o pedido com tokens/custo (`ai_coach_finish`, só
+  service_role). **A IA só propõe:** a tela mostra antes → depois e "Aplicar alterações" grava por
+  `apply_prescription_changes` (origem `ai`; mesmo histórico e desfazer). Ambiguidade (exercício, treino, unidade) →
+  a IA pergunta.
+- **Ao provedor vão só nomes dos exercícios e a prescrição.** Nunca nome do aluno, nome do plano, ficha de saúde,
+  contraindicação, cuidado (`care_note`) ou dica. O texto do comando **não é gravado** (`private.ai_coach_requests` só
+  tem contagem, tokens e custo). Custo do mês visível só para o personal (`get_ai_coach_status`). Testes com o
+  provedor falso (`fakeCoachReply`).
+
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
   últimos 7 dias civis de São Paulo. A fórmula aparece na UI (tooltip no card). Calculado por
@@ -952,6 +970,8 @@ sem efeitos colaterais).
 | **Fuso da conta (1.7)** | `set_organization_time_zone` | `require_owner()` + conta gravável; só fusos de `private.allowed_time_zones()` (Brasil + Lisboa); auditado. `20261120170000`; testes em `tests/db/time-zone-retention.test.ts` |
 | **Meu plano (aluno, edição 0)** | `get_my_plan_summary` | Só o aluno da sessão (`students.user_id = auth.uid()`, sem exclusão) → senão `STUDENT_NOT_FOUND`; acesso não ativo → `null`. Devolve só o plano ativo (nome, datas) e o próximo pagamento pendente (valor, data) — nada de histórico nem de outro aluno. `20261124120000`; testes em `tests/db/student-my-plan.test.ts` |
 | **Edição rápida da prescrição (edição A)** | `apply_prescription_changes`, `undo_prescription_batch`, `list_prescription_changes`, `get_prescription_review`, `dismiss_prescription_suggestion`, `set_load_step` | `require_staff()` + conta gravável nas escritas; item → `private.lock_editable_plan` (quem pode editar o plano de ALUNO, não arquivado) dentro de `private.prescription_apply_one`; valor antigo esperado (`PRESCRIPTION_CHANGED`); leitura/desfazer/revisão com `private.can_access_student`. `set_load_step`: `require_owner()`. Revisão sem dor nem comentário. `20261124130000`; testes em `tests/db/prescription-quick-edit.test.ts` |
+| **Comando com IA (edição B, desligado)** | `get_ai_coach_status`, `ai_coach_begin` | `require_staff()`; `ai_coach_begin`: conta gravável + `ai_coach_enabled` (`AI_DISABLED`) + plano Pro/Gold (`AI_PLAN_REQUIRED`) + `private.can_access_student` + tamanho + limite do dia (trava a org); devolve só refs/exercício/prescrição (nunca saúde, cuidado, dica, nome do plano); o nome do aluno vem só para o servidor tirar do texto. Custo do mês só para o owner. `20261124140000`; testes em `tests/db/ai-coach.test.ts` |
+| **Só servidor — comando com IA** (`service_role`) | `ai_coach_finish` | Fecha o pedido (tokens, custo, falha) uma única vez; sem EXECUTE para `authenticated`/`anon`. `20261124140000` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `get_access_link_branding` (nome/logo do negócio na tela do link, só com token válido, sem consumir), `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 

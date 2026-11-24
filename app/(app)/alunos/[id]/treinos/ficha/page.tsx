@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { z } from "zod";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CoachCommand } from "@/features/coach-ai/components/CoachCommand";
+import { getCoachStatus } from "@/features/coach-ai/queries";
 import { getStudentName } from "@/features/plans/queries";
 import { BulkProgression } from "@/features/prescription/components/BulkProgression";
 import { PrescriptionHistory } from "@/features/prescription/components/PrescriptionHistory";
@@ -29,10 +31,11 @@ export default async function QuickSheetPage({ params }: PageProps<"/alunos/[id]
   if (!z.uuid().safeParse(id).success) notFound();
   const student = await getStudentName(id);
   if (!student) notFound();
-  const [sheet, review, history] = await Promise.all([
+  const [sheet, review, history, coach] = await Promise.all([
     getQuickSheet(id, session.organizationId),
     getPrescriptionReview(id),
     listPrescriptionChanges(id),
+    getCoachStatus(),
   ]);
 
   return (
@@ -51,6 +54,8 @@ export default async function QuickSheetPage({ params }: PageProps<"/alunos/[id]
       ) : (
         <>
           <SuggestionsPanel suggestions={computeSuggestions(review)} />
+          {/* PARTE B: só com a conta ligada (desligado por padrão) e plano Pro/Gold. */}
+          {coach && <CoachCommand studentId={id} status={coach} />}
           <QuickEditSheet workouts={sheet.workouts} loadStep={sheet.loadStep} />
           <BulkProgression workouts={sheet.workouts} loadStep={sheet.loadStep} />
           <PrescriptionHistory batches={history} />
