@@ -3460,6 +3460,7 @@ export type Database = {
         Args: { p_batch_id: string; p_rows: Json }
         Returns: Json
       }
+      get_my_plan_summary: { Args: never; Returns: Json }
       is_platform_admin: { Args: never; Returns: boolean }
       list_chat_inbox: {
         Args: never

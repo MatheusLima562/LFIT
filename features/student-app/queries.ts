@@ -4,6 +4,7 @@ import { createClient } from "@/lib/db/server";
 import { createAdminClient } from "@/lib/db/admin";
 import { exerciseMediaUrl } from "@/lib/media";
 import type { SessionRecord } from "./humanize";
+import { parseMyPlan, type MyPlanSummary } from "./my-plan";
 
 const PHOTO_BUCKET = "student-photos";
 import type { AppActivePlan, AppExercise, AppHistoryEntry, AppProfile, AppTrainingSession, AppWorkout } from "./types";
@@ -20,6 +21,13 @@ export const getMyProfile = cache(async (): Promise<AppProfile | null> => {
   if (error) throw new Error(`PROFILE_UNAVAILABLE${error.code ? `:${error.code}` : ""}`);
   return (data?.[0] as AppProfile | undefined) ?? null;
 });
+
+/** "Meu plano" do Perfil: só o próprio aluno (RPC). Sem plano ativo (ou erro) → null → o bloco não aparece. */
+export async function getMyPlanSummary(): Promise<MyPlanSummary | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_my_plan_summary");
+  return error ? null : parseMyPlan(data);
+}
 
 /**
  * A conta do personal limita o app? (assinatura em atraso após a tolerância, suspensa ou cancelada). `limited`: só leitura

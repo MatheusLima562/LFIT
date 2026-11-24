@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Building2, CircleCheck, Clock, LogOut } from "lucide-react";
+import { CircleCheck, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOutStudent } from "@/features/student-app/actions";
 import { initials } from "@/features/student-app/humanize";
+import { MyPlanCard } from "@/features/student-app/components/MyPlanCard";
 import { TrainerAvatar } from "@/features/student-app/components/TrainerAvatar";
-import { getMyPhotoUrl, getMyProfile } from "@/features/student-app/queries";
+import { getMyPhotoUrl, getMyPlanSummary, getMyProfile } from "@/features/student-app/queries";
 import { messages } from "@/messages/pt-BR";
 
 const t = messages.aluno;
@@ -25,12 +26,12 @@ function Row({ icon, label, children }: { icon: React.ReactNode; label: string; 
   );
 }
 
-/** Perfil do aluno: quem é, de qual estúdio, quem acompanha (e em que horário) e o "Sair". */
+/** Perfil do aluno: quem é, quem acompanha, situação do acesso, "Meu plano" (se houver) e o "Sair". */
 export default async function StudentProfilePage() {
   // Roda em paralelo ao layout: sem perfil/acesso, quem mostra o portão é o layout.
   const profile = await getMyProfile();
   if (!profile || profile.effective_status !== "active") return null;
-  const photo = await getMyPhotoUrl(profile.photo_path);
+  const [photo, plan] = await Promise.all([getMyPhotoUrl(profile.photo_path), getMyPlanSummary()]);
   const fullName = `${profile.first_name} ${profile.last_name}`.trim();
 
   return (
@@ -47,10 +48,8 @@ export default async function StudentProfilePage() {
         <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">{fullName}</h1>
       </section>
 
+      {/* Consultoria a distância: sem "Estúdio" nem "Atendimento" no Perfil (pedido do dono). */}
       <dl className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">
-        <Row icon={<Building2 className="size-4" />} label={t.profile.organization}>
-          {profile.organization_name}
-        </Row>
         <div className="flex items-start gap-3 px-4 py-3">
           <TrainerAvatar name={profile.trainer_name ?? profile.personal_name} className="size-9 text-xs" />
           <div className="min-w-0">
@@ -58,15 +57,12 @@ export default async function StudentProfilePage() {
             <dd className="text-[15px] text-ink">{profile.trainer_name ?? t.profile.noTrainer(profile.personal_name)}</dd>
           </div>
         </div>
-        {profile.trainer_office_hours && (
-          <Row icon={<Clock className="size-4" />} label={t.profile.officeHours}>
-            {profile.trainer_office_hours}
-          </Row>
-        )}
         <Row icon={<CircleCheck className="size-4" />} label={t.profile.access}>
           {t.profile.active}
         </Row>
       </dl>
+
+      {plan && <MyPlanCard plan={plan} />}
 
       <form action={signOutStudent}>
         <Button type="submit" variant="outline" size="lg" className="h-12 w-full text-base">

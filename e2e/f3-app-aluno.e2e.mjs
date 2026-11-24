@@ -68,7 +68,9 @@ ok("área de toque das abas ≥ 44 px", tabBox && tabBox.height >= 44 && tabBox.
 await tab("/aluno/perfil").focus();
 await page.keyboard.press("Enter");
 await page.waitForURL(`${BASE}/aluno/perfil`, { timeout: 15000 });
-ok("Perfil pelo teclado: nome, estúdio, professor, horário e Sair", (await waitText(page, "Camila Freitas")) && (await waitText(page, "Studio Exemplo (fictício)")) && (await waitText(page, "Caio Exemplo")) && (await waitText(page, "Seg a sex, 7h às 12h")) && (await page.getByRole("button", { name: "Sair da conta" }).count()) === 1);
+// Perfil (sprint edição, PARTE 0): sem "Estúdio" e sem "Atendimento"; professor e acesso continuam.
+ok("Perfil pelo teclado: nome, professor, acesso e Sair", (await waitText(page, "Camila Freitas")) && (await waitText(page, "Caio Exemplo")) && (await waitText(page, "Acesso ao app")) && (await page.getByRole("button", { name: "Sair da conta" }).count()) === 1);
+ok("Perfil sem 'Estúdio' e sem 'Atendimento'", !/Estúdio|Atendimento|Seg a sex, 7h às 12h/.test(await page.getByRole("main").innerText()));
 ok("cabeçalho sem 'Sair' dentro do app (fica no Perfil)", (await page.locator("header").getByRole("button", { name: /Sair/ }).count()) === 0);
 await page.screenshot({ path: `${OUT}/f3-01b-perfil.png`, fullPage: true });
 
