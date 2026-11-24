@@ -97,6 +97,19 @@ describe.runIf(dbTestsEnabled)("edição rápida da prescrição", () => {
     await expect(apply(owner, [{ item_id: itemLoad, field: "sets", old: 4, new: 5 }], "undo")).rejects.toThrow("INVALID_INPUT");
   });
 
+  it("faixa: mudança grande válida passa em qualquer ordem (e o desfazer também); invertida → INVALID_INPUT", async () => {
+    // 9–11 → 13–15 enviando o mínimo antes do máximo (no meio ficaria 13–11): o banco aplica na ordem segura.
+    const b = await apply(owner, [
+      { item_id: itemRange, field: "quantity_min", old: 9, new: 13 },
+      { item_id: itemRange, field: "quantity_max", old: 11, new: 15 },
+    ]);
+    expect(await item(itemRange)).toMatchObject({ quantity_min: 13, quantity_max: 15 });
+    await rpc(owner.client, "undo_prescription_batch", { p_batch_id: b.batch_id });
+    expect(await item(itemRange)).toMatchObject({ quantity_min: 9, quantity_max: 11 });
+    await expect(apply(owner, [{ item_id: itemRange, field: "quantity_min", old: 9, new: 20 }])).rejects.toThrow("INVALID_INPUT");
+    expect(await item(itemRange)).toMatchObject({ quantity_min: 9, quantity_max: 11 });
+  });
+
   it("permissões: aluno, professor de outro aluno, outra organização e anônimo não alteram nem leem o histórico", async () => {
     const ch = [{ item_id: itemLoad, field: "sets", old: 4, new: 5 }];
     await expect(apply(studentUser, ch)).rejects.toThrow("FORBIDDEN");
@@ -148,7 +161,8 @@ describe.runIf(dbTestsEnabled)("edição rápida da prescrição", () => {
     }).select("id").single();
     const sessionId = ws!.id;
     const { data: il } = await fx.db.from("session_item_logs").insert({ organization_id: org.id, session_id: sessionId, item_id: itemLoad, exercise_id: exerciseId, exercise_name: "Ex" }).select("id").single();
-    await fx.db.from("session_set_logs").insert([0, 1, 2].map((k) => ({ organization_id: org.id, item_log_id: il!.id, exercise_id: exerciseId, set_index: k, load_value: 45, load_unit: "kg", quantity_value: 12 })));
+    const { error: setErr } = await fx.db.from("session_set_logs").insert([1, 2, 3].map((k) => ({ organization_id: org.id, item_log_id: il!.id, set_index: k, load_value: 45, load_unit: "kg", quantity_value: 12 })));
+    expect(setErr).toBeNull();
 
     const review = await rpc<{ plan_id: string; items: { item_id: string; session_id: string; logs: unknown[]; dismissed: string[] }[] }>(trainer.client, "get_prescription_review", { p_student_id: studentId });
     expect(review.plan_id).toBe(planId);

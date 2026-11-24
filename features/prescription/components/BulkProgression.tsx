@@ -22,19 +22,54 @@ export function BulkProgression({ workouts, loadStep }: { workouts: QuickWorkout
   const [shown, setShown] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const workout = workouts.find((w) => w.id === workoutId);
   const pct = Number(percent.replace(",", "."));
   const valid = Number.isFinite(pct) && pct !== 0 && Math.abs(pct) <= 50;
-  const preview = workout && valid ? bulkProgression(workout, pct, loadStep) : null;
+  // Prévia sempre com os valores ATUAIS do banco (não os da tela, que podem estar defasados depois de um +/−).
+  const [fresh, setFresh] = useState<QuickWorkout | null>(null);
+  const workout = fresh ?? workouts.find((w) => w.id === workoutId);
+  const preview = shown && fresh && valid ? bulkProgression(fresh, pct, loadStep) : null;
+
+  const loadPreview = async () => {
+    const base = workouts.find((w) => w.id === workoutId);
+    if (!base) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase
+        .from("plan_workout_items")
+        .select("id, sets, quantity_min, quantity_max, quantity_unit, load_value, load_unit, load_text")
+        .eq("workout_id", workoutId);
+      if (error) return void toast.error(dbErrorMessage(error));
+      const byId = new Map((data ?? []).map((r) => [r.id, r]));
+      setFresh({
+        ...base,
+        items: base.items.flatMap((i) => {
+          const r = byId.get(i.id);
+          if (!r) return [];
+          return [{ ...i, sets: r.sets, quantityMin: r.quantity_min, quantityMax: r.quantity_max, quantityUnit: r.quantity_unit,
+            loadValue: r.load_value === null ? null : Number(r.load_value), loadUnit: r.load_unit, loadText: r.load_text }];
+        }),
+      });
+      setShown(true);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const apply = async () => {
     if (!preview?.rows.length) return;
     setBusy(true);
     try {
       const { error } = await supabase.rpc("apply_prescription_changes", { p_changes: bulkChanges(preview.rows), p_source: "bulk" });
-      if (error) return void toast.error(dbErrorMessage(error));
+      if (error) {
+        // Mudou no meio (outra aba/pessoa): avisa, relê e refaz a prévia com os valores novos.
+        toast.error(dbErrorMessage(error));
+        router.refresh();
+        await loadPreview();
+        return;
+      }
       toast.success(t.applied);
       setShown(false);
+      setFresh(null);
       router.refresh();
     } finally {
       setBusy(false);
@@ -50,7 +85,7 @@ export function BulkProgression({ workouts, loadStep }: { workouts: QuickWorkout
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-w`} className="text-sm font-medium text-ink">{t.workout}</label>
-          <select id={`${id}-w`} className={select} value={workoutId} onChange={(e) => { setWorkoutId(e.target.value); setShown(false); }}>
+          <select id={`${id}-w`} className={select} value={workoutId} onChange={(e) => { setWorkoutId(e.target.value); setShown(false); setFresh(null); }}>
             {workouts.map((w) => <option key={w.id} value={w.id}>{messages.prescription.workoutTab(w.label)}</option>)}
           </select>
         </div>
@@ -60,7 +95,7 @@ export function BulkProgression({ workouts, loadStep }: { workouts: QuickWorkout
         </div>
       </div>
       {!valid && <p role="alert" className="text-xs text-danger-ink">{t.invalid}</p>}
-      <Button type="button" variant="outline" className="h-11 self-start" disabled={!valid} onClick={() => setShown(true)}>{t.preview}</Button>
+      <Button type="button" variant="outline" className="h-11 self-start" disabled={!valid || busy} onClick={() => void loadPreview()}>{t.preview}</Button>
 
       {shown && preview && workout && (
         <div className="flex flex-col gap-2" data-testid="bulk-preview">

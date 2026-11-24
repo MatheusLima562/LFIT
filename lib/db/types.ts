@@ -1381,11 +1381,13 @@ export type Database = {
         }
         Insert: {
           ai_assistant_enabled?: boolean
+          ai_coach_enabled?: boolean
           contact_whatsapp?: string | null
           created_at?: string
           id?: string
           is_seed?: boolean
           live_enabled?: boolean
+          load_step?: number
           logo_path?: string | null
           name: string
           overdue_grace_days?: number
@@ -1400,11 +1402,13 @@ export type Database = {
         }
         Update: {
           ai_assistant_enabled?: boolean
+          ai_coach_enabled?: boolean
           contact_whatsapp?: string | null
           created_at?: string
           id?: string
           is_seed?: boolean
           live_enabled?: boolean
+          load_step?: number
           logo_path?: string | null
           name?: string
           overdue_grace_days?: number
@@ -1831,6 +1835,174 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "training_plans"
             referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      prescription_changes: {
+        Row: {
+          actor_id: string | null
+          batch_id: string
+          created_at: string
+          exercise_name: string
+          field: string
+          id: string
+          item_id: string | null
+          new_value: number | null
+          old_value: number | null
+          organization_id: string
+          plan_id: string | null
+          session_id: string | null
+          source: string
+          student_id: string
+          undo_batch_id: string | null
+          undone_at: string | null
+          undone_by: string | null
+          unit: string | null
+          workout_id: string | null
+          workout_label: string
+        }
+        Insert: {
+          actor_id?: string | null
+          batch_id: string
+          created_at?: string
+          exercise_name: string
+          field: string
+          id?: string
+          item_id?: string | null
+          new_value?: number | null
+          old_value?: number | null
+          organization_id: string
+          plan_id?: string | null
+          session_id?: string | null
+          source: string
+          student_id: string
+          undo_batch_id?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
+          unit?: string | null
+          workout_id?: string | null
+          workout_label: string
+        }
+        Update: {
+          actor_id?: string | null
+          batch_id?: string
+          created_at?: string
+          exercise_name?: string
+          field?: string
+          id?: string
+          item_id?: string | null
+          new_value?: number | null
+          old_value?: number | null
+          organization_id?: string
+          plan_id?: string | null
+          session_id?: string | null
+          source?: string
+          student_id?: string
+          undo_batch_id?: string | null
+          undone_at?: string | null
+          undone_by?: string | null
+          unit?: string | null
+          workout_id?: string | null
+          workout_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_changes_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_changes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_changes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_changes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_changes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_changes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_with_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_changes_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescription_suggestion_dismissals: {
+        Row: {
+          created_at: string
+          dismissed_by: string | null
+          field: string
+          item_id: string
+          organization_id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_by?: string | null
+          field: string
+          item_id: string
+          organization_id: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_by?: string | null
+          field?: string
+          item_id?: string
+          organization_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_suggestion_dismissals_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workout_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_suggestion_dismissals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_suggestion_dismissals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2305,7 +2477,6 @@ export type Database = {
           billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
-          plan_amount_cents: number | null
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
@@ -2322,6 +2493,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -2334,6 +2506,7 @@ export type Database = {
         }
         Insert: {
           access_expires_at?: string | null
+          billing_cycle?: string | null
           birth_date?: string | null
           block_if_overdue?: boolean
           created_at?: string
@@ -2352,6 +2525,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           photo_path?: string | null
+          plan_amount_cents?: number | null
           sex?: Database["public"]["Enums"]["sex"] | null
           source?: Database["public"]["Enums"]["student_source"]
           status?: Database["public"]["Enums"]["student_status"]
@@ -2364,6 +2538,7 @@ export type Database = {
         }
         Update: {
           access_expires_at?: string | null
+          billing_cycle?: string | null
           birth_date?: string | null
           block_if_overdue?: boolean
           created_at?: string
@@ -2382,6 +2557,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           photo_path?: string | null
+          plan_amount_cents?: number | null
           sex?: Database["public"]["Enums"]["sex"] | null
           source?: Database["public"]["Enums"]["student_source"]
           status?: Database["public"]["Enums"]["student_status"]
@@ -2991,6 +3167,19 @@ export type Database = {
       admin_activate_due_plans: { Args: never; Returns: number }
       admin_purge_ai_data: { Args: never; Returns: number }
       admin_purge_live_tracking: { Args: never; Returns: number }
+      ai_coach_begin: {
+        Args: { p_command: string; p_student_id: string }
+        Returns: Json
+      }
+      ai_coach_finish: {
+        Args: {
+          p_failed: boolean
+          p_input_tokens: number
+          p_output_tokens: number
+          p_request_id: string
+        }
+        Returns: undefined
+      }
       ai_record_reply: {
         Args: {
           p_body: string
@@ -3021,6 +3210,10 @@ export type Database = {
           student_id: string
         }[]
       }
+      apply_prescription_changes: {
+        Args: { p_changes: Json; p_session_id?: string; p_source: string }
+        Returns: Json
+      }
       apply_template_to_student: {
         Args: {
           p_ends_on?: string
@@ -3034,6 +3227,7 @@ export type Database = {
         Args: { p_group_ids?: string[]; p_id: string; p_trainer_id?: string }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3052,6 +3246,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -3073,6 +3268,7 @@ export type Database = {
         Args: { p_ids: string[]; p_trainer_id?: string }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3091,6 +3287,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -3119,6 +3316,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3137,6 +3335,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -3178,6 +3377,7 @@ export type Database = {
         Args: { p_data: Json }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3196,6 +3396,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -3226,6 +3427,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3244,6 +3446,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -3262,6 +3465,10 @@ export type Database = {
         }
       }
       delete_feed_post: { Args: { p_id: string }; Returns: Json }
+      dismiss_prescription_suggestion: {
+        Args: { p_field: string; p_item_id: string; p_session_id: string }
+        Returns: undefined
+      }
       duplicate_plan: { Args: { p_plan_id: string }; Returns: string }
       end_student_pause: { Args: { p_student_id: string }; Returns: undefined }
       end_trainer_announcement: {
@@ -3290,6 +3497,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3308,6 +3516,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -3335,6 +3544,7 @@ export type Database = {
       }
       get_access_link_branding: { Args: { p_token: string }; Returns: Json }
       get_ai_assistant_state: { Args: { p_session_id: string }; Returns: Json }
+      get_ai_coach_status: { Args: never; Returns: Json }
       get_chat_messages: {
         Args: { p_before?: string; p_student_id: string }
         Returns: {
@@ -3392,6 +3602,7 @@ export type Database = {
       }
       get_my_nps_prompt: { Args: never; Returns: Json }
       get_my_pinned_post: { Args: never; Returns: Json }
+      get_my_plan_summary: { Args: never; Returns: Json }
       get_my_student_profile: {
         Args: never
         Returns: {
@@ -3440,6 +3651,10 @@ export type Database = {
         }[]
       }
       get_platform_support: { Args: never; Returns: Json }
+      get_prescription_review: {
+        Args: { p_session_id?: string; p_student_id: string }
+        Returns: Json
+      }
       get_public_signup_form: {
         Args: { p_token: string }
         Returns: {
@@ -3464,17 +3679,6 @@ export type Database = {
         Args: { p_batch_id: string; p_rows: Json }
         Returns: Json
       }
-      get_my_plan_summary: { Args: never; Returns: Json }
-      set_student_billing: { Args: { p_student_id: string; p_cycle: string; p_amount_cents: number }; Returns: undefined }
-      set_load_step: { Args: { p_step: number }; Returns: undefined }
-      get_ai_coach_status: { Args: never; Returns: Json }
-      ai_coach_begin: { Args: { p_student_id: string; p_command: string }; Returns: Json }
-      ai_coach_finish: { Args: { p_request_id: string; p_input_tokens: number; p_output_tokens: number; p_failed: boolean }; Returns: undefined }
-      apply_prescription_changes: { Args: { p_changes: Json; p_source: string; p_session_id?: string }; Returns: Json }
-      undo_prescription_batch: { Args: { p_batch_id: string }; Returns: Json }
-      list_prescription_changes: { Args: { p_student_id: string; p_limit?: number }; Returns: Json }
-      get_prescription_review: { Args: { p_student_id: string; p_session_id?: string }; Returns: Json }
-      dismiss_prescription_suggestion: { Args: { p_session_id: string; p_item_id: string; p_field: string }; Returns: undefined }
       is_platform_admin: { Args: never; Returns: boolean }
       list_chat_inbox: {
         Args: never
@@ -3489,6 +3693,10 @@ export type Database = {
         }[]
       }
       list_feed_posts: { Args: never; Returns: Json }
+      list_prescription_changes: {
+        Args: { p_limit?: number; p_student_id: string }
+        Returns: Json
+      }
       live_heartbeat: { Args: { p_session_id: string }; Returns: Json }
       log_account_export: {
         Args: { p_count: number; p_include_health: boolean; p_kind: string }
@@ -3614,6 +3822,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3632,6 +3841,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]
@@ -3760,8 +3970,13 @@ export type Database = {
         Returns: undefined
       }
       set_live_enabled: { Args: { p_enabled: boolean }; Returns: undefined }
+      set_load_step: { Args: { p_step: number }; Returns: undefined }
       set_organization_time_zone: {
         Args: { p_time_zone: string }
+        Returns: undefined
+      }
+      set_student_billing: {
+        Args: { p_amount_cents: number; p_cycle: string; p_student_id: string }
         Returns: undefined
       }
       set_student_modality: {
@@ -3871,6 +4086,7 @@ export type Database = {
         Returns: Json
       }
       undo_import_batch: { Args: { p_batch_id: string }; Returns: Json }
+      undo_prescription_batch: { Args: { p_batch_id: string }; Returns: Json }
       update_my_profile: {
         Args: { p_avatar_path: string; p_full_name: string }
         Returns: Json
@@ -3887,6 +4103,7 @@ export type Database = {
         Args: { p_patch: Json; p_student_id: string }
         Returns: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
           created_at: string
@@ -3905,6 +4122,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           photo_path: string | null
+          plan_amount_cents: number | null
           sex: Database["public"]["Enums"]["sex"] | null
           source: Database["public"]["Enums"]["student_source"]
           status: Database["public"]["Enums"]["student_status"]

@@ -51,7 +51,8 @@ try {
   if (error) throw new Error(error.message);
   sessionId = ws.id;
   const { data: il } = await admin.from("session_item_logs").insert({ organization_id: org, session_id: sessionId, item_id: target.id, exercise_id: target.exercise_id, exercise_name: name }).select("id").single();
-  await admin.from("session_set_logs").insert([0, 1, 2].map((k) => ({ organization_id: org, item_log_id: il.id, exercise_id: target.exercise_id, set_index: k, load_value: heavier, load_unit: target.load_unit ?? "kg", quantity_value: target.quantity_min })));
+  const { error: setErr } = await admin.from("session_set_logs").insert([1, 2, 3].map((k) => ({ organization_id: org, item_log_id: il.id, set_index: k, load_value: heavier, load_unit: target.load_unit ?? "kg", quantity_value: target.quantity_min })));
+  if (setErr) throw new Error(setErr.message);
 
   // --- Celular (375 px) ---------------------------------------------------------------------------------------------
   const page = await login({ width: 375, height: 812 });
