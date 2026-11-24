@@ -2302,8 +2302,10 @@ export type Database = {
       students: {
         Row: {
           access_expires_at: string | null
+          billing_cycle: string | null
           birth_date: string | null
           block_if_overdue: boolean
+          plan_amount_cents: number | null
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
@@ -3463,6 +3465,7 @@ export type Database = {
         Returns: Json
       }
       get_my_plan_summary: { Args: never; Returns: Json }
+      set_student_billing: { Args: { p_student_id: string; p_cycle: string; p_amount_cents: number }; Returns: undefined }
       set_load_step: { Args: { p_step: number }; Returns: undefined }
       get_ai_coach_status: { Args: never; Returns: Json }
       ai_coach_begin: { Args: { p_student_id: string; p_command: string }; Returns: Json }

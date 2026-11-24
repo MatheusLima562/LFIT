@@ -119,6 +119,9 @@ describe("validação", () => {
       notes: "Joelho ok\nObjetivo: Hipertrofia\nInício (importado): 01/03/2026",
       modality: "consultoria",
       status: "active",
+      // Colunas opcionais do plano (sprint edição): sem coluna, ficam em branco.
+      billing_cycle: null,
+      plan_amount_cents: null,
     });
   });
 

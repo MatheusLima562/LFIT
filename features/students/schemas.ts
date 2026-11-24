@@ -3,6 +3,8 @@ import { endOfDayBR, parseBRDate, todayISO } from "@/lib/dates";
 import { isValidPhone, toE164 } from "@/lib/phone";
 import { messages } from "@/messages/pt-BR";
 import { DEFAULT_MODALITY, MODALITIES } from "./modality";
+import { BILLING_CYCLES } from "@/features/student-app/my-plan";
+import { parseMoneyToCents } from "@/lib/money";
 
 const v = messages.validation;
 const f = messages.studentForm.errors;
@@ -34,6 +36,9 @@ export const studentFormSchema = z
     blockIfOverdue: z.boolean(),
     /** Gravada à parte (`set_student_modality`), não entra no payload de create/update_student. */
     modality: z.enum(MODALITIES),
+    /** Plano (cobrança): gravado à parte (`set_student_billing`). Vazio = sem ciclo / sem valor. */
+    billingCycle: z.enum(["", ...BILLING_CYCLES]),
+    planAmount: z.string().trim().max(20),
   })
   .superRefine((d, ctx) => {
     if (d.birthDate) {
@@ -49,6 +54,9 @@ export const studentFormSchema = z
     }
     if (d.groupIds.length > 0 && !d.consentOnFile && !d.healthConsent) {
       ctx.addIssue({ code: "custom", path: ["healthConsent"], message: f.consentRequired });
+    }
+    if (d.planAmount && parseMoneyToCents(d.planAmount) === null) {
+      ctx.addIssue({ code: "custom", path: ["planAmount"], message: f.invalidAmount });
     }
     if (d.sendAnamnesis && !d.anamnesisTemplateId) {
       ctx.addIssue({ code: "custom", path: ["anamnesisTemplateId"], message: f.templateRequired });
@@ -78,6 +86,8 @@ export const emptyStudentForm: StudentFormInput = {
   anamnesisTemplateId: "",
   blockIfOverdue: false,
   modality: DEFAULT_MODALITY,
+  billingCycle: "",
+  planAmount: "",
 };
 
 /** Converte o formulário validado no payload das RPCs create_student / update_student. */

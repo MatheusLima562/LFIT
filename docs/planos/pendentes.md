@@ -12,5 +12,4 @@ a condição indicada abaixo.
 | **Assistente de IA** | Continua desligado em todas as contas (`docs/ia-checklist-juridico.md`). | Revisão jurídica e decisão do dono. |
 | **Comentários no feed** | Fase 2 planejada em `docs/planos/feed.md`: moderação, denúncia, nome de exibição. | Termos da comunidade e revisão de privacidade. |
 | **Importação de treinos** (MFIT e outras) | Proposta em `docs/planos/importacao-treinos.md`. | Arquivo real exportado da plataforma de origem. |
-| **Tipo de plano comercial do aluno** (mensal, trimestral, semestral, anual) | O cadastro não tem o campo; o "Meu plano" do Perfil mostra o nome do plano de treino, o vencimento e o próximo pagamento. | Definir o cadastro comercial (tipo, valor, renovação) junto com **Vendas**. |
 | **Notificações fora do app** (push, e-mail, WhatsApp automático) | Hoje só avisos dentro do app e links para copiar/WhatsApp manual. | SMTP próprio (e-mail) e/ou web push (PWA com service worker), e opt-in do aluno. |

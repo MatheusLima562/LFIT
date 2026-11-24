@@ -837,14 +837,20 @@ effective_status =
   `lfit-test-…@example.com` e organizações `lfit-test-…` fora do seed (`scripts/test-data-filters.mts`); trava do ref.
 - **Suporte e Configurações** no menu (sem "Em breve"). Fora do escopo de propósito: `docs/planos/pendentes.md`.
 
-### Perfil do aluno — "Meu plano" (sprint edição, PARTE 0, migration `20261124120000` — escrita, ainda não aplicada; e2e `e2e/perfil-meu-plano.e2e.mjs`)
+### Perfil do aluno — "Treino atual" e "Plano" (sprint edição, PARTE 0, migration `20261124120000` — escrita, ainda não aplicada; e2e `e2e/perfil-meu-plano.e2e.mjs`)
 - Público principal = consultoria a distância: o Perfil do app do aluno **não mostra** "Estúdio" nem "Atendimento".
   Continuam: nome, professor/personal responsável, "Acesso ao app: Ativo" e o Sair.
-- Bloco **"Meu plano"** (`get_my_plan_summary`, só o próprio aluno com acesso ativo): plano de treino ATIVO (nome),
-  vencimento com prazo ("vence em 12 dias" / "vence hoje" / "vencido há 3 dias", `features/student-app/my-plan.ts`) ou
-  "Sem data de vencimento", e — se houver — o PRÓXIMO pagamento pendente (valor + data). Nunca histórico nem outro
-  aluno. Sem plano ativo → o bloco não aparece. O sistema não tem tipo de plano comercial (mensal, trimestral…): não é
-  inventado (`docs/decisoes-autonomas.md`).
+- `get_my_plan_summary` (só o próprio aluno com acesso ativo; nunca histórico nem outro aluno) devolve dois blocos:
+  - **"Treino atual"**: nome do plano de TREINO ativo e "Válido até dd/mm/aaaa" (ou "Sem data de término").
+    **Nunca a palavra "vence" para o treino.**
+  - **"Plano"**: ciclo de cobrança do cadastro ("Plano mensal/trimestral/semestral/anual") e valor, mais o PRÓXIMO
+    pagamento pendente ("R$ X em dd/mm") com "vence em N dias / vence hoje / vencido há N dias" — o prazo é **só do
+    pagamento**. Sem ciclo cadastrado: só o próximo pagamento, se houver. Bloco vazio não aparece.
+- **Cadastro:** `students.billing_cycle` (`monthly`/`quarterly`/`semiannual`/`annual`) e `students.plan_amount_cents`;
+  escrita só por `set_student_billing` (equipe com acesso ao aluno, conta gravável; sem mudança = nada gravado) —
+  formulário do aluno ("Plano (cobrança)" e "Valor do plano") e **importação** (colunas opcionais "Plano"/"Valor";
+  não reconhecido → aviso e a linha entra sem o dado). `import_students`/`private.import_one_student` redefinidas nesta
+  migration com as duas colunas.
 
 ### Edição rápida da prescrição (sprint edição, PARTE A, migration `20261124130000` — escrita, ainda não aplicada; e2e `e2e/edicao-rapida.e2e.mjs`)
 - **Um só ponto de escrita:** `apply_prescription_changes(p_changes, p_source, p_session_id)` — `[{item_id, field, old,
@@ -979,7 +985,7 @@ sem efeitos colaterais).
 | **Convites dos alunos (1.4)** | `create_student_invites`, `student_invite_statuses`, `get_invite_quota` | `create_student_invites`: `require_staff()` + `lock_accessible_student` por aluno (owner ou responsável), só sem login (`STUDENT_HAS_ACCOUNT`); 1–200 por chamada; limite diário da conta (`private.account_rules.invite_daily_limit`, dia civil, trava por organização) → lote inteiro recusado com `INVITE_LIMIT_REACHED` (detail = quantos cabem); token só na resposta (banco guarda o hash), auditado sem o token. `student_invite_statuses`: só alunos com `can_access_student` (vazio para quem não acessa). `get_invite_quota`: `require_staff()`. `20261120140000`; testes em `tests/db/student-invites.test.ts` |
 | **Ausência e pausa (1.5)** | `set_student_pause`, `end_student_pause`, `get_inactive_students`, `claim_my_nudge` | Pausa: `lock_accessible_student` (owner ou responsável), motivo só `viagem`/`ferias`/`outro` (nunca saúde), volta ≥ hoje; auditadas. `get_inactive_students`: `require_staff()` + `private.dashboard_students()`; só nome, dias e limite. `claim_my_nudge`: escopo `students.user_id = auth.uid()`; ativo, com plano ativo, fora de pausa, conta sem limitação, 7+ dias e último aviso há 7+ dias (marca a hora em `private.student_nudges`). `20261120150000`; testes em `tests/db/pause-absence.test.ts` |
 | **Fuso da conta (1.7)** | `set_organization_time_zone` | `require_owner()` + conta gravável; só fusos de `private.allowed_time_zones()` (Brasil + Lisboa); auditado. `20261120170000`; testes em `tests/db/time-zone-retention.test.ts` |
-| **Meu plano (aluno, edição 0)** | `get_my_plan_summary` | Só o aluno da sessão (`students.user_id = auth.uid()`, sem exclusão) → senão `STUDENT_NOT_FOUND`; acesso não ativo → `null`. Devolve só o plano ativo (nome, datas) e o próximo pagamento pendente (valor, data) — nada de histórico nem de outro aluno. `20261124120000`; testes em `tests/db/student-my-plan.test.ts` |
+| **Perfil do aluno — treino e plano (edição 0)** | `get_my_plan_summary`, `set_student_billing` | `get_my_plan_summary`: só o aluno da sessão (`students.user_id = auth.uid()`, sem exclusão) → senão `STUDENT_NOT_FOUND`; acesso não ativo → `null`; devolve treino ativo (nome, válido até), ciclo/valor do cadastro e o próximo pagamento pendente — nada de histórico nem de outro aluno. `set_student_billing`: `require_staff()` + `private.lock_accessible_student` + conta gravável; ciclo da lista e valor 1–100.000.000 centavos; auditado. `20261124120000`; testes em `tests/db/student-my-plan.test.ts` |
 | **Edição rápida da prescrição (edição A)** | `apply_prescription_changes`, `undo_prescription_batch`, `list_prescription_changes`, `get_prescription_review`, `dismiss_prescription_suggestion`, `set_load_step` | `require_staff()` + conta gravável nas escritas; item → `private.lock_editable_plan` (quem pode editar o plano de ALUNO, não arquivado) dentro de `private.prescription_apply_one`; valor antigo esperado (`PRESCRIPTION_CHANGED`); leitura/desfazer/revisão com `private.can_access_student`. `set_load_step`: `require_owner()`. Revisão sem dor nem comentário. `20261124130000`; testes em `tests/db/prescription-quick-edit.test.ts` |
 | **Comando com IA (edição B, desligado)** | `get_ai_coach_status`, `ai_coach_begin` | `require_staff()`; `ai_coach_begin`: conta gravável + `ai_coach_enabled` (`AI_DISABLED`) + plano Pro/Gold (`AI_PLAN_REQUIRED`) + `private.can_access_student` + tamanho + limite do dia (trava a org); devolve só refs/exercício/prescrição (nunca saúde, cuidado, dica, nome do plano); o nome do aluno vem só para o servidor tirar do texto. Custo do mês só para o owner. `20261124140000`; testes em `tests/db/ai-coach.test.ts` |
 | **Só servidor — comando com IA** (`service_role`) | `ai_coach_finish` | Fecha o pedido (tokens, custo, falha) uma única vez; sem EXECUTE para `authenticated`/`anon`. `20261124140000` |

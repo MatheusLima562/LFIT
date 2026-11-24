@@ -16,6 +16,8 @@ export const IMPORT_FIELDS = [
   "start_date",
   "modality",
   "status",
+  "billing_cycle",
+  "plan_amount",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -35,6 +37,8 @@ const SYNONYMS: Record<ImportField, string[]> = {
   start_date: ["data de inicio", "data inicio", "inicio", "dt inicio", "data de matricula", "data matricula", "data de cadastro", "cadastro", "cliente desde", "aluno desde", "start date", "start", "since", "member since", "created at", "signup date"],
   modality: ["modalidade", "tipo de atendimento", "atendimento", "tipo", "modality", "service type", "type"],
   status: ["status", "situacao", "ativo", "state", "active"],
+  billing_cycle: ["plano", "tipo de plano", "ciclo", "ciclo de cobranca", "periodicidade", "recorrencia", "plan", "billing cycle", "billing", "plan type"],
+  plan_amount: ["valor", "valor do plano", "mensalidade", "preco", "valor mensal", "price", "amount", "fee", "plan price"],
 };
 
 const norm = (s: string) => searchKey(s).replace(/[^a-z0-9]+/g, " ").trim();

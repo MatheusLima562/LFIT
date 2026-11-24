@@ -97,13 +97,8 @@ export function parseAccountDetail(raw: unknown): AccountDetail {
   };
 }
 
-/** "1.234,56" / "1234,5" / "99" → centavos. Inválido ou ≤ 0 → null. */
-export function parseMoneyToCents(input: string): number | null {
-  const clean = input.trim().replace(/^R\$\s*/i, "").replace(/\./g, "").replace(",", ".");
-  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return null;
-  const cents = Math.round(Number(clean) * 100);
-  return cents > 0 && cents <= 100_000_000 ? cents : null;
-}
+export { parseMoneyToCents } from "@/lib/money";
+import { parseMoneyToCents } from "@/lib/money";
 
 export const createAccountSchema = z.object({
   business: z.string().trim().min(2).max(120),
