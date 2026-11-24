@@ -6,6 +6,8 @@
 import type { Change, Field, LoadUnit } from "@/features/prescription/prescription";
 
 export const COACH_MARKER = "LFIT_COACH_V1";
+/** Código que substitui o nome do aluno no texto enviado ao provedor (microfone central). */
+export const STUDENT_CODE = "ALUNO_1";
 
 export interface CoachItem {
   ref: string;
@@ -73,13 +75,17 @@ Você ajuda um personal trainer a ajustar a prescrição do treino atual de um a
 Responda SOMENTE com um JSON, sem texto fora dele, em um destes formatos:
 {"type":"proposal","changes":[{"ref":"A1","field":"load","value":42.5}]}
 {"type":"question","question":"pergunta curta em português"}
+{"type":"unsupported"}
 Regras:
+- Você só altera a prescrição (carga, séries, repetições). Qualquer outro pedido (mensagem, agenda, pagamento,
+  cadastro, dieta, saúde…) → {"type":"unsupported"}.
+- "${STUDENT_CODE}" é o código do aluno; nunca peça nem escreva o nome dele.
 - Use só as refs da prescrição recebida e só exercícios com "editavel": true.
 - field: "load" (carga, na unidade do exercício), "sets" (séries), "reps" (repetições fixas), "reps_min" e "reps_max" (faixa).
 - "value" é o valor NOVO final (não a diferença).
 - Se o exercício, o treino ou a unidade estiverem ambíguos (ex.: o mesmo exercício em dois treinos e o comando não diz
   qual, ou "kg" pedido num exercício em "lb"), responda com "question". Não chute.
-- Se o comando não for sobre a prescrição (séries, repetições, carga), responda com "question".`;
+- Se o comando for sobre a prescrição mas faltar o valor, responda com "question".`;
 
 export function buildUserMessage(workouts: CoachWorkout[], command: string): string {
   return `Prescrição atual (JSON): ${JSON.stringify(promptPayload(workouts))}\nComando: ${command}`;
@@ -88,7 +94,46 @@ export function buildUserMessage(workouts: CoachWorkout[], command: string): str
 export type CoachReply =
   | { type: "proposal"; changes: { ref: string; field: string; value: unknown }[] }
   | { type: "question"; question: string }
+  | { type: "unsupported" }
   | { type: "invalid" };
+
+// --- Microfone central: aluno pelo nome (no SERVIDOR) --------------------------------------------------------------
+export interface StudentRef { id: string; firstName: string; lastName: string }
+
+const tokens = (s: string) => strip(s).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+/**
+ * Alunos citados no texto: o primeiro nome aparece como palavra inteira (sem acento/caixa). Se algum também tem o
+ * sobrenome no texto, ficam só esses. Resultado: 0 (não achou), 1 (achou) ou 2+ (perguntar qual).
+ */
+export function matchStudents(text: string, students: StudentRef[]): StudentRef[] {
+  const words = new Set(tokens(text));
+  const byFirst = students.filter((s) => {
+    const f = tokens(s.firstName);
+    return f.length > 0 && f.every((w) => words.has(w));
+  });
+  const withLast = byFirst.filter((s) => {
+    const l = tokens(s.lastName).filter((w) => w.length >= 3);
+    return l.length > 0 && l.some((w) => words.has(w));
+  });
+  return withLast.length ? withLast : byFirst;
+}
+
+/** Troca o nome (e sobrenomes) do aluno pelo código antes do provedor; sequências viram um só código. */
+export function replaceStudentName(text: string, s: StudentRef): string {
+  const targets = new Set([...tokens(s.firstName), ...tokens(s.lastName).filter((w) => w.length >= 3)]);
+  const replaced = text.replace(/[\p{L}]+/gu, (w) => (targets.has(strip(w)) ? STUDENT_CODE : w));
+  return replaced.replace(new RegExp(`${STUDENT_CODE}(\\s+(d[aeo]s?\\s+)?${STUDENT_CODE})+`, "g"), STUDENT_CODE);
+}
+
+/**
+ * Escopo do microfone: só prescrição (carga, séries, repetições). Sem nenhum sinal disso, responde "ainda não faço
+ * isso" sem gastar chamada ao provedor (o modelo também é instruído a responder "unsupported").
+ */
+export function looksLikePrescription(text: string): boolean {
+  const t = ` ${strip(text)} `;
+  return /\d/.test(t) && /(kg|quilo|lb|libra|serie|rep|carga|peso|%|por cento|aument|diminu|sobe|subir|baix|reduz|tira|coloca|\+|-)/.test(t);
+}
 
 /** Lê a resposta do modelo: o primeiro objeto JSON do texto. Qualquer outra coisa → inválida. */
 export function parseReply(text: string): CoachReply {
@@ -102,6 +147,7 @@ export function parseReply(text: string): CoachReply {
     return { type: "invalid" };
   }
   const r = (o ?? {}) as Record<string, unknown>;
+  if (r.type === "unsupported") return { type: "unsupported" };
   if (r.type === "question" && typeof r.question === "string" && r.question.trim()) {
     return { type: "question", question: r.question.trim().slice(0, 300) };
   }

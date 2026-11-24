@@ -5,10 +5,12 @@ import { SubscriptionNotice } from "@/features/subscription/components/Subscript
 import { getMySubscription } from "@/features/subscription/queries";
 import { messages } from "@/messages/pt-BR";
 import { AppShell } from "@/components/layout/AppShell";
+import { getCoachStatus } from "@/features/coach-ai/queries";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await requireStaff();
-  const [plan, chatUnread, sub] = await Promise.all([getOrganizationPlanUsage(), getStaffUnread(), getMySubscription()]);
+  // IA do personal (desligada por padrão): com ela ligada e plano Pro/Gold, o celular ganha a barra com o microfone.
+  const [plan, chatUnread, sub, coach] = await Promise.all([getOrganizationPlanUsage(), getStaffUnread(), getMySubscription(), getCoachStatus()]);
 
   return (
     <AppShell
@@ -19,6 +21,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       }}
       plan={plan}
       chatUnread={chatUnread}
+      coach={coach}
     >
       {/* Assinatura: banner (tolerância/somente leitura) e, com a conta encerrada, só Configurações para o personal. */}
       <SubscriptionNotice sub={sub} role={session.role === "owner" ? "owner" : "trainer"}>

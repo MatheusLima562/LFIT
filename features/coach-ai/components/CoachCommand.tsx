@@ -41,6 +41,8 @@ export function CoachCommand({ studentId, status }: { studentId: string; status:
       const r = await callAction(() => runCoachCommand(studentId, command));
       if (!r) return;
       if (r.status === "error") return void toast.error(r.message);
+      if (r.status === "info") return void setQuestion(r.message);
+      if (r.status === "choose") return; // só no microfone central (aqui o aluno já está aberto)
       setRemaining(r.remaining);
       if (r.status === "question") setQuestion(r.question);
       else setProposal({ changes: r.changes, rows: r.rows });

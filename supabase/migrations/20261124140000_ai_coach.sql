@@ -7,7 +7,10 @@
 --   origem `ai`).
 -- * Enviado ao provedor: só nomes dos exercícios e a prescrição atual (séries, repetições, carga), com referências
 --   curtas (A1, A2…). Nunca nome do aluno, nome do plano, ficha de saúde, contraindicação, observações ou dicas.
---   O texto do comando NUNCA é gravado (só contagem, tokens e custo).
+--   O texto do comando NUNCA é gravado (só contagem, tokens e custo). Termos de saúde (mesma lista do assistente,
+--   `private.ai_safety_hit`) barram o comando antes do provedor.
+-- * Microfone central (complemento): sem aluno aberto, o SERVIDOR acha o aluno pelo nome entre os que o personal
+--   acessa e troca o nome por código antes do provedor; a mesma `ai_coach_begin` decide tudo para o aluno achado.
 -- * Limite de comandos por dia por conta, contador de custo, prazo (timeout) — `private.ai_coach_settings`.
 
 -- 1) Flag e regras ----------------------------------------------------------------------------------------------------
@@ -109,6 +112,11 @@ begin
   select * into cfg from private.ai_coach_settings where singleton;
   if p_command is null or length(trim(p_command)) = 0 or length(p_command) > cfg.max_input_chars then
     raise exception 'INVALID_INPUT' using errcode = 'P0001', detail = 'command';
+  end if;
+  -- Barreira de termos de saúde (a MESMA lista do assistente, `private.ai_safety_hit`): o comando não vai ao provedor
+  -- e não consome o limite do dia.
+  if private.ai_safety_hit(p_command) then
+    raise exception 'AI_HEALTH_TERMS' using errcode = 'P0001';
   end if;
   select * into s from public.students where id = p_student_id;
 

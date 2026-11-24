@@ -886,6 +886,17 @@ effective_status =
   contraindicação, cuidado (`care_note`) ou dica. O texto do comando **não é gravado** (`private.ai_coach_requests` só
   tem contagem, tokens e custo). Custo do mês visível só para o personal (`get_ai_coach_status`). Testes com o
   provedor falso (`fakeCoachReply`).
+- **Barreira de termos de saúde:** `ai_coach_begin` recusa (`AI_HEALTH_TERMS`) comando com termo da MESMA lista do
+  assistente (`private.ai_safety_hit`), antes do provedor e sem consumir o limite.
+- **Microfone central (complemento):** com a IA usável, o painel no CELULAR ganha a barra inferior (`CoachMicBar`, só
+  `lg:hidden`): Início, Alunos, **microfone grande no centro**, Chat, Treinos; o `main` ganha espaço no fim (não cobre
+  nada a 375 px). Sem a IA, o painel fica como sempre. Voz = reconhecimento do navegador (`SpeechRecognition`,
+  pt-BR); sem suporte/erro → campo de texto com instrução do ditado do teclado. **Sem serviço pago de transcrição;
+  nenhum áudio é gravado nem enviado ao servidor do app.** Com aluno aberto (`/alunos/[id]…`) vale para ele; senão o
+  SERVIDOR (`runCentralCoachCommand`) acha o aluno pelo nome entre os que o personal acessa (RLS): 1 → segue, 2+ →
+  "Qual?", 0 → "não encontrei"; o nome vira `ALUNO_1` antes do provedor e a proposta volta com o nome completo. Só
+  prescrição: pedido sem sinal de carga/séries/repetições → "ainda não faço isso" sem chamar o provedor (o modelo
+  também responde `unsupported`). Mesmas RPCs, tela antes → depois, histórico e desfazer.
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos

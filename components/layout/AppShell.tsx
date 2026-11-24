@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import type { PlanUsage, ShellUser } from "@/types/dashboard";
 import { BRAND } from "@/features/brand/config";
+import { CoachMicBar } from "@/features/coach-ai/components/CoachMicBar";
+import type { CoachStatus } from "@/features/coach-ai/queries";
 import { useChatUnread } from "@/features/chat/hooks";
 import { useNewMessageToast } from "@/features/notifications/hooks";
 import { cn } from "@/lib/utils";
@@ -19,10 +21,12 @@ interface AppShellProps {
   plan: PlanUsage;
   /** Não lidas do chat no carregamento; depois o selo se atualiza sozinho. */
   chatUnread: number;
+  /** IA do personal usável (ligada + Pro/Gold): barra inferior com o microfone no celular. `null` = painel como sempre. */
+  coach?: CoachStatus | null;
   children: ReactNode;
 }
 
-export function AppShell({ user, plan, chatUnread, children }: AppShellProps) {
+export function AppShell({ user, plan, chatUnread, coach = null, children }: AppShellProps) {
   const unread = useChatUnread({ initial: chatUnread, studentId: null });
   const pathname = usePathname();
   useNewMessageToast(unread, { onChat: pathname.startsWith("/chat"), href: "/chat" });
@@ -76,10 +80,12 @@ export function AppShell({ user, plan, chatUnread, children }: AppShellProps) {
           <UserMenu user={user} compact />
         </div>
 
-        <main id="conteudo" className="flex min-w-0 flex-1 flex-col">
+        {/* Com a barra do microfone (só celular), o fim da página fica acima dela. */}
+        <main id="conteudo" className={cn("flex min-w-0 flex-1 flex-col", coach && "pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0")}>
           {children}
         </main>
       </div>
+      {coach && <CoachMicBar status={coach} />}
     </div>
   );
 }

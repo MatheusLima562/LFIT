@@ -18,6 +18,7 @@ export function fakeCoachReply(message: string): string {
   if (!m) return q("Não entendi o comando.");
   const plan = JSON.parse(m[1]!) as { treino: string; exercicios: { ref: string; exercicio: string; series: number | null; repeticoes: number | string | null; carga: number | null; unidade: string | null; editavel: boolean }[] }[];
   const cmd = fold(m[2]!);
+  if (/\b(mensagem|agenda|agendar|pagamento|cobra|marca|envia|cadastra|dieta)\b/.test(cmd)) return JSON.stringify({ type: "unsupported" });
   const wanted = /treino ([a-z])\b/.exec(cmd)?.[1]?.toUpperCase();
   const hits = plan
     .filter((w) => !wanted || w.treino === wanted)
@@ -25,10 +26,11 @@ export function fakeCoachReply(message: string): string {
     .filter((e) => e.editavel && fold(e.exercicio).split(/\s+/).some((word) => word.length >= 4 && cmd.includes(word)));
   if (hits.length !== 1) return q(hits.length ? "Esse exercício aparece em mais de um treino. Qual treino?" : "Qual exercício?");
   const e = hits[0]!;
-  const n = /([+-]?)\s*(\d+(?:[.,]\d+)?)\s*(kg|lb|series|serie|reps|repeticoes)/.exec(cmd);
+  // "+2,5 kg" / "mais 2,5 kg" = relativo; "45 kg" = absoluto (como se fala no ditado).
+  const n = /(\+|-|mais |menos )?\s*(\d+(?:[.,]\d+)?)\s*(kg|lb|series|serie|reps|repeticoes)/.exec(cmd);
   if (!n) return q("Qual valor?");
   const value = Number(n[2]!.replace(",", "."));
-  const signed = n[1] === "-" ? -value : value;
+  const signed = n[1] === "-" || n[1] === "menos " ? -value : value;
   const unit = n[3]!;
   if (unit === "kg" || unit === "lb") {
     if (e.unidade && e.unidade !== unit) return q(`Esse exercício está em ${e.unidade}. Confirma a unidade?`);

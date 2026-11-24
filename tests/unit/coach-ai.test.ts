@@ -1,8 +1,12 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fakeCoachReply } from "@/features/assistant/provider";
 import {
-  buildUserMessage, COACH_SYSTEM, parseCoachContext, parseReply, promptPayload, redactNames, validateProposal, type CoachWorkout,
+  buildUserMessage, COACH_SYSTEM, looksLikePrescription, matchStudents, parseCoachContext, parseReply, promptPayload, redactNames,
+  replaceStudentName, STUDENT_CODE, validateProposal, type CoachWorkout,
 } from "@/features/coach-ai/coach-ai";
+import { messages } from "@/messages/pt-BR";
 
 const ctx = parseCoachContext({
   workouts: [
@@ -67,11 +71,52 @@ describe("comando com IA: resposta validada contra a prescrição", () => {
   });
 });
 
+describe("microfone central: aluno pelo nome, código no lugar do nome, escopo", () => {
+  const students = [
+    { id: "1", firstName: "Camila", lastName: "Freitas" },
+    { id: "2", firstName: "Camila", lastName: "Barbosa" },
+    { id: "3", firstName: "Diego", lastName: "Jardim" },
+    { id: "4", firstName: "Ângela", lastName: "de Souza" },
+  ];
+  it("1 achado, 2+ (perguntar qual) ou 0 (não encontrei); sobrenome desempata; sem acento/caixa", () => {
+    expect(matchStudents("supino do diego +2 kg", students).map((s) => s.id)).toEqual(["3"]);
+    expect(matchStudents("supino da Camila +2 kg", students).map((s) => s.id)).toEqual(["1", "2"]);
+    expect(matchStudents("supino da Camila Freitas +2 kg", students).map((s) => s.id)).toEqual(["1"]);
+    expect(matchStudents("ANGELA rosca 12 reps", students).map((s) => s.id)).toEqual(["4"]);
+    expect(matchStudents("supino do João +2 kg", students)).toEqual([]);
+    expect(matchStudents("Camilão +2 kg", students)).toEqual([]); // palavra inteira
+  });
+  it("nome e sobrenome viram um só código antes do provedor", () => {
+    expect(replaceStudentName("supino da Camila Freitas +2,5 kg", students[0]!)).toBe(`supino da ${STUDENT_CODE} +2,5 kg`);
+    expect(replaceStudentName("Ângela de Souza: rosca 12 reps", students[3]!)).toBe(`${STUDENT_CODE}: rosca 12 reps`);
+    const sent = buildUserMessage(ctx, replaceStudentName("crucifixo da camila freitas +2 kg", students[0]!));
+    expect(sent).not.toMatch(/camila|freitas/i);
+    expect(COACH_SYSTEM).toContain(STUDENT_CODE);
+  });
+  it("escopo: só prescrição; outros pedidos → 'ainda não faço isso' (modelo e provedor falso também)", () => {
+    expect(looksLikePrescription("supino da Camila mais 2,5 kg")).toBe(true);
+    expect(looksLikePrescription("agachamento 4 séries")).toBe(true);
+    expect(looksLikePrescription("manda mensagem pra Camila")).toBe(false);
+    expect(looksLikePrescription("marca aula amanhã")).toBe(false);
+    expect(parseReply("{\"type\":\"unsupported\"}")).toEqual({ type: "unsupported" });
+    expect(JSON.parse(fakeCoachReply(buildUserMessage(ctx, "envia mensagem com 3 kg")))).toEqual({ type: "unsupported" });
+  });
+  it("barreira de termos de saúde fica no banco, antes do provedor e do limite", () => {
+    const sql = readFileSync(join(process.cwd(), "supabase/migrations/20261124140000_ai_coach.sql"), "utf8");
+    const begin = sql.slice(sql.indexOf("create function public.ai_coach_begin"), sql.indexOf("create function public.ai_coach_finish"));
+    expect(begin.indexOf("private.ai_safety_hit(p_command)")).toBeGreaterThan(0);
+    expect(begin.indexOf("private.ai_safety_hit(p_command)")).toBeLessThan(begin.indexOf("insert into private.ai_coach_requests"));
+    expect(messages.coachAi.errors.health).toMatch(/saúde/);
+  });
+});
+
 describe("provedor falso do comando (testes)", () => {
   const ask = (cmd: string) => JSON.parse(fakeCoachReply(buildUserMessage(ctx, cmd)));
   it("propõe quando o exercício e a unidade são claros", () => {
     expect(ask("crucifixo +2 kg")).toEqual({ type: "proposal", changes: [{ ref: "A2", field: "load", value: 16 }] });
     expect(ask("remada 4 séries")).toEqual({ type: "proposal", changes: [{ ref: "B2", field: "sets", value: 4 }] });
+    expect(ask("crucifixo da ALUNO_1 mais 2,5 kg")).toEqual({ type: "proposal", changes: [{ ref: "A2", field: "load", value: 16.5 }] });
+    expect(ask("crucifixo menos 2 kg")).toEqual({ type: "proposal", changes: [{ ref: "A2", field: "load", value: 12 }] });
   });
   it("pergunta quando é ambíguo (exercício em dois treinos, nenhum exercício, unidade diferente)", () => {
     expect(ask("supino +2,5 kg").type).toBe("question"); // supino reto (A) e inclinado (B)

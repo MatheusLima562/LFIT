@@ -91,6 +91,15 @@ describe.runIf(dbTestsEnabled)("comando com IA do personal", () => {
     expect((await rpc<{ cost_month_usd_micros: number | null }>(trainer.client, "get_ai_coach_status")).cost_month_usd_micros).toBeNull();
   });
 
+  it("barreira de termos de saúde (mesma lista do assistente): recusa antes do provedor e não consome o limite", async () => {
+    const before = (await rpc<{ remaining_today: number }>(owner.client, "get_ai_coach_status")).remaining_today;
+    await expect(begin(owner, studentId, "supino +2 kg, ela está com dor no ombro")).rejects.toThrow("AI_HEALTH_TERMS");
+    await expect(begin(owner, studentId, "tira o agachamento por causa da hérnia")).rejects.toThrow("AI_HEALTH_TERMS");
+    expect((await rpc<{ remaining_today: number }>(owner.client, "get_ai_coach_status")).remaining_today).toBe(before);
+    // Palavra que só contém o termo (ex.: "abdutora" tem "dor" dentro) não barra.
+    expect((await begin(owner, studentId, "cadeira abdutora +5 kg")).status).toBe("ok");
+  });
+
   it("limite de comandos por dia por conta", async () => {
     const used = (sqlLinked(`select count(*)::int as n from private.ai_coach_requests where organization_id = ${uuidLiteral(org.id)} and day = private.today_br()`) as { n: number }[])[0]!.n;
     sqlLinked(`insert into private.ai_coach_requests (organization_id, day) select ${uuidLiteral(org.id)}, (now() at time zone 'America/Sao_Paulo')::date from generate_series(1, ${30 - used})`);
