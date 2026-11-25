@@ -201,6 +201,41 @@ export function TimeZoneForm({ initial }: { initial: string }) {
   );
 }
 
+/** Passo do +/− de carga da edição rápida (PARTE A), por conta. Só o personal (a RPC exige owner). */
+export function LoadStepForm({ initial }: { initial: number }) {
+  const id = useId();
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+  const [value, setValue] = useState(String(initial).replace(".", ","));
+  const [saving, setSaving] = useState(false);
+  const step = Number(value.replace(",", "."));
+  const valid = Number.isFinite(step) && step >= 0.25 && step <= 20 && Math.round(step * 100) === step * 100;
+  const save = async () => {
+    if (!valid) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc("set_load_step", { p_step: step });
+      if (error) return void toast.error(dbErrorMessage(error));
+      toast.success(t.loadStep.saved);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <section aria-labelledby={`${id}-t`} className={box}>
+      <div>
+        <h2 id={`${id}-t`} className="text-[15px] font-semibold text-ink">{t.loadStep.title}</h2>
+        <p className="mt-0.5 text-xs text-ink-3">{t.loadStep.hint}</p>
+      </div>
+      <label htmlFor={`${id}-s`} className={label}>{t.loadStep.label}</label>
+      <Input id={`${id}-s`} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} className="sm:max-w-40" aria-invalid={!valid} />
+      {!valid && <p role="alert" className="text-xs text-danger-ink">{t.loadStep.invalid}</p>}
+      <Button type="button" className="self-start" disabled={saving || !valid || step === initial} onClick={() => void save()}>{t.loadStep.save}</Button>
+    </section>
+  );
+}
+
 export function PasswordForm() {
   const id = useId();
   const supabase = useMemo(() => createClient(), []);

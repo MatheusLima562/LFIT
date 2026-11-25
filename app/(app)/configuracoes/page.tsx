@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BusinessForm, ExportPanel, PasswordForm, ProfileForm, TimeZoneForm } from "@/features/settings/components/SettingsForms";
+import { BusinessForm, ExportPanel, LoadStepForm, PasswordForm, ProfileForm, TimeZoneForm } from "@/features/settings/components/SettingsForms";
 import { createClient } from "@/lib/db/server";
 import { getMyBranding, getMyStaffProfile } from "@/features/settings/queries";
 import { getOrganizationPlanUsage } from "@/features/organizations/queries";
@@ -22,9 +22,10 @@ export default async function SettingsPage() {
     getMyBranding(),
     getOrganizationPlanUsage(),
     getMySubscription(),
-    supabase.from("organizations").select("time_zone").eq("id", session.organizationId).maybeSingle(),
+    supabase.from("organizations").select("time_zone, load_step").eq("id", session.organizationId).maybeSingle(),
   ]);
   const timeZone = org.data?.time_zone ?? "America/Sao_Paulo";
+  const loadStep = Number(org.data?.load_step ?? 2.5) || 2.5;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
@@ -39,6 +40,7 @@ export default async function SettingsPage() {
         <>
           <BusinessForm orgId={session.organizationId} initial={branding} />
           <TimeZoneForm initial={timeZone} />
+          <LoadStepForm initial={loadStep} />
         </>
       ) : (
         <p className="text-xs text-ink-3">{t.business.ownerOnly}</p>

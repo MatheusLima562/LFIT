@@ -108,7 +108,12 @@ export class Fixture {
   }
 
   async cleanup() {
-    if (this.orgIds.length) await this.db.from("organizations").delete().in("id", this.orgIds);
+    // Erro aqui não pode passar calado: era assim que organizações de teste se acumulavam no lfit-dev (FK RESTRICT na
+    // cascata, corrigida em 20261124160000/170000). Falhou → o arquivo de teste falha e o motivo aparece.
+    if (this.orgIds.length) {
+      const { error } = await this.db.from("organizations").delete().in("id", this.orgIds);
+      if (error) throw new Error(`limpeza: não apagou as organizações de teste (${error.code}: ${error.message})`);
+    }
     for (const id of this.userIds) await this.db.auth.admin.deleteUser(id);
   }
 }

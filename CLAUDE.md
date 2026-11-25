@@ -758,7 +758,7 @@ effective_status =
   `PinnedPostCard` (`get_my_pinned_post`). Fase 2 (comentários moderados, denúncia, nome de exibição) só em
   `docs/planos/feed.md`.
 
-### Plataforma e inadimplência (sprint de venda, migration `20261120120000` — escrita, ainda não aplicada)
+### Plataforma e inadimplência (sprint de venda, migration `20261120120000` — aplicada no lfit-dev)
 - **Plataforma** = quem vende o app. Área `/plataforma` (fora do AppShell; `requirePlatformAdmin()` → 404 para quem não
   está na lista). Entrar na lista: **só por SQL** (`insert into private.platform_admins (user_id) values (...)`). O admin
   pode não ter perfil em organização: o login cai em `/plataforma` (`requireStaff` redireciona).
@@ -790,7 +790,7 @@ effective_status =
   "Seu acesso está temporariamente limitado. Fale com {nome}." no topo, último treino só leitura (sem iniciar), chat sem
   caixa de envio; conta encerrada: tela de acesso indisponível. e2e `e2e/plataforma-inadimplencia.e2e.mjs`.
 
-### Configurações do personal (1.3, migration `20261120130000` — escrita, ainda não aplicada; e2e `e2e/configuracoes.e2e.mjs`)
+### Configurações do personal (1.3, migration `20261120130000` — aplicada no lfit-dev; e2e `e2e/configuracoes.e2e.mjs`)
 - `/configuracoes` (menu e menu da conta): **perfil** (nome, foto — qualquer membro da equipe), **negócio** (nome, logo,
   WhatsApp de contato — só o owner), **senha** (`supabase.auth.updateUser`), **plano e assinatura** (só leitura) e
   **exportar** (só o owner): `/configuracoes/exportar?tipo=students|sessions[&saude=1]`, CSV de `lib/spreadsheet.ts`.
@@ -803,7 +803,7 @@ effective_status =
 - Conta em somente leitura recusa as configurações (`ACCOUNT_READ_ONLY`); exportar continua (inclusive encerrada).
 - `/suporte`: WhatsApp/e-mail da plataforma (`get_platform_support`, de `private.account_rules`).
 
-### Convites dos alunos (1.4, migration `20261120140000` — escrita, ainda não aplicada; e2e `e2e/convites.e2e.mjs`)
+### Convites dos alunos (1.4, migration `20261120140000` — aplicada no lfit-dev; e2e `e2e/convites.e2e.mjs`)
 - `/alunos/convites` ("Convidar alunos" em Meus alunos; "Convidar" no menu da linha leva já com o aluno marcado):
   alunos **sem login** (inclusive importados em pré-cadastro), escolha um ou vários → link individual de **uso único,
   7 dias** (`access_links.kind = 'invite'`). Por aluno: "Copiar link" e "Abrir no WhatsApp" (wa.me para o número do
@@ -813,7 +813,7 @@ effective_status =
 - Aceitar = o fluxo de sempre do link de acesso (`/acesso/[token]` → POST consome → definir senha → consentimento de
   saúde se o professor declarou → `/acesso/pronto`). A tela do link mostra "Convite de {negócio}" e o logo.
 
-### Aluno ausente e pausa (1.5, migration `20261120150000` — escrita, ainda não aplicada; e2e `e2e/ausencia-pausa.e2e.mjs`)
+### Aluno ausente e pausa (1.5, migration `20261120150000` — aplicada no lfit-dev; e2e `e2e/ausencia-pausa.e2e.mjs`)
 - **Pausa** (`student_pauses`, uma por aluno): motivo viagem/férias/outro (sem saúde), volta opcional. Em pausa = sem data
   ou data ≥ hoje. "Colocar em pausa"/"Encerrar pausa" no menu da linha de Meus alunos e no card do Início; a lista
   mostra "Em pausa (até dd/mm)". Tabela com o gatilho `org_writable`.
@@ -823,7 +823,7 @@ effective_status =
 - **App do aluno:** card gentil no Hoje ("Sentimos sua falta!"), sem push/e-mail, no máximo 1 vez a cada 7 dias
   (`claim_my_nudge` decide e marca); nada para aluno em pausa, sem plano ou de conta limitada.
 
-### Ajustes do sprint de venda (1.7, migration `20261120170000` — escrita, ainda não aplicada)
+### Ajustes do sprint de venda (1.7, migration `20261120170000` — aplicada no lfit-dev)
 - **Fuso por conta:** `organizations.time_zone` (padrão `America/Sao_Paulo`; Configurações → "Fuso horário da conta",
   só o personal). `private.today_br`, `private.sp_day` e `private.sp_day_start` (nomes mantidos) usam o fuso da conta de
   quem chama (`private.current_time_zone`; sem sessão = SP). Reescritas com o fuso: gatilho do NPS (`submitted_on`),
@@ -836,6 +836,73 @@ effective_status =
 - **Limpeza dos testes no lfit-dev:** `npm run db:cleanup-tests` (simulação) / `-- --apply`. Só e-mails
   `lfit-test-…@example.com` e organizações `lfit-test-…` fora do seed (`scripts/test-data-filters.mts`); trava do ref.
 - **Suporte e Configurações** no menu (sem "Em breve"). Fora do escopo de propósito: `docs/planos/pendentes.md`.
+
+### Perfil do aluno — "Treino atual" e "Plano" (sprint edição, PARTE 0, migration `20261124120000` — escrita, ainda não aplicada; e2e `e2e/perfil-meu-plano.e2e.mjs`)
+- Público principal = consultoria a distância: o Perfil do app do aluno **não mostra** "Estúdio" nem "Atendimento".
+  Continuam: nome, professor/personal responsável, "Acesso ao app: Ativo" e o Sair.
+- `get_my_plan_summary` (só o próprio aluno com acesso ativo; nunca histórico nem outro aluno) devolve dois blocos:
+  - **"Treino atual"**: nome do plano de TREINO ativo e "Válido até dd/mm/aaaa" (ou "Sem data de término").
+    **Nunca a palavra "vence" para o treino.**
+  - **"Plano"**: ciclo de cobrança do cadastro ("Plano mensal/trimestral/semestral/anual") e valor, mais o PRÓXIMO
+    pagamento pendente ("R$ X em dd/mm") com "vence em N dias / vence hoje / vencido há N dias" — o prazo é **só do
+    pagamento**. Sem ciclo cadastrado: só o próximo pagamento, se houver. Bloco vazio não aparece.
+- **Cadastro:** `students.billing_cycle` (`monthly`/`quarterly`/`semiannual`/`annual`) e `students.plan_amount_cents`;
+  escrita só por `set_student_billing` (equipe com acesso ao aluno, conta gravável; sem mudança = nada gravado) —
+  formulário do aluno ("Plano (cobrança)" e "Valor do plano") e **importação** (colunas opcionais "Plano"/"Valor";
+  não reconhecido → aviso e a linha entra sem o dado). `import_students`/`private.import_one_student` redefinidas nesta
+  migration com as duas colunas.
+
+### Edição rápida da prescrição (sprint edição, PARTE A, migration `20261124130000` — escrita, ainda não aplicada; e2e `e2e/edicao-rapida.e2e.mjs`)
+- **Um só ponto de escrita:** `apply_prescription_changes(p_changes, p_source, p_session_id)` — `[{item_id, field, old,
+  new, unit?}]`, tudo ou nada. Cada mudança leva o valor ANTIGO esperado: se o item mudou desde que a tela leu →
+  `PRESCRIPTION_CHANGED` e nada é gravado. Campos: `load_value` (na unidade do item, kg/lb), `sets` (1–20),
+  `quantity_min`/`quantity_max` (só itens em repetições, 1–300, máx ≥ mín). Itens com séries detalhadas
+  (`plan_item_sets`) ou carga em texto e planos-modelo (sem aluno) ficam para o montador. Permissão =
+  `private.lock_editable_plan` (quem pode editar o plano). Conta somente leitura → `ACCOUNT_READ_ONLY`.
+  **A PARTE B (IA) aplica pelo mesmo caminho**, origem `ai`.
+- **Histórico** `prescription_changes` (cópia própria: treino, exercício, campo, antes → depois, quem, quando, origem
+  `quick`/`suggestion`/`bulk`/`ai`/`undo`). O montador recria os itens ao salvar o plano inteiro: o histórico fica e o
+  desfazer (`undo_prescription_batch`, lote inteiro) avisa `PRESCRIPTION_ITEM_GONE` / `PRESCRIPTION_CHANGED` /
+  `ALREADY_UNDONE`. Leitura por RLS (equipe com acesso ao aluno) e `list_prescription_changes`.
+- **Sugestões** "Atualizar prescrição para X?": `get_prescription_review` devolve, para o plano ATIVO, as séries
+  registradas na sessão concluída mais recente de cada item (60 dias; sem dor, sem comentário). A regra fica em
+  `features/prescription/prescription.ts` (`computeSuggestions`): carga = valor mais usado ≠ prescrito; repetições =
+  valor fixo diferente ou faixa ultrapassada (a faixa anda mantendo a largura). Aparecem agrupadas por sessão (a mais
+  recente primeiro) na ficha do aluno (`/alunos/[id]/treinos`) e na edição rápida, com "Atualizar", "Atualizar as N
+  desta sessão" e "Manter" (`dismiss_prescription_suggestion`). **Nunca atualiza sozinho.**
+- **Edição rápida** `/alunos/[id]/treinos/ficha` (celular): +/− carga (passo da conta `organizations.load_step`,
+  padrão 2,5, Configurações → só o personal, `set_load_step`), repetições e séries; toques seguidos no mesmo exercício
+  viram uma gravação (~1 s). **Progressão em lote** por treino (±%, arredondado ao passo, nunca inverte o sentido) com
+  prévia antes → depois.
+
+### Comando do personal com IA — DESLIGADO por padrão (sprint edição, PARTE B, migration `20261124140000` — escrita, ainda não aplicada; e2e `e2e/comando-ia.e2e.mjs` com `AI_PROVIDER=fake npx next start -p 3100`)
+- Flag `organizations.ai_coach_enabled` (padrão **false**; liga só por SQL — nenhuma tela liga; equipe não grava a
+  coluna) **e** plano Pro/Gold. **Nenhuma conta ligada.** Campo "Comando (IA)" na edição rápida
+  (`/alunos/[id]/treinos/ficha`); o ditado do teclado do iPhone serve como voz.
+- Fluxo (`features/coach-ai/actions.ts`): `ai_coach_begin` (sessão do personal) confere acesso ao aluno, conta
+  gravável, flag, plano, tamanho (300), limite do dia por conta (30) e treino ativo; reserva 1 do limite e devolve o
+  contexto MÍNIMO (refs A1, A2…, exercício, séries, repetições, carga). O servidor tira o nome do aluno do texto
+  (`redactNames`), chama o provedor (reaproveita `features/assistant/provider.ts` / `anthropic.ts`, prazo 20 s →
+  "a IA demorou demais"), valida a resposta contra a prescrição atual (`validateProposal`: ref existe, item editável,
+  campo e limites; qualquer erro derruba a proposta inteira) e fecha o pedido com tokens/custo (`ai_coach_finish`, só
+  service_role). **A IA só propõe:** a tela mostra antes → depois e "Aplicar alterações" grava por
+  `apply_prescription_changes` (origem `ai`; mesmo histórico e desfazer). Ambiguidade (exercício, treino, unidade) →
+  a IA pergunta.
+- **Ao provedor vão só nomes dos exercícios e a prescrição.** Nunca nome do aluno, nome do plano, ficha de saúde,
+  contraindicação, cuidado (`care_note`) ou dica. O texto do comando **não é gravado** (`private.ai_coach_requests` só
+  tem contagem, tokens e custo). Custo do mês visível só para o personal (`get_ai_coach_status`). Testes com o
+  provedor falso (`fakeCoachReply`).
+- **Barreira de termos de saúde:** `ai_coach_begin` recusa (`AI_HEALTH_TERMS`) comando com termo da MESMA lista do
+  assistente (`private.ai_safety_hit`), antes do provedor e sem consumir o limite.
+- **Microfone central (complemento):** com a IA usável, o painel no CELULAR ganha a barra inferior (`CoachMicBar`, só
+  `lg:hidden`): Início, Alunos, **microfone grande no centro**, Chat, Treinos; o `main` ganha espaço no fim (não cobre
+  nada a 375 px). Sem a IA, o painel fica como sempre. Voz = reconhecimento do navegador (`SpeechRecognition`,
+  pt-BR); sem suporte/erro → campo de texto com instrução do ditado do teclado. **Sem serviço pago de transcrição;
+  nenhum áudio é gravado nem enviado ao servidor do app.** Com aluno aberto (`/alunos/[id]…`) vale para ele; senão o
+  SERVIDOR (`runCentralCoachCommand`) acha o aluno pelo nome entre os que o personal acessa (RLS): 1 → segue, 2+ →
+  "Qual?", 0 → "não encontrei"; o nome vira `ALUNO_1` antes do provedor e a proposta volta com o nome completo. Só
+  prescrição: pedido sem sinal de carga/séries/repetições → "ainda não faço isso" sem chamar o provedor (o modelo
+  também responde `unsupported`). Mesmas RPCs, tela antes → depois, histórico e desfazer.
 
 ### Métrica de engajamento
 - Engajamento = % de alunos com `effective_status = active` que têm ≥ 1 sessão registrada nos
@@ -918,6 +985,10 @@ sem efeitos colaterais).
 | **Convites dos alunos (1.4)** | `create_student_invites`, `student_invite_statuses`, `get_invite_quota` | `create_student_invites`: `require_staff()` + `lock_accessible_student` por aluno (owner ou responsável), só sem login (`STUDENT_HAS_ACCOUNT`); 1–200 por chamada; limite diário da conta (`private.account_rules.invite_daily_limit`, dia civil, trava por organização) → lote inteiro recusado com `INVITE_LIMIT_REACHED` (detail = quantos cabem); token só na resposta (banco guarda o hash), auditado sem o token. `student_invite_statuses`: só alunos com `can_access_student` (vazio para quem não acessa). `get_invite_quota`: `require_staff()`. `20261120140000`; testes em `tests/db/student-invites.test.ts` |
 | **Ausência e pausa (1.5)** | `set_student_pause`, `end_student_pause`, `get_inactive_students`, `claim_my_nudge` | Pausa: `lock_accessible_student` (owner ou responsável), motivo só `viagem`/`ferias`/`outro` (nunca saúde), volta ≥ hoje; auditadas. `get_inactive_students`: `require_staff()` + `private.dashboard_students()`; só nome, dias e limite. `claim_my_nudge`: escopo `students.user_id = auth.uid()`; ativo, com plano ativo, fora de pausa, conta sem limitação, 7+ dias e último aviso há 7+ dias (marca a hora em `private.student_nudges`). `20261120150000`; testes em `tests/db/pause-absence.test.ts` |
 | **Fuso da conta (1.7)** | `set_organization_time_zone` | `require_owner()` + conta gravável; só fusos de `private.allowed_time_zones()` (Brasil + Lisboa); auditado. `20261120170000`; testes em `tests/db/time-zone-retention.test.ts` |
+| **Perfil do aluno — treino e plano (edição 0)** | `get_my_plan_summary`, `set_student_billing` | `get_my_plan_summary`: só o aluno da sessão (`students.user_id = auth.uid()`, sem exclusão) → senão `STUDENT_NOT_FOUND`; acesso não ativo → `null`; devolve treino ativo (nome, válido até), ciclo/valor do cadastro e o próximo pagamento pendente — nada de histórico nem de outro aluno. `set_student_billing`: `require_staff()` + `private.lock_accessible_student` + conta gravável; ciclo da lista e valor 1–100.000.000 centavos; auditado. `20261124120000`; testes em `tests/db/student-my-plan.test.ts` |
+| **Edição rápida da prescrição (edição A)** | `apply_prescription_changes`, `undo_prescription_batch`, `list_prescription_changes`, `get_prescription_review`, `dismiss_prescription_suggestion`, `set_load_step` | `require_staff()` + conta gravável nas escritas; item → `private.lock_editable_plan` (quem pode editar o plano de ALUNO, não arquivado) dentro de `private.prescription_apply_one`; valor antigo esperado (`PRESCRIPTION_CHANGED`); leitura/desfazer/revisão com `private.can_access_student`. `set_load_step`: `require_owner()`. Revisão sem dor nem comentário. `20261124130000`; testes em `tests/db/prescription-quick-edit.test.ts` |
+| **Comando com IA (edição B, desligado)** | `get_ai_coach_status`, `ai_coach_begin` | `require_staff()`; `ai_coach_begin`: conta gravável + `ai_coach_enabled` (`AI_DISABLED`) + plano Pro/Gold (`AI_PLAN_REQUIRED`) + `private.can_access_student` + tamanho + limite do dia (trava a org); devolve só refs/exercício/prescrição (nunca saúde, cuidado, dica, nome do plano); o nome do aluno vem só para o servidor tirar do texto. Custo do mês só para o owner. `20261124140000`; testes em `tests/db/ai-coach.test.ts` |
+| **Só servidor — comando com IA** (`service_role`) | `ai_coach_finish` | Fecha o pedido (tokens, custo, falha) uma única vez; sem EXECUTE para `authenticated`/`anon`. `20261124140000` |
 | Leitura sem efeito | `organization_plan_usage` (vazio p/ não-staff), `can_view_student_health` (false p/ quem não acessa) | `private.is_staff()` / `private.can_access_student()` |
 | **Só servidor** (`service_role`) | `get_access_link_branding` (nome/logo do negócio na tela do link, só com token válido, sem consumir), `consume_access_link`, `submit_public_signup`, `get_public_signup_form`, `hit_rate_limit`, `admin_activate_due_plans`, `admin_purge_live_tracking`, `admin_purge_ai_data`, `ai_record_reply` | sem EXECUTE para `authenticated`/`anon` (não aparecem no advisor) |
 

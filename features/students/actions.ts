@@ -12,6 +12,7 @@ import { AccountConflictError, linkStudentAccount, type StudentAccountTarget } f
 import { studentFormSchema, toStudentPayload } from "./schemas";
 import { GROUP_COLORS } from "@/features/groups/colors";
 import { DEFAULT_MODALITY } from "./modality";
+import { parseMoneyToCents } from "@/lib/money";
 
 const t = messages.students;
 const f = messages.studentForm;
@@ -153,6 +154,15 @@ export async function saveStudent(input: unknown, studentId?: string): Promise<S
   if (studentId || values.modality !== DEFAULT_MODALITY) {
     const { error: modalityError } = await supabase.rpc("set_student_modality", { p_student_id: id, p_modality: values.modality });
     if (modalityError) warnings.push(f.warnings.modality);
+  }
+
+  // Plano (cobrança): RPC própria (equipe com acesso). Cadastro novo só chama se veio algo; a RPC ignora "sem mudança".
+  const billingCents = values.planAmount ? parseMoneyToCents(values.planAmount) : null;
+  if (studentId || values.billingCycle || billingCents !== null) {
+    const { error: billingError } = await supabase.rpc("set_student_billing", {
+      p_student_id: id, p_cycle: values.billingCycle || (null as unknown as string), p_amount_cents: billingCents as number,
+    });
+    if (billingError) warnings.push(f.warnings.billing);
   }
 
   if (values.sendInvite) {

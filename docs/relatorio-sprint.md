@@ -1,3 +1,77 @@
+# Relatório — sprint "Perfil do aluno + edição rápida do treino + IA do personal" (24/11/2026)
+
+Pedido: `.claude/prompt-sprint-edicao.md` (fora do git), com o complemento do microfone central e o ajuste do "Meu
+plano" pedido no APROVADO. Branch `feat/edicao-rapida`, a partir da `main` (a `feat/venda` já estava mesclada, PR #4).
+Commits locais, sem push. Decisões: `docs/decisoes-autonomas.md`.
+
+Migrations aplicadas no **lfit-dev**; o dry-run listou só as do sprint:
+- `20261124120000_student_my_plan`: Perfil do aluno com "Treino atual" e "Plano"; ciclo e valor no cadastro e na importação.
+- `20261124130000_prescription_quick_edit`: edição rápida, sugestões, lote, histórico com desfazer, passo da carga.
+- `20261124140000_ai_coach`: comando com IA, desligado; barreira de termos de saúde; limite e custo.
+- `20261124150000_prescription_range_order`: correção da faixa de repetições.
+- `20261124160000_exercise_fk_no_action` + `20261124170000_exercise_fk_deferred`: correção da exclusão de organização.
+
+**A IA continua desligada em todas as contas.** O teste de banco confere que nenhuma conta real está ligada, e o e2e
+desliga a flag no fim.
+
+## Testes (lfit-dev, build de produção, `next start -p 3100`; o `comando-ia` com `AI_PROVIDER=fake`)
+| Teste | Resultado |
+|---|---|
+| `tests/db/student-my-plan.test.ts` (novo: dois blocos, só o próprio aluno, só o próximo pagamento, `set_student_billing` com permissões, importação com ciclo e valor) | 5/5 |
+| `tests/db/prescription-quick-edit.test.ts` (novo: +/− com valor antigo esperado, tudo ou nada, recusas, faixa em ordem segura, permissões e isolamento, desfazer e conflitos, item recriado, sugestões, passo, conta somente leitura) | 10/10 |
+| `tests/db/ai-coach.test.ts` (novo: desligada por padrão em todas as contas, só Pro/Gold, contexto sem aluno/saúde, texto não gravado, permissões, finalização só no servidor, custo, barreira de saúde sem gastar o limite, limite diário, somente leitura) | 8/8 |
+| `tests/db/org-delete.test.ts` (novo: organização com exercício próprio em uso é apagada; exercício em uso continua protegido) | 2/2 |
+| `training` 38 · `training-2-8` 27 · `fase3-sessions` 17 · `session-rating` 8 · `security-definer` 173 · `security-definer-coverage` 1 · `org-writable-coverage` 1 · `student-import` 12 · `ai-assistant` 10 · `live` 10 · `exercise-library` 6 | todos ok |
+| Regressão: `isolation` 29 · `write-protection` 11 · `feed` 18 · `status-and-limits` 14 · `access-and-signup` 9 · `student-modality` 4 | todos ok |
+| Unitários | 436/436 |
+| e2e da sprint: `perfil-meu-plano` (375 px, incluindo o personal preenchendo o plano no cadastro a 375 px), `edicao-rapida` (375 px e desktop), `comando-ia` (375 px: campo na ficha, microfone central com voz simulada, "Qual aluno?", sem suporte a voz, "ainda não faço isso", "não encontrei", desktop sem a barra) | 3/3 |
+| e2e de regressão: `f3-app-aluno`, `k212-chat`, `k212-chat-layout`, `k212-professor`, `feed-aluno`, `feed-personal`, `configuracoes`, `fase1-aluno-cadastro`, `fase1-modalidade`, `importar-fluxo`, `importar-layout` | 11/11 |
+| Type check, lint, build | ok |
+
+Rodadas: o lote rodou em sequência, com o reseed automático do executor. Ficaram de fora do lote e rodaram depois, na
+tomada e também em sequência: `edicao-rapida` (corrigido), `k212-professor` e `perfil-meu-plano`. Não ficaram de fora
+por falha deles: o seed automático estourou o tempo limite uma vez e a execução parou (ver abaixo).
+
+Defeitos achados e corrigidos na causa, sem afrouxar asserção:
+- **Faixa de repetições:**
+  - Uma mudança grande e válida (8–10 → 12–14) quebrava no meio.
+  - Uma faixa invertida vazava o erro cru do banco.
+  - Correção: o banco aplica na ordem segura e devolve `INVALID_INPUT` (`20261124150000`).
+- **Prévia da progressão em lote:** usava os valores da tela, que podiam estar defasados logo depois de um +/−.
+  - O banco recusou a aplicação (o valor antigo esperado não batia), então nada errado foi gravado.
+  - Correção: a prévia lê os valores atuais do banco; num conflito, o painel avisa, relê e refaz a prévia.
+- **Progressão em lote, pego no teste unitário:** +5% de 1 kg com passo de 2,5 dava 0 kg. Agora uma progressão nunca reduz a carga e uma redução nunca zera.
+- **Exclusão de organização:** falhava quando ela tinha um exercício próprio usado num treino.
+  - Causa: a FK `RESTRICT` era checada no meio da cascata.
+  - Correção: a checagem foi adiada para o fim da transação (`20261124160000` + `20261124170000`).
+  - Esse defeito fazia a limpeza dos testes deixar organizações para trás: eram 133 no lfit-dev.
+- **Provedor falso:** lia "mais 2,5 kg" como valor absoluto; agora entende mais/menos, como se fala no ditado.
+- **Dados de teste:** o número da série começava em 0 (o banco aceita de 1 a 50) e o erro não era conferido. Corrigido no teste de banco e no e2e.
+
+Tempo limite do seed (antes do `k212-professor`, na primeira rodada):
+- **Medição:** apagar a conta de exemplo leva 0,37 s; no histórico, o máximo foi 2,7 s, contra o limite de 8 s.
+- **Não se repetiu:** os 4 seeds seguintes passaram, incluindo os 3 automáticos entre os roteiros finais.
+- **Causa provável:** espera por trava de outra transação. Não foi provada.
+- **Acúmulo:** as organizações de teste acumuladas foram apagadas com `db:cleanup-tests -- --apply` (135 organizações e 14 usuários de teste). Agora a limpeza dos testes falha quando não consegue apagar.
+
+## O que conferir no iPhone (lfit-dev, contas do seed)
+1. **Perfil do aluno** (`aluno.seed`):
+   - Sem "Estúdio" e sem "Atendimento".
+   - "Treino atual" com "Válido até …", sem a palavra "vence".
+   - "Plano" com "Plano mensal", o valor e "Próximo pagamento: R$ X em dd/mm · vence em N dias". Antes, preencha o plano no cadastro da Camila (passo 2).
+2. **Cadastro do aluno no celular** (personal): "Plano (cobrança)" e "Valor do plano" no formulário de editar aluno.
+3. **Edição rápida** (personal, Alunos → Camila → "Edição rápida"):
+   - +/− de carga, repetições e séries com o polegar; a página não rola para os lados.
+   - Depois de alguns toques seguidos, "Desfazer" no aviso.
+4. **Progressão em lote:** +10% no treino A, "Ver prévia", conferir antes → depois e aplicar. Depois desfazer pelo "Histórico de alterações".
+5. **"Atualizar prescrição para X?"** na ficha da Camila, depois de ela registrar um treino com carga diferente: testar "Atualizar" e "Manter".
+6. **Passo da carga** em Configurações (só o personal): trocar para 1 e conferir o +/−.
+7. **IA do personal (desligada).** Para testar, é preciso ligar por SQL só na conta de exemplo e no plano Pro, e desligar depois.
+   - Microfone no centro da barra inferior.
+   - Ditado: "supino da Camila mais 2,5 quilos" → "Qual?" (há duas Camilas) → proposta → Aplicar.
+   - Um pedido como "manda mensagem" → "Ainda não faço isso".
+   - Um termo de saúde no comando → recusado.
+
 # Relatório — sprint "Feed + correções" (19/11/2026)
 
 Pedido: `.claude/prompt-sprint-feed-ia.md` (fora do git). Branch `feat/feed` (a partir de `feat/ao-vivo-importacao`, já

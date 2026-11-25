@@ -7,6 +7,8 @@ import { toE164 } from "@/lib/phone";
 import { parseBRDate, isoToBR, todayISO } from "@/lib/dates";
 import { searchKey } from "@/lib/text";
 import { toCsv } from "@/lib/spreadsheet";
+import { parseMoneyToCents } from "@/lib/money";
+import type { BillingCycle } from "@/features/student-app/my-plan";
 import type { ColumnMapping, ImportField } from "./fields";
 
 export type RowError =
@@ -31,9 +33,21 @@ export const CELL_LIMITS: Record<ImportField, number> = {
   start_date: 120,
   modality: 120,
   status: 120,
+  billing_cycle: 120,
+  plan_amount: 120,
 };
 
-export type RowWarning = "phone_invalid" | "birth_date_invalid" | "start_date_invalid" | "modality_unknown" | "status_unknown";
+export type RowWarning =
+  | "phone_invalid" | "birth_date_invalid" | "start_date_invalid" | "modality_unknown" | "status_unknown"
+  | "billing_cycle_unknown" | "plan_amount_invalid";
+
+/** Ciclo de cobrança do plano (coluna opcional): mensal, trimestral, semestral, anual. */
+const BILLING: Record<string, BillingCycle> = {
+  mensal: "monthly", mes: "monthly", "1 mes": "monthly", monthly: "monthly", month: "monthly",
+  trimestral: "quarterly", trimestre: "quarterly", "3 meses": "quarterly", quarterly: "quarterly",
+  semestral: "semiannual", semestre: "semiannual", "6 meses": "semiannual", semiannual: "semiannual",
+  anual: "annual", ano: "annual", "12 meses": "annual", annual: "annual", yearly: "annual",
+};
 
 export type Modality = "consultoria" | "presencial" | "hibrido";
 export type ImportStatus = "active" | "inactive";
@@ -48,6 +62,8 @@ export interface StudentPayload {
   notes: string | null;
   modality: Modality;
   status: ImportStatus;
+  billing_cycle: BillingCycle | null;
+  plan_amount_cents: number | null;
 }
 
 export interface ValidatedRow {
@@ -193,13 +209,30 @@ export function validateRow(
     else warnings.push("status_unknown");
   }
 
+  // Plano (cobrança), opcional: não reconhecido/inválido → aviso e o dado fica em branco (a linha entra).
+  const cycleRaw = get("billing_cycle");
+  let billingCycle: BillingCycle | null = null;
+  if (cycleRaw) {
+    billingCycle = BILLING[key(cycleRaw)] ?? null;
+    if (!billingCycle) warnings.push("billing_cycle_unknown");
+  }
+  const amountRaw = get("plan_amount");
+  let planAmount: number | null = null;
+  if (amountRaw) {
+    planAmount = parseMoneyToCents(amountRaw);
+    if (planAmount === null) warnings.push("plan_amount_invalid");
+  }
+
   return {
     line,
     errors,
     warnings,
     payload: errors.length
       ? null
-      : { row: line, first_name: first, last_name: last, email, whatsapp_e164: phone, birth_date: birth, notes: notes || null, modality, status },
+      : {
+          row: line, first_name: first, last_name: last, email, whatsapp_e164: phone, birth_date: birth, notes: notes || null,
+          modality, status, billing_cycle: billingCycle, plan_amount_cents: planAmount,
+        },
   };
 }
 

@@ -30,6 +30,8 @@ import { PhoneField } from "./form/PhoneField";
 import { PHOTO_TYPES, PhotoField, type PhotoValue } from "./form/PhotoField";
 import { uuidV4 } from "@/lib/uuid";
 import { MODALITIES } from "../modality";
+import { BILLING_CYCLES } from "@/features/student-app/my-plan";
+import { centsToInput } from "@/lib/money";
 
 const t = messages.studentForm;
 const NONE = "none";
@@ -67,6 +69,8 @@ function initialValues(student: StudentForEdit | null, role: "owner" | "trainer"
     sendInvite: false,
     blockIfOverdue: student.blockIfOverdue,
     modality: student.modality,
+    billingCycle: student.billingCycle ?? "",
+    planAmount: student.planAmountCents ? centsToInput(student.planAmountCents) : "",
   };
 }
 
@@ -254,6 +258,31 @@ export function StudentFormDialog({
                         </Select>
                       )}
                     />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="billingCycle">{t.billingCycle}</FieldLabel>
+                    <Controller
+                      control={control}
+                      name="billingCycle"
+                      render={({ field }) => (
+                        <Select value={field.value || NONE} onValueChange={(v) => field.onChange(v === NONE ? "" : v)}>
+                          <SelectTrigger id="billingCycle" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE}>{t.billingNone}</SelectItem>
+                            {BILLING_CYCLES.map((c) => (
+                              <SelectItem key={c} value={c}>{t.billingCycles[c]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Field>
+                  <Field data-invalid={!!errors.planAmount}>
+                    <FieldLabel htmlFor="planAmount">{t.planAmount}</FieldLabel>
+                    <Input id="planAmount" inputMode="decimal" placeholder={t.planAmountPlaceholder} aria-invalid={!!errors.planAmount} {...register("planAmount")} />
+                    <FieldError errors={[errors.planAmount]} />
                   </Field>
                   <Field data-invalid={!!errors.phone} className="sm:col-span-2">
                     <FieldLabel htmlFor="phone">{t.whatsapp}</FieldLabel>

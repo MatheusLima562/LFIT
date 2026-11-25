@@ -5,6 +5,7 @@ import { getLatestRedFlagCheck } from "@/features/knowledge/queries";
 import type { RedFlagCheck } from "@/features/knowledge/red-flags";
 import { searchKey } from "@/lib/text";
 import type { Modality } from "./modality";
+import { BILLING_CYCLES, type BillingCycle } from "@/features/student-app/my-plan";
 import { PAGE_SIZE, type StudentListParams } from "./search-params";
 
 export type EffectiveStatus = Database["public"]["Enums"]["effective_status"];
@@ -208,6 +209,8 @@ export interface StudentForEdit {
   notes: string | null;
   blockIfOverdue: boolean;
   modality: Modality;
+  billingCycle: BillingCycle | null;
+  planAmountCents: number | null;
   photoPath: string | null;
   photoUrl: string | null;
   hasAccount: boolean;
@@ -219,7 +222,7 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
   const { data } = await supabase
     .from("students")
     .select(
-      "id, first_name, last_name, email, birth_date, sex, whatsapp_e164, trainer_id, health_data_consent_at, health_consent_declared_at, access_expires_at, training_location, notes, block_if_overdue, photo_path, user_id, modality, student_groups(group_id)",
+      "id, first_name, last_name, email, birth_date, sex, whatsapp_e164, trainer_id, health_data_consent_at, health_consent_declared_at, access_expires_at, training_location, notes, block_if_overdue, photo_path, user_id, modality, billing_cycle, plan_amount_cents, student_groups(group_id)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -249,6 +252,8 @@ export async function getStudentForEdit(id: string): Promise<StudentForEdit | nu
     notes: data.notes,
     blockIfOverdue: data.block_if_overdue,
     modality: data.modality as Modality,
+    billingCycle: (BILLING_CYCLES as readonly string[]).includes(data.billing_cycle ?? "") ? (data.billing_cycle as BillingCycle) : null,
+    planAmountCents: data.plan_amount_cents,
     photoPath: data.photo_path,
     photoUrl: data.photo_path ? (photoUrls.get(data.photo_path) ?? null) : null,
     hasAccount: data.user_id !== null,

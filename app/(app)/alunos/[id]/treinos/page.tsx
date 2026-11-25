@@ -12,7 +12,10 @@ import { cn } from "@/lib/utils";
 import { messages } from "@/messages/pt-BR";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Dumbbell, Lock, MessageSquareText } from "lucide-react";
+import { Dumbbell, Lock, MessageSquareText, Zap } from "lucide-react";
+import { SuggestionsPanel } from "@/features/prescription/components/SuggestionsPanel";
+import { computeSuggestions } from "@/features/prescription/prescription";
+import { getPrescriptionReview } from "@/features/prescription/queries";
 import { AnnouncementEditor } from "@/features/coach/components/AnnouncementEditor";
 import { CoachSessions } from "@/features/coach/components/CoachSessions";
 import { getCoachSessions, getStudentAnnouncement } from "@/features/coach/queries";
@@ -33,14 +36,16 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
   if (!z.uuid().safeParse(id).success) notFound();
   const student = await getStudentName(id);
   if (!student) notFound();
-  const [plans, templates, students, announcement, coach, npsStatus] = await Promise.all([
+  const [plans, templates, students, announcement, coach, npsStatus, review] = await Promise.all([
     listStudentPlans(id, session),
     listTemplateOptions(),
     listStudentOptions(),
     getStudentAnnouncement(id, session.userId),
     getCoachSessions(id),
     getNpsStatus(id),
+    getPrescriptionReview(id),
   ]);
+  const suggestions = computeSuggestions(review);
   // Assistente de IA: só quem vê a saúde do aluno recebe linhas (RLS); sem conversa, a seção não aparece.
   const aiConversations = await getAssistantConversations(id);
 
@@ -69,6 +74,14 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
           <p className="mt-0.5 text-[13px] text-ink-2">{t.studentSubtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {plans.active && (
+            <Button asChild variant="outline">
+              <Link href={`/alunos/${student.id}/treinos/ficha`}>
+                <Zap aria-hidden />
+                {messages.prescription.open}
+              </Link>
+            </Button>
+          )}
           <ApplyTemplateButton student={student} templates={templates} />
           <Button asChild>
             <Link href={`/treinos/novo?aluno=${student.id}`}>
@@ -78,6 +91,9 @@ export default async function StudentPlansPage({ params, searchParams }: PagePro
           </Button>
         </div>
       </header>
+
+      {/* Edição rápida (PARTE A): "Atualizar prescrição para X?" das sessões recentes — nada muda sem um toque. */}
+      <SuggestionsPanel suggestions={suggestions} />
 
       <nav aria-label={t.tabsLabel} className="-mb-px flex gap-1 overflow-x-auto border-b border-line">
         {TABS.map((k) => {

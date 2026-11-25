@@ -110,6 +110,18 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     ["end_student_pause", () => ({ p_student_id: studentId })],
     ["get_inactive_students", () => ({})],
     ["set_organization_time_zone", () => ({ p_time_zone: "Europe/Lisbon" })],
+    // Plano (cobrança) do aluno (20261124120000): só equipe com acesso.
+    ["set_student_billing", () => ({ p_student_id: studentId, p_cycle: "monthly", p_amount_cents: 100 })],
+    // Edição rápida da prescrição (20261124130000): só equipe.
+    ["set_load_step", () => ({ p_step: 5 })],
+    ["apply_prescription_changes", () => ({ p_changes: [{ item_id: randomUUID(), field: "sets", old: 3, new: 4 }], p_source: "quick" })],
+    ["undo_prescription_batch", () => ({ p_batch_id: randomUUID() })],
+    ["list_prescription_changes", () => ({ p_student_id: studentId })],
+    ["get_prescription_review", () => ({ p_student_id: studentId })],
+    ["dismiss_prescription_suggestion", () => ({ p_session_id: randomUUID(), p_item_id: randomUUID(), p_field: "load_value" })],
+    // Comando com IA (20261124140000): só equipe (e desligado por padrão).
+    ["get_ai_coach_status", () => ({})],
+    ["ai_coach_begin", () => ({ p_student_id: studentId, p_command: "supino +2 kg" })],
   ];
 
   it.each(forbidden)("%s falha para o aluno", async (fn, args) => {
@@ -164,7 +176,10 @@ describe.runIf(dbTestsEnabled)("SECURITY DEFINER: usuário com papel student é 
     "update_my_profile", "update_organization_profile", "get_my_branding", "get_access_link_branding", "export_account_data",
     "log_account_export", "create_student_invites", "student_invite_statuses", "get_invite_quota",
     "set_student_pause", "end_student_pause", "get_inactive_students", "claim_my_nudge", "get_my_pinned_post",
-    "set_organization_time_zone",
+    "set_organization_time_zone", "get_my_plan_summary", "set_student_billing",
+    "set_load_step", "apply_prescription_changes", "undo_prescription_batch", "list_prescription_changes",
+    "get_prescription_review", "dismiss_prescription_suggestion",
+    "get_ai_coach_status", "ai_coach_begin", "ai_coach_finish",
   ])("anônimo não executa %s", async (fn) => {
     const { error } = await anon().rpc(fn, {});
     expect(error).not.toBeNull();
